@@ -24,6 +24,11 @@
 import codecs
 import sys
 import time
+import itertools
+if sys.version_info >= (3, 0):
+	from itertools import zip_longest
+else:
+	from itertools import izip_longest
 
 # from chirptext.leutile import jilog, Timer, Counter, StringTool
 
@@ -91,3 +96,14 @@ def main():
 
 if __name__ == "__main__":
 	main()
+
+if sys.version_info >= (3, 0):
+	def grouper(iterable, n, fillvalue=None):
+		args = [iter(iterable)] * n
+		return zip_longest(fillvalue=fillvalue, *args)
+else:
+	def grouper(iterable, n, fillvalue=None):
+		args = [iter(iterable)] * n
+		return izip_longest(fillvalue=fillvalue, *args)
+
+
