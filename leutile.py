@@ -90,6 +90,38 @@ class StringTool:
 	def to_str(a_str):
 		return str(a_str) if a_str else ''
 
+class FileHub:
+	def __init__(self, ext='.log'):
+		self.files = {}
+		self.ext = ext if ext else ''
+	
+	def __getitem__(self, key):
+		if not self.files.has_key(key):
+			self.addtext(key)
+		return self.files[key]
+	
+	def __setitem__(self, key, value):
+		self.files[key] = value
+		
+	def addtext(self, key):
+		self.files[key] = open(key + self.ext, 'a')
+		
+	def create(self, key):
+		self.files[key] = open(key + self.ext, 'w')
+		
+	def writeline(self, key, text):
+		self[key].write('%s\n' % (text,))
+		self[key].flush()
+	
+	def flush(self):
+		for key in self.files.keys():
+			self[key].flush()
+			
+	def close(self):
+		for key in self.files.keys():
+			self[key].flush()
+			self[key].close()
+
 def main():
 	print("This is an utility module, not an application.")
 	pass
