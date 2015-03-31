@@ -32,10 +32,12 @@ else:
 
 # from chirptext.leutile import jilog, Timer, Counter, StringTool
 
+JILOG_LOCATION = 'debug.txt'
+
 def jilog(msg):
-	sys.stderr.write(("%s" % str(msg)).encode("ascii","ignore"))
+	sys.stderr.write(("%s" % str(msg)).encode("ascii","ignore").decode('ascii', 'ignore'))
 	try:
-		with codecs.open("debug.txt", "a", encoding='utf-8') as logfile:
+		with codecs.open(JILOG_LOCATION, "a", encoding='utf-8') as logfile:
 			logfile.write("%s\n" % str(msg))
 	except Exception as ex:
 		sys.stderr.write(str(ex))
