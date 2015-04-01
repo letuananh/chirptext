@@ -21,6 +21,7 @@
 #OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 #THE SOFTWARE.
 
+import os
 import codecs
 import sys
 import time
@@ -80,8 +81,14 @@ class Counter:
 		self[key] += 1
 	
 	def summarise(self):
-		for k in list(self.count_map.keys()):
+		for k in sorted(list(self.count_map.keys())):
 			print(("%s: %d" % (k, self.count_map[k])))
+
+	def save(self, file_loc):
+		'''Save counter information to files'''
+		with open(file_loc, 'w') as outfile:
+			for k in sorted(list(self.count_map.keys())):
+				outfile.write(("%s: %d\n" % (k, self.count_map[k])))
 
 class StringTool:
 	@staticmethod
@@ -123,6 +130,22 @@ class FileHub:
 		for key in self.files.keys():
 			self[key].flush()
 			self[key].close()
+
+class FileTool:
+	@staticmethod
+	def getfilename(file_path):
+		''' Get filename without extension
+		'''
+		return os.path.splitext(getfullfilename(file_path))[0]
+
+	@staticmethod
+	def getfullfilename(file_path):
+		''' Get full filename (with extension)
+		'''
+		if file_path:
+			return os.path.basename(file_path)
+		else:
+			return ''
 
 def main():
 	print("This is an utility module, not an application.")
