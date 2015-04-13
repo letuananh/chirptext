@@ -26,6 +26,7 @@ import codecs
 import sys
 import time
 import itertools
+import operator
 if sys.version_info >= (3, 0):
 	from itertools import zip_longest
 else:
@@ -66,8 +67,9 @@ class Timer:
 			self.stop().log(task_note)
 
 class Counter:
-	def __init__(self):
+	def __init__(self, priority=None):
 		self.count_map = {}
+		self.priority = priority if priority else []
 	
 	def __getitem__(self, key):
 		if key not in self.count_map:
@@ -79,16 +81,34 @@ class Counter:
 	
 	def count(self, key):
 		self[key] += 1
-	
+
+	def order(self, priority):
+		self.priority = [ x for x in priority ]
+
+	def get_report_order(self):
+		order_list = []
+		for x in self.priority:
+			order_list.append([x, self[x]])
+		for x in sorted(list(self.count_map.keys())):
+			if x not in self.priority:
+				order_list.append([x, self[x]])
+		return order_list
+		
 	def summarise(self):
-		for k in sorted(list(self.count_map.keys())):
-			print(("%s: %d" % (k, self.count_map[k])))
+		for k, v in self.get_report_order():
+			print( "%s: %d" % (k, v) )
 
 	def save(self, file_loc):
 		'''Save counter information to files'''
 		with open(file_loc, 'w') as outfile:
-			for k in sorted(list(self.count_map.keys())):
-				outfile.write(("%s: %d\n" % (k, self.count_map[k])))
+			for k, v in self.get_report_order():
+				outfile.write( "%s: %d\n" % (k, v) )
+
+	def sorted_by_count(self):
+		if sys.version_info >= (3, 0):
+			return sorted(self.count_map.items(), key=operator.itemgetter(1), reverse=True)
+		else:
+			return sorted(self.count_map.iteritems(), key=operator.itemgetter(1), reverse=True)
 
 class StringTool:
 	@staticmethod
