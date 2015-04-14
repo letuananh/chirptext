@@ -37,7 +37,7 @@ else:
 JILOG_LOCATION = 'debug.txt'
 
 def jilog(msg):
-	sys.stderr.write(("%s" % str(msg)).encode("ascii","ignore").decode('ascii', 'ignore'))
+	sys.stderr.write(("%s\n" % str(msg)).encode("ascii","ignore").decode('ascii', 'ignore'))
 	try:
 		with codecs.open(JILOG_LOCATION, "a", encoding='utf-8') as logfile:
 			logfile.write("%s\n" % str(msg))
