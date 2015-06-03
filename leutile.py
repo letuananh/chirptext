@@ -46,9 +46,12 @@ def jilog(msg):
 		pass
 
 class Timer:
+	''' Timer a task
+	'''
 	def __init__(self):
 		self.start_time = time.time()
 		self.end_time = time.time()
+		
 	def start(self, task_note=''):
 		if task_note:
 			jilog("[%s]\n" % (str(task_note),))
@@ -58,11 +61,14 @@ class Timer:
 	def stop(self):
 		self.end_time = time.time()
 		return self
+		
 	def __str__(self):
 		return "Execution time: %.2f sec(s)" % (self.end_time - self.start_time)
+		
 	def log(self, task_note = ''):
 		jilog("%s - Note=[%s]\n" % (self, str(task_note)))
 		return self
+		
 	def end(self, task_note=''):
 			self.stop().log(task_note)
 
