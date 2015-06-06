@@ -32,6 +32,7 @@ if sys.version_info >= (3, 0):
 else:
 	from itertools import izip_longest
 
+from collections import OrderedDict
 # from chirptext.leutile import jilog, Timer, Counter, StringTool
 
 JILOG_LOCATION = 'debug.txt'
@@ -44,6 +45,9 @@ def jilog(msg):
 	except Exception as ex:
 		sys.stderr.write(str(ex))
 		pass
+
+def uniquify(a_list):
+	return list(OrderedDict(zip(a_list, range(len(a_list)))).keys())
 
 class Timer:
 	''' Timer a task
