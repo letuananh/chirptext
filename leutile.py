@@ -38,12 +38,20 @@ from collections import OrderedDict
 JILOG_LOCATION = 'debug.txt'
 
 def jilog(msg):
-	sys.stderr.write(("%s\n" % str(msg)).encode("ascii","ignore").decode('ascii', 'ignore'))
+	try:
+		sys.stderr.write(("%s\n" % str(msg)).encode("ascii","ignore").decode('ascii', 'ignore'))
+		sys.stdout.write(("%s\n" % str(msg)).encode("ascii","ignore").decode('ascii', 'ignore'))
+	except:
+		# nah, dun care
+		pass
 	try:
 		with codecs.open(JILOG_LOCATION, "a", encoding='utf-8') as logfile:
-			logfile.write("%s\n" % str(msg))
+			# don't do this anymore
+			# logfile.write("%s\n" % str(msg))
+			pass
 	except Exception as ex:
-		sys.stderr.write(str(ex))
+		# sys.stderr.write(str(ex))
+		# nah, dun care
 		pass
 
 def uniquify(a_list):
