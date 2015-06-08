@@ -49,6 +49,19 @@ def jilog(msg):
 def uniquify(a_list):
 	return list(OrderedDict(zip(a_list, range(len(a_list)))).keys())
 
+def header(msg, level='h1'):
+    if level == 'h1':
+        print('-' * 80)
+        print(msg)
+        print('-' * 80)
+    elif level == 'h2':
+        print('\t%s' % msg)
+        print('\t' + ('-' * 40))
+    else:
+        print('\t\t%s' % msg)
+        print('\t\t' + ('-' * 20))
+
+
 class Timer:
 	''' Timer a task
 	'''
