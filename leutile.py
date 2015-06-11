@@ -35,20 +35,26 @@ else:
 from collections import OrderedDict
 # from chirptext.leutile import jilog, Timer, Counter, StringTool
 
-JILOG_LOCATION = 'debug.txt'
+class ChirpConfig:
+        JILOG_OUTPUT   = 'e'  # o, e or oe
+        JILOG_LOCATION = None # ChirpConfig.JILOG_LOCATION = 'debug.txt'
 
 def jilog(msg):
 	try:
-		sys.stderr.write(("%s\n" % str(msg)).encode("ascii","ignore").decode('ascii', 'ignore'))
-		sys.stdout.write(("%s\n" % str(msg)).encode("ascii","ignore").decode('ascii', 'ignore'))
+                if 'e' in ChirpConfig.JILOG_OUTPUT:
+                        sys.stderr.write(("%s\n" % str(msg)).
+                                         encode("ascii","ignore").decode('ascii', 'ignore'))
+                if 'o' in ChirpConfig.JILOG_OUTPUT:
+                        sys.stdout.write(("%s\n" % str(msg)).
+                                         encode("ascii","ignore").decode('ascii', 'ignore'))
 	except:
 		# nah, dun care
 		pass
 	try:
-		with codecs.open(JILOG_LOCATION, "a", encoding='utf-8') as logfile:
-			# don't do this anymore
-			# logfile.write("%s\n" % str(msg))
-			pass
+                if ChirpConfig.JILOG_LOCATION:
+                        with codecs.open(JILOG_LOCATION, "a", encoding='utf-8') as logfile:
+                                logfile.write("%s\n" % str(msg))
+                                pass
 	except Exception as ex:
 		# sys.stderr.write(str(ex))
 		# nah, dun care
