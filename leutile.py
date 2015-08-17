@@ -82,7 +82,7 @@ def header(msg, level='h1', print_out=print):
         print_out('\t\t' + ('-' * 20))
 
 class TextReport:
-    def __init__(self, report_path=None, mode='w', auto_flush=True):
+    def __init__(self, report_path=None, mode='w', auto_flush=True, encoding='utf8'):
         ''' Create a text report.
 
         Arguments:
@@ -97,7 +97,7 @@ class TextReport:
             pass
         else:
             self.report_path = os.path.expanduser(report_path)
-            self.report_file = open(self.report_path, mode)
+            self.report_file = open(self.report_path, mode, encoding=encoding)
             self.auto_flush  = auto_flush
             self.mode        = mode
         self.print       = self.writeline # just an alias
@@ -338,7 +338,7 @@ class FileTool:
     def getfilename(file_path):
         ''' Get filename without extension
         '''
-        return os.path.splitext(getfullfilename(file_path))[0]
+        return os.path.splitext(FileTool.getfullfilename(file_path))[0]
 
     @staticmethod
     def getfullfilename(file_path):
