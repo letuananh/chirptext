@@ -194,10 +194,23 @@ class Counter:
                 outfile.write( "%s: %d\n" % (k, v) )
 
     def sorted_by_count(self):
+        ''' Return a list of 2-element arrays that are sorted by count in descending order
+
+            E.g. ( [ 'label1', 23 ], ['label2', 5 ] )
+        ''' 
         if sys.version_info >= (3, 0):
             return sorted(self.count_map.items(), key=operator.itemgetter(1), reverse=True)
         else:
             return sorted(self.count_map.iteritems(), key=operator.itemgetter(1), reverse=True)
+
+    def group_by_count(self):
+        count_groups = self.sorted_by_count()
+        d = OrderedDict()
+        for cgroup in count_groups:
+            if cgroup[1] not in d:
+                d[cgroup[1]] = []
+            d[cgroup[1]].append(cgroup[0])
+        return d.items()
 
 class StringTool:
     @staticmethod
