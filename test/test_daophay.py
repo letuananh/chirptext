@@ -3,7 +3,7 @@
 
 '''
 Test Dao Phay library
-Latest version can be found at https://github.com/letuananh/pydemo
+Latest version can be found at https://github.com/letuananh/chirptext
 
 References:
 	Python documentation:
@@ -51,7 +51,7 @@ import sys
 import os
 import argparse
 import unittest
-from daophay import DaoPhay
+from chirptext.daophay import DaoPhay
 
 ########################################################################
 
