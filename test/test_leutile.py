@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 '''
-Script for testing daklib.demolib library
+Script for testing leutile
 Latest version can be found at https://github.com/letuananh/pydemo
 
 References:
@@ -54,35 +54,21 @@ import sys
 import os
 import argparse
 import unittest
-from uberapp.daklib.demolib import authenticate
+from chirptext.leutile import Counter
 
 ########################################################################
 
-class TestDemoLib(unittest.TestCase):
+class TestLeUtile(unittest.TestCase):
 
-	def test_null_args(self):
-		print("Testing authenticate function with empty args")
-		username=None
-		password=None
-		self.assertFalse(authenticate(username, password))
-
-	def test_null_username(self):
-		print("Testing authenticate function with empty username")
-		username=None
-		password='enoN'
-		self.assertFalse(authenticate(username, password))
-
-	def test_null_password(self):
-		print("Testing authenticate function with empty password")
-		username='None'
-		password=None
-		self.assertFalse(authenticate(username, password))
-
-	def test_valid_login(self):
-		print("Testing valid combination")
-		username='foo'
-		password='oof'
-		self.assertTrue(authenticate(username, password))
+	def test_counter(self):
+		print("Test counter")
+		c = Counter()
+		c.count("A")
+		c.count(None)
+		c.count(None)
+		self.assertEqual(c['A'], 1)
+		self.assertEqual(c[None], 2)
+		self.assertEqual(c.sorted_by_count(), [ (None, 2), ('A', 1) ] )
 
 
 ########################################################################
