@@ -44,7 +44,7 @@ class ChirpConfig:
         DEFAULT_DISPLAY_STRATEGY = 'replace' # it's also possible to choose ignore
 
 def jilog(msg):
-    formatted_message = ("%s\n" % str(msg)).encode(ChirpConfig.CONSOLE_ENCODING, DEFAULT_DISPLAY_STRATEGY)
+    formatted_message = ("%s\n" % str(msg)).encode(ChirpConfig.CONSOLE_ENCODING, ChirpConfig.DEFAULT_DISPLAY_STRATEGY)
     try:
         if 'e' in ChirpConfig.JILOG_OUTPUT:
             sys.stderr.write(formatted_message.decode(ChirpConfig.CONSOLE_ENCODING))
