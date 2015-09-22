@@ -35,18 +35,21 @@ else:
 from collections import OrderedDict
 # from chirptext.leutile import jilog, Timer, Counter, StringTool
 
+###############################################################################
+
 class ChirpConfig:
         JILOG_OUTPUT   = 'e'  # o, e or oe
         JILOG_LOCATION = None # ChirpConfig.JILOG_LOCATION = 'debug.txt'
+        CONSOLE_ENCODING = sys.stdout.encoding or 'ignore' # Possible to fallback to ASCII
+        DEFAULT_DISPLAY_STRATEGY = 'replace' # it's also possible to choose ignore
 
 def jilog(msg):
+    formatted_message = ("%s\n" % str(msg)).encode(ChirpConfig.CONSOLE_ENCODING, DEFAULT_DISPLAY_STRATEGY)
     try:
         if 'e' in ChirpConfig.JILOG_OUTPUT:
-            sys.stderr.write(("%s\n" % str(msg)).
-                encode("ascii","ignore").decode('ascii', 'ignore'))
+            sys.stderr.write(formatted_message.decode(ChirpConfig.CONSOLE_ENCODING))
         if 'o' in ChirpConfig.JILOG_OUTPUT:
-            sys.stdout.write(("%s\n" % str(msg)).
-                encode("ascii","ignore").decode('ascii', 'ignore'))
+            sys.stdout.write(formatted_message.decode(ChirpConfig.CONSOLE_ENCODING))
     except:
         # nah, dun care
         pass
