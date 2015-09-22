@@ -33,17 +33,23 @@ else:
     from itertools import izip_longest
 
 from collections import OrderedDict
-# from chirptext.leutile import jilog, Timer, Counter, StringTool
 
 ###############################################################################
 
 class ChirpConfig:
-        JILOG_OUTPUT   = 'e'  # o, e or oe
-        JILOG_LOCATION = None # ChirpConfig.JILOG_LOCATION = 'debug.txt'
-        CONSOLE_ENCODING = sys.stdout.encoding or 'ignore' # Possible to fallback to ASCII
-        DEFAULT_DISPLAY_STRATEGY = 'replace' # it's also possible to choose ignore
+    ''' Library configuration
+    '''
+    JILOG_OUTPUT   = 'e'  # o, e or oe
+    JILOG_LOCATION = None # ChirpConfig.JILOG_LOCATION = 'debug.txt'
+    CONSOLE_ENCODING = sys.stdout.encoding or 'ignore' # Possible to fallback to ASCII
+    DEFAULT_DISPLAY_STRATEGY = 'replace' # it's also possible to choose ignore
+    LOREM_IPSUM = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
 
+###############################################################################
+    
 def jilog(msg):
+    ''' Basic log function
+    '''
     formatted_message = ("%s\n" % str(msg)).encode(ChirpConfig.CONSOLE_ENCODING, ChirpConfig.DEFAULT_DISPLAY_STRATEGY)
     try:
         if 'e' in ChirpConfig.JILOG_OUTPUT:
@@ -67,6 +73,8 @@ def uniquify(a_list):
     return list(OrderedDict(zip(a_list, range(len(a_list)))).keys())
 
 def header(msg, level='h1', print_out=print):
+    ''' Print header block in text mode
+    '''
     if level == 'h0':
         # box_len = 80 if len(msg) < 80 else len(msg)
         box_len = 80
@@ -83,8 +91,31 @@ def header(msg, level='h1', print_out=print):
     else:
         print_out('\t\t%s' % msg)
         print_out('\t\t' + ('-' * 20))
-
+        
+def is_number(s):
+    ''' Check if something is a number
+    '''
+    try:
+        if str(float(s)) != 'nan':
+            return True
+    except Exception:
+        pass
+    return False    
+        
+if sys.version_info >= (3, 0):
+    def grouper(iterable, n, fillvalue=None):
+        args = [iter(iterable)] * n
+        return zip_longest(fillvalue=fillvalue, *args)
+else:
+    def grouper(iterable, n, fillvalue=None):
+        args = [iter(iterable)] * n
+        return izip_longest(fillvalue=fillvalue, *args)
+        
+###############################################################################
+        
 class TextReport:
+    ''' Helper for creating text report with indentation, tables and flexible output (to stdout or a file)
+    '''
     def __init__(self, report_path=None, mode='w', auto_flush=True, encoding='utf8'):
         ''' Create a text report.
 
@@ -128,8 +159,10 @@ class TextReport:
     def get_path(self):
         return self.report_path
 
+###############################################################################        
+        
 class Timer:
-    ''' Timer a task
+    ''' Measure tasks' runtime
     '''
     def __init__(self):
         self.start_time = time.time()
@@ -155,7 +188,11 @@ class Timer:
     def end(self, task_note=''):
             self.stop().log(task_note)
 
+###############################################################################            
+            
 class Counter:
+    ''' Powerful counter class
+    '''
     def __init__(self, priority=None):
         self.count_map = {}
         self.priority = priority if priority else []
@@ -215,7 +252,11 @@ class Counter:
             d[cgroup[1]].append(cgroup[0])
         return d.items()
 
+###############################################################################        
+        
 class StringTool:
+    ''' Common string function
+    '''
     @staticmethod
     def strip(a_str):
         return a_str.strip() if a_str else ''
@@ -224,7 +265,11 @@ class StringTool:
     def to_str(a_str):
         return str(a_str) if a_str else ''
 
+###############################################################################        
+        
 class FileHub:
+    ''' A helper class for working with multiple files at the same time
+    '''
     def __init__(self, ext='.log'):
         self.files = {}
         self.ext = ext if ext else ''
@@ -257,7 +302,11 @@ class FileHub:
             self[key].flush()
             self[key].close()
 
+###############################################################################            
+            
 class Table:
+    ''' A text-based table which can be used with TextReport
+    '''
     def __init__(self, header=True, padding=True, NoneValue=None):
         self.rows = []
         self.col_count = 0
@@ -328,14 +377,8 @@ class Table:
             self.print_cells(cells, print_func, extra_lines=(self.header and ridx == 0))
         self.print_separator(print_func)
 
-def is_number(s):
-    try:
-        if str(float(s)) != 'nan':
-            return True
-    except Exception:
-        pass
-    return False
-
+###############################################################################        
+    
 class FileTool:
     @staticmethod
     def getfilename(file_path):
@@ -355,20 +398,11 @@ class FileTool:
     def abspath(a_path):
         return os.path.abspath(os.path.expanduser(a_path))
 
-LOREM_IPSUM = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
-
+###############################################################################        
+        
 def main():
     print("This is an utility module, not an application.")
     pass
 
 if __name__ == "__main__":
     main()
-
-if sys.version_info >= (3, 0):
-    def grouper(iterable, n, fillvalue=None):
-        args = [iter(iterable)] * n
-        return zip_longest(fillvalue=fillvalue, *args)
-else:
-    def grouper(iterable, n, fillvalue=None):
-        args = [iter(iterable)] * n
-        return izip_longest(fillvalue=fillvalue, *args)

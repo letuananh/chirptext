@@ -39,8 +39,12 @@ __status__ = "Prototype"
 
 #-----------------------------------------------------------------------
 
-from leutile import jilog, header, Counter, Timer, TextReport, Table, LOREM_IPSUM
 from itertools import cycle
+
+from chirptext.leutile import jilog, header, Counter, Timer, TextReport, Table, FileTool, ChirpConfig
+
+LOREM_IPSUM = ChirpConfig.LOREM_IPSUM
+REPORT_LOC  = FileTool.abspath("~/workspace/tmp/foo.txt")
 #-----------------------------------------------------------------------
 
 def generate_report(report):
@@ -74,6 +78,8 @@ def generate_report(report):
     # Done!
     report.close()
 
+#-----------------------------------------------------------------------    
+    
 def main():
     header("Main method")
     c = Counter()
@@ -89,8 +95,7 @@ def main():
             c.count("odd")
     c.summarise()
 
-    
-    report = TextReport("~/tmp/foo.txt")
+    report = TextReport(REPORT_LOC)
     jilog("Now try to create a text report (Located at: %s)" % (report.get_path()))
     generate_report(report)
 
