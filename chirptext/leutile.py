@@ -398,6 +398,15 @@ class FileTool:
     def abspath(a_path):
         return os.path.abspath(os.path.expanduser(a_path))
 
+    def create_dir(dir_path):
+        if not os.path.exists(dir_path):
+            try:
+                os.makedirs(dir_path)
+            except Exception as e:
+                jilog("Error was raised while attempting to create folder [%s]: %s" % (dir_path, e))
+                raise
+
+
 ###############################################################################        
         
 def main():

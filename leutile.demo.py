@@ -39,12 +39,14 @@ __status__ = "Prototype"
 
 #-----------------------------------------------------------------------
 
+import os
 from itertools import cycle
 
 from chirptext.leutile import jilog, header, Counter, Timer, TextReport, Table, FileTool, ChirpConfig
 
 LOREM_IPSUM = ChirpConfig.LOREM_IPSUM
-REPORT_LOC  = FileTool.abspath("~/workspace/tmp/foo.txt")
+WORK_DIR    = FileTool.abspath("~/workspace/tmp")
+REPORT_LOC  = os.path.join(WORK_DIR, "foo.txt")
 #-----------------------------------------------------------------------
 
 def generate_report(report):
@@ -86,6 +88,9 @@ def main():
     t = Timer()
     
     t.start("Doing some time-consuming tasks ...")
+
+    jilog("Creating report dir ...")
+    FileTool.create_dir(WORK_DIR)
 
     jilog("Count even & odd numbers ...")
     for i in range(10000):
