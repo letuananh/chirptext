@@ -275,7 +275,7 @@ class FileHub:
         self.ext = ext if ext else ''
     
     def __getitem__(self, key):
-        if not self.files.has_key(key):
+        if not key in self.files:
             self.addtext(key)
         return self.files[key]
     
