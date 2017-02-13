@@ -33,6 +33,9 @@ class TagInfo(object):
 
     GOLD = 'gold'
     ISF = 'isf'
+    MFS = 'mfs'
+    LELESK = 'lelesk'
+    OTHER = 'other'
     DEFAULT = 'n/a'
 
     def __init__(self, cfrom, cto, label, source=DEFAULT):
