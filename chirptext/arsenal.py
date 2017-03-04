@@ -58,37 +58,38 @@ from .leutile import FileHelper
 class JiCache:
     ''' Cache textual/binary content using an SQLite file (with internal blob or an external folder)
     '''
-    def __init__(self, location, blob_location=None, use_internal_blob=False):
+    def __init__(self, location, blob_location=None, use_internal_blob=True):
         self.location = os.path.abspath(os.path.expanduser(location))
         self.blob_location = os.path.abspath(os.path.expanduser(blob_location)) if blob_location else self.location + '.blob'
         self.use_internal_blob = use_internal_blob
         logging.getLogger().info("Cache DB location    : {location}".format(location=self.location))
-        logging.getLogger().info("Blob location        : {blob_loc}".format(blob_loc=self.blob_location))
-        logging.getLogger().info("Store BLOB internally: {storage_mode}".format(storage_mode=self.use_internal_blob))
-        self.setup()
+        if not use_internal_blob:
+            logging.getLogger().info("Blob location        : {blob_loc}".format(blob_loc=self.blob_location))
+        else:
+            logging.getLogger().info("Store BLOB internally: {storage_mode}".format(storage_mode=self.use_internal_blob))
+        # self.setup()
 
     def setup(self):
-        if not self.use_internal_blob:
-            FileHelper.createIfNeeded(self.blob_location)
-        conn = None
-        try:
-            conn = sqlite3.connect(self.location)
-            c = conn.cursor()
-            # Create tables
-            c.execute('''CREATE TABLE IF NOT EXISTS cache_entries (key UNIQUE, value);''')
-            c.execute("""CREATE INDEX IF NOT EXISTS CACHE_ENTRIES_KEY_INDEX ON cache_entries (key);""")
-            c.execute('''CREATE TABLE IF NOT EXISTS blob_entries (key UNIQUE, compressed, blob_data);''')
-            c.execute("""CREATE INDEX IF NOT EXISTS BLOB_ENTRIES_KEY_INDEX ON blob_entries (key);""")
-            conn.commit()
-        except:
-            logging.debug("Cannot setup")
-            pass
-        finally:
-            if conn is not None:
-                conn.close()
+        if not os.path.isfile(self.location) or os.path.getsize(self.location) == 0:
+            logging.debug("Setting up DB")
+            # create dir to store blobs
+            if not self.use_internal_blob:
+                FileHelper.create_dir(self.blob_location)
+            with sqlite3.connect(self.location) as conn:
+                c = conn.cursor()
+                # Create tables
+                c.execute('''CREATE TABLE IF NOT EXISTS cache_entries (key UNIQUE, value);''')
+                c.execute("""CREATE INDEX IF NOT EXISTS CACHE_ENTRIES_KEY_INDEX ON cache_entries (key);""")
+                c.execute('''CREATE TABLE IF NOT EXISTS blob_entries (key UNIQUE, compressed, blob_data);''')
+                c.execute("""CREATE INDEX IF NOT EXISTS BLOB_ENTRIES_KEY_INDEX ON blob_entries (key);""")
+                conn.commit()
+
+    def get_conn(self):
+        self.setup()
+        return sqlite3.connect(self.location)
 
     def count_entries(self):
-        with sqlite3.connect(self.location) as conn:
+        with self.get_conn() as conn:
             try:
                 c = conn.cursor()
                 c.execute("SELECT COUNT(value) FROM cache_entries")
@@ -98,7 +99,7 @@ class JiCache:
                 return None
 
     def retrieve_keys(self):
-        with sqlite3.connect(self.location) as conn:
+        with self.get_conn() as conn:
             try:
                 c = conn.cursor()
                 c.execute("SELECT key FROM cache_entries")
@@ -112,10 +113,13 @@ class JiCache:
     def __retrieve(self, key):
         ''' Retrieve file location from cache DB
         '''
-        with sqlite3.connect(self.location) as conn:
+        with self.get_conn() as conn:
             try:
                 c = conn.cursor()
-                c.execute("SELECT value FROM cache_entries WHERE key = ?", (key,))
+                if key is None:
+                    c.execute("SELECT value FROM cache_entries WHERE key IS NULL")
+                else:
+                    c.execute("SELECT value FROM cache_entries WHERE key = ?", (key,))
                 result = c.fetchone()
                 if result is None or len(result) != 1:
                     logging.debug("There's no entry with key={key}".format(key=key))
@@ -127,6 +131,9 @@ class JiCache:
                 return None
 
     def has_key(self, key):
+        return key in self
+
+    def __contains__(self, key):
         return self.__retrieve(key) is not None
 
     def __insert(self, key, value):
@@ -136,7 +143,7 @@ class JiCache:
         if self.__retrieve(key) is not None:
             logging.debug("Cache entry exists, cannot insert a new entry with key='{key}'".format(key=key))
             return False
-        with sqlite3.connect(self.location) as conn:
+        with self.get_conn() as conn:
             try:
                 c = conn.cursor()
                 c.execute("INSERT INTO cache_entries (key, value) VALUES (?,?)", (key, value))
@@ -151,7 +158,7 @@ class JiCache:
     def __delete(self, key):
         ''' Delete file key from database
         '''
-        with sqlite3.connect(self.location) as conn:
+        with self.get_conn() as conn:
             try:
                 c = conn.cursor()
                 c.execute("DELETE FROM cache_entries WHERE key = ?", (key,))
@@ -166,7 +173,7 @@ class JiCache:
     def __insert_internal_blob(self, key, blob, compressed=True):
         ''' This method will insert blob data to blob table
         '''
-        with sqlite3.connect(self.location) as conn:
+        with self.get_conn() as conn:
             conn.isolation_level = None
             c = conn.cursor()
             try:
@@ -185,7 +192,7 @@ class JiCache:
     def __delete_internal_blob(self, key):
         ''' This method will insert blob data to blob table
         '''
-        with sqlite3.connect(self.location) as conn:
+        with self.get_conn() as conn:
             conn.isolation_level = None
             try:
                 c = conn.cursor()
@@ -201,10 +208,13 @@ class JiCache:
     def __retrieve_internal_blob(self, key):
         ''' Retrieve file location from cache DB
         '''
-        with sqlite3.connect(self.location) as conn:
+        with self.get_conn() as conn:
             try:
                 c = conn.cursor()
-                c.execute("SELECT compressed, blob_data FROM blob_entries WHERE KEY = ?", (key,))
+                if key is None:
+                    c.execute("SELECT compressed, blob_data FROM blob_entries WHERE KEY IS NULL")
+                else:
+                    c.execute("SELECT compressed, blob_data FROM blob_entries WHERE KEY = ?", (key,))
                 result = c.fetchone()
                 if not result:
                     logging.debug("There's no blob entry with key={key}".format(key=key))
@@ -221,7 +231,7 @@ class JiCache:
 
     def insert_blob(self, key, blob):
         if self.__retrieve(key) is not None:
-            logging.info("Key exists, cannot insert entry with key='{key}'".format(key=key))
+            logging.warning("Key exists, cannot insert entry with key='{key}'".format(key=key))
             return False
         elif self.use_internal_blob:
             # insert to database
@@ -246,6 +256,7 @@ class JiCache:
                 return True
 
     def retrieve_blob(self, key, encoding=None):
+        ''' Retrieve blob in binary format (or string format if encoding is provided) '''
         blob_key = self.__retrieve(key)
         if blob_key is None:
             return None

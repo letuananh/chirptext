@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 '''
-Script for testing leutile
+Script for testing arsenal lib
 Latest version can be found at https://github.com/letuananh/chirptext
 
 References:
@@ -50,26 +50,44 @@ __status__ = "Prototype"
 
 ########################################################################
 
-import sys
 import os
-import argparse
+import logging
 import unittest
-from chirptext.leutile import Counter
+
+from chirptext.leutile import ChirpConfig as CC
+from chirptext import JiCache
+
+#----------------------------------------------------------------------
+# Configuration
+#----------------------------------------------------------------------
+logging.basicConfig(level=logging.DEBUG)
+TEST_DIR = os.path.dirname(__file__)
+TEST_CACHE = os.path.join(TEST_DIR, 'test_cache.db')
 
 
 ########################################################################
 
-class TestLeUtile(unittest.TestCase):
+class TestMain(unittest.TestCase):
 
-    def test_counter(self):
-        print("Test counter")
-        c = Counter()
-        c.count("A")
-        c.count(None)
-        c.count(None)
-        self.assertEqual(c['A'], 1)
-        self.assertEqual(c[None], 2)
-        self.assertEqual(c.sorted_by_count(), [(None, 2), ('A', 1)])
+    def try_cache(self, cache, key, value):
+        if key in cache:
+            cache.delete_blob(key)
+        cache.insert_string(key, value)
+        self.assertIn(key, cache)
+        self.assertEqual(cache.retrieve_string(key), value)
+
+    def test_empty_cache(self):
+        TEST_CACHE2 = os.path.join(TEST_DIR, 'test_cache2.db')
+        JiCache(TEST_CACHE2)
+        self.assertFalse(os.path.exists(TEST_CACHE2))
+
+    def test_arsenal(self):
+        print("Test JiCache")
+        cache = JiCache(TEST_CACHE)
+        # test insert blob
+        self.try_cache(cache, 'lorem', CC.LOREM_IPSUM)
+        self.try_cache(cache, 1, 'Key is a number')
+        self.try_cache(cache, None, 'None key')
 
 
 ########################################################################

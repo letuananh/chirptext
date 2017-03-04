@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 '''
-Script for testing leutile
+Script for testing chirpnet lib
 Latest version can be found at https://github.com/letuananh/chirptext
 
 References:
@@ -50,26 +50,31 @@ __status__ = "Prototype"
 
 ########################################################################
 
-import sys
 import os
-import argparse
+import logging
 import unittest
-from chirptext.leutile import Counter
+
+from chirptext import JiCache, WebHelper
+
+#----------------------------------------------------------------------
+# Configuration
+#----------------------------------------------------------------------
+logging.basicConfig(level=logging.DEBUG)
+TEST_DIR = os.path.dirname(__file__)
+TEST_CACHE = os.path.join(TEST_DIR, 'test_cache.db')
 
 
 ########################################################################
 
-class TestLeUtile(unittest.TestCase):
+class TestMain(unittest.TestCase):
 
-    def test_counter(self):
-        print("Test counter")
-        c = Counter()
-        c.count("A")
-        c.count(None)
-        c.count(None)
-        self.assertEqual(c['A'], 1)
-        self.assertEqual(c[None], 2)
-        self.assertEqual(c.sorted_by_count(), [(None, 2), ('A', 1)])
+    def test_chirpnet(self):
+        print("Test WebHelper")
+        web = WebHelper(cache=JiCache(TEST_CACHE))
+        u = "https://letuananh.github.io/test/data.json"
+        data = web.fetch(u, encoding="utf-8")
+        self.assertEqual(data.strip(), '{ "name": "Kungfu Panda" }')
+        self.assertIn(u, web.cache)
 
 
 ########################################################################

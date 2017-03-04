@@ -36,7 +36,7 @@ References:
 
 __author__ = "Le Tuan Anh <tuananh.ke@gmail.com>"
 __copyright__ = "Copyright 2017, chirptext"
-__credits__ = ["Le Tuan Anh"]
+__credits__ = []
 __license__ = "MIT"
 __version__ = "0.1"
 __maintainer__ = "Le Tuan Anh"
@@ -93,41 +93,47 @@ class SmartURL(object):
         return urlunparse((self.scheme, self.netloc, '/'.join(self.path), self.params, urlencode(flatd), self.fragment))
 
 
-class WebHelper:
+class WebHelper(object):
     ''' a wget like utility for Python '''
+
+    def __init__(self, cache=None):
+        self.cache = cache
 
     @staticmethod
     def encode_url(url):
         return url.replace(" ", "%20").replace('%3A', ':').replace('%2F', '/')
 
-    @staticmethod
-    def fetch(url, force_refetch=False):
-        ''' Fetch a HTML file
-        '''
+    def fetch(self, url, encoding=None, force_refetch=False):
+        ''' Fetch a HTML file as binary'''
         try:
+            if not force_refetch and self.cache is not None and url in self.cache:
+                # try to look for content in cache
+                logging.debug('Retrieving content from cache for {}'.format(url))
+                return self.cache.retrieve_blob(url, encoding)
             logging.info("Fetching: {url} |".format(url=url))
             url = WebHelper.encode_url(url)
             req = Request(url, headers={'User-Agent': 'Mozilla/5.0'})
             # Open URL
             response = urlopen(req)
-            return response.read()
+            content = response.read()
+            # update cache if available
+            if self.cache is not None:
+                if url not in self.cache:
+                    self.cache.insert_blob(url, content)
+            return content
         except URLError as e:
             if hasattr(e, 'reason'):
-                logging.debug('We failed to reach a server.')
-                logging.debug('Reason: ', e.reason)
+                logging.exception(e, 'We failed to reach a server. Reason: {}'.format(e.reason))
             elif hasattr(e, 'code'):
-                logging.debug('The server couldn\'t fulfill the request.')
-                logging.debug('Error code: {code}'.format(code=e.code))
+                logging.exception('The server couldn\'t fulfill the request. Error code: {}'.format(e.code))
             else:
-                # everything is fine
-                logging.debug("Unknown error: {err}".format(err=e))
+                # Other exception ...
+                logging.exception(e, "Fetching error")
         return None
 
-    @staticmethod
-    def download(url, path):
+    def download(self, url, path, force_refetch=False):
         ''' Download a file at $url and save it to $path
         '''
-        url = WebHelper.encode_url(url)
         # Enable cache
         if os.path.isfile(path):
             logging.info("File exists, download task skipped -> {path}".format(path=path))
@@ -135,7 +141,7 @@ class WebHelper:
         try:
             # Open URL
             logging.info("Downloading: {url} -> {path}".format(url=url, path=path))
-            response = WebHelper.fetch(url)
+            response = self.fetch(url, force_refetch=force_refetch)
             if response is not None:
                 # Download file
                 local_file = open(path, "wb")
