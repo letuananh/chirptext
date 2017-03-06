@@ -103,7 +103,7 @@ class WebHelper(object):
     def encode_url(url):
         return url.replace(" ", "%20").replace('%3A', ':').replace('%2F', '/')
 
-    def fetch(self, url, encoding=None, force_refetch=False):
+    def fetch(self, url, encoding=None, force_refetch=False, nocache=False):
         ''' Fetch a HTML file as binary'''
         try:
             if not force_refetch and self.cache is not None and url in self.cache:
@@ -116,8 +116,8 @@ class WebHelper(object):
             # Open URL
             response = urlopen(req)
             content = response.read()
-            # update cache if available
-            if self.cache is not None:
+            # update cache if required
+            if self.cache is not None and not nocache:
                 if url not in self.cache:
                     self.cache.insert_blob(url, content)
             return content
@@ -131,7 +131,7 @@ class WebHelper(object):
                 logging.exception(e, "Fetching error")
         return None
 
-    def download(self, url, path, force_refetch=False):
+    def download(self, url, path, force_refetch=False, nocache=False):
         ''' Download a file at $url and save it to $path
         '''
         # Enable cache
@@ -141,7 +141,7 @@ class WebHelper(object):
         try:
             # Open URL
             logging.info("Downloading: {url} -> {path}".format(url=url, path=path))
-            response = self.fetch(url, force_refetch=force_refetch)
+            response = self.fetch(url, force_refetch=force_refetch, nocache=nocache)
             if response is not None:
                 # Download file
                 local_file = open(path, "wb")
