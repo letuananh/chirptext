@@ -101,7 +101,7 @@ class WebHelper(object):
 
     @staticmethod
     def encode_url(url):
-        return str(SmartURL(url))
+        return str(SmartURL(url, quoted=True))
 
     def fetch(self, url, encoding=None, force_refetch=False, nocache=False):
         ''' Fetch a HTML file as binary'''
@@ -110,10 +110,10 @@ class WebHelper(object):
                 # try to look for content in cache
                 logging.debug('Retrieving content from cache for {}'.format(url))
                 return self.cache.retrieve_blob(url, encoding)
-            logging.info("Fetching: {url} |".format(url=url))
             url = WebHelper.encode_url(url)
             req = Request(url, headers={'User-Agent': 'Mozilla/5.0'})
             # Open URL
+            logging.info("Fetching: {url} |".format(url=url))
             response = urlopen(req)
             content = response.read()
             # update cache if required
