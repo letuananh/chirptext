@@ -49,13 +49,13 @@ import os
 import logging
 from urllib.request import Request, urlopen
 from urllib.error import URLError
-from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
+from urllib.parse import urlparse, urlunparse, parse_qs, urlencode, quote
 
 
 class SmartURL(object):
     ''' Smart URL supports URL manipulation '''
 
-    def __init__(self, raw_url):
+    def __init__(self, raw_url, quoted=False):
         self.raw = raw_url
         self.p = None
         self.scheme = None
@@ -66,7 +66,7 @@ class SmartURL(object):
         self.query = None
         self.fragment = None
         if self.raw:
-            self.process()
+            self.process(quoted)
 
     def get_filename(self):
         return os.path.basename(self.p.path)
@@ -77,13 +77,13 @@ class SmartURL(object):
     def get_file_ext(self):
         return os.path.splitext(self.get_filename())[1]
 
-    def process(self):
+    def process(self, quoted=False):
         ''' Parse an URL '''
         self.p = urlparse(self.raw)
         self.scheme = self.p.scheme
         self.netloc = self.p.netloc
-        self.opath = self.p.path
-        self.path = [x for x in self.p.path.split('/') if x]
+        self.opath = self.p.path if not quoted else quote(self.p.path)
+        self.path = [x for x in self.opath.split('/') if x]
         self.params = self.p.params
         self.query = parse_qs(self.p.query, keep_blank_values=True)
         self.fragment = self.p.fragment
