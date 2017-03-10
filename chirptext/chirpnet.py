@@ -101,7 +101,7 @@ class WebHelper(object):
 
     @staticmethod
     def encode_url(url):
-        return url.replace(" ", "%20").replace('%3A', ':').replace('%2F', '/')
+        return str(SmartURL(url))
 
     def fetch(self, url, encoding=None, force_refetch=False, nocache=False):
         ''' Fetch a HTML file as binary'''
@@ -120,7 +120,7 @@ class WebHelper(object):
             if self.cache is not None and not nocache:
                 if url not in self.cache:
                     self.cache.insert_blob(url, content)
-            return content
+            return content.decode(encoding) if content and encoding else content
         except URLError as e:
             if hasattr(e, 'reason'):
                 logging.exception(e, 'We failed to reach a server. Reason: {}'.format(e.reason))
