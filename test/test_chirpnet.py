@@ -54,20 +54,28 @@ import os
 import logging
 import unittest
 
-from chirptext import JiCache, WebHelper
+from chirptext import JiCache, WebHelper, FileHelper
 
 #----------------------------------------------------------------------
 # Configuration
 #----------------------------------------------------------------------
-logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 TEST_DIR = os.path.dirname(__file__)
-TEST_CACHE = os.path.join(TEST_DIR, 'test_cache.db')
+TEST_DATA = os.path.join(TEST_DIR, 'data')
+TEST_CACHE = os.path.join(TEST_DATA, 'test_cache.db')
 
 
 ########################################################################
 
 class TestMain(unittest.TestCase):
 
+    @classmethod
+    def setUpClass(cls):
+        if not os.path.isdir(TEST_DATA):
+            logger.info("Creating TEST DATA folder at {}".format(TEST_DATA))
+            FileHelper.create_dir(TEST_DATA)
+    
     def test_chirpnet(self):
         print("Test WebHelper")
         web = WebHelper(cache=JiCache(TEST_CACHE))
