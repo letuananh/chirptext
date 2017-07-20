@@ -52,7 +52,7 @@ __credits__ = []
 import os
 import unittest
 
-from chirptext.deko import tokenize, analyse, txt2mecab, tokenize_sent, DekoText
+from chirptext.deko import wakati, tokenize, analyse, txt2mecab, tokenize_sent, DekoText
 
 #-------------------------------------------------------------------------------
 # CONFIGURATION
@@ -73,9 +73,13 @@ class TestMainApp(unittest.TestCase):
         tokens = txt2mecab(txt)
         print(tokens[-1].is_eos)
 
+    def test_wakati(self):
+        tks = wakati(txt)
+        self.assertEqual(tks, '雨 が 降る 。 \n')
+
     def test_deko(self):
         tokenized = tokenize(txt)
-        self.assertEqual(tokenized, ['雨', 'が', '降る', '。', '\n'])
+        self.assertEqual(tokenized, ['雨', 'が', '降る', '。'])
 
     def test_analyse2(self):
         sents = DekoText.parse(txt)

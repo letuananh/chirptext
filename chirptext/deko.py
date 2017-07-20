@@ -233,11 +233,15 @@ def tokenize_sent(mtokens):
     return sents
 
 
+def wakati(content):
+    return MeCab.Tagger("-O wakati").parse(content)
+
+
 def tokenize(content):
     ''' Sentence to a list of tokens (string) '''
-    # return txt2mecab(content).words
     # TODO: Check if wakati better?
-    return MeCab.Tagger("-O wakati").parse(content).split(' ')
+    # return wakati(content).split(' ')
+    return txt2mecab(content).words
 
 
 def analyse(content, splitlines=True, format=None):
