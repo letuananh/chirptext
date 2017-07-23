@@ -46,6 +46,8 @@ __status__ = "Prototype"
 #-----------------------------------------------------------------------------
 
 import os
+from io import BytesIO
+import gzip
 import logging
 from urllib.request import Request, urlopen
 from urllib.error import URLError
@@ -110,12 +112,19 @@ class WebHelper(object):
                 # try to look for content in cache
                 logging.debug('Retrieving content from cache for {}'.format(url))
                 return self.cache.retrieve_blob(url, encoding)
-            url = WebHelper.encode_url(url)
-            req = Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+            encoded_url = WebHelper.encode_url(url)
+            req = Request(encoded_url, headers={'User-Agent': 'Mozilla/5.0'})
+            # support gzip
+            req.add_header('Accept-encoding', 'gzip, deflate')
             # Open URL
             logging.info("Fetching: {url} |".format(url=url))
             response = urlopen(req)
             content = response.read()
+            # unzip if required
+            if 'Content-Encoding' in response.info() and response.info().get('Content-Encoding') == 'gzip':
+                # unzip
+                with gzip.open(BytesIO(content)) as gzfile:
+                    content = gzfile.read()
             # update cache if required
             if self.cache is not None and not nocache:
                 if url not in self.cache:

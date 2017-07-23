@@ -75,7 +75,7 @@ class TestMain(unittest.TestCase):
         if not os.path.isdir(TEST_DATA):
             logger.info("Creating TEST DATA folder at {}".format(TEST_DATA))
             FileHelper.create_dir(TEST_DATA)
-    
+
     def test_chirpnet(self):
         print("Test WebHelper")
         web = WebHelper(cache=JiCache(TEST_CACHE))
