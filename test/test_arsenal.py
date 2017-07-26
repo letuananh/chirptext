@@ -54,7 +54,7 @@ import os
 import logging
 import unittest
 
-from chirptext.leutile import ChirpConfig as CC
+from chirptext.leutile import LOREM_IPSUM
 from chirptext import JiCache
 
 #----------------------------------------------------------------------
@@ -85,7 +85,7 @@ class TestMain(unittest.TestCase):
         print("Test JiCache")
         cache = JiCache(TEST_CACHE)
         # test insert blob
-        self.try_cache(cache, 'lorem', CC.LOREM_IPSUM)
+        self.try_cache(cache, 'lorem', LOREM_IPSUM)
         self.try_cache(cache, 1, 'Key is a number')
         self.try_cache(cache, None, 'None key')
 

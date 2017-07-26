@@ -38,43 +38,17 @@ from collections import OrderedDict
 
 ###############################################################################
 
-class ChirpConfig:
-    ''' Library configuration
-    '''
-    JILOG_OUTPUT = 'e'  # o, e or oe
-    JILOG_LOCATION = None  # ChirpConfig.JILOG_LOCATION = 'debug.txt'
-    CONSOLE_ENCODING = sys.stdout.encoding or 'ignore'  # Possible to fallback to ASCII
-    DEFAULT_DISPLAY_STRATEGY = 'replace'  # it's also possible to choose ignore
-    LOREM_IPSUM = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+
+LOREM_IPSUM = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
 
 
 ###############################################################################
 
 def confirm(msg):
     return input(msg).upper() in ['Y', 'YES', 'OK']
-
-
-def jilog(msg):
-    ''' Basic log function
-    '''
-    formatted_message = ("%s\n" % str(msg)).encode(ChirpConfig.CONSOLE_ENCODING, ChirpConfig.DEFAULT_DISPLAY_STRATEGY)
-    try:
-        if 'e' in ChirpConfig.JILOG_OUTPUT:
-            sys.stderr.write(formatted_message.decode(ChirpConfig.CONSOLE_ENCODING))
-        if 'o' in ChirpConfig.JILOG_OUTPUT:
-            sys.stdout.write(formatted_message.decode(ChirpConfig.CONSOLE_ENCODING))
-    except:
-        # nah, dun care
-        pass
-    try:
-        if ChirpConfig.JILOG_LOCATION is not None:
-            with codecs.open(ChirpConfig.JILOG_LOCATION, "a", encoding='utf-8') as logfile:
-                logfile.write("%s\n" % str(msg))
-                pass
-    except Exception as ex:
-        # sys.stderr.write(str(ex))
-        # nah, dun care
-        pass
 
 
 def uniquify(a_list):
@@ -148,13 +122,13 @@ class TextReport:
             self.mode = mode
         self.print = self.writeline  # just an alias
 
-    def write(self, msg, level=0):
+    def write(self, msg=None, level=0):
         self.report_file.write("\t" * level)
-        self.report_file.write(msg)
+        self.report_file.write(str(msg) if msg else '')
         if self.auto_flush:
             self.report_file.flush()
 
-    def writeline(self, msg, level=0):
+    def writeline(self, msg='', level=0):
         self.write("%s\n" % msg, level)
 
     def header(self, msg, level='h1'):
@@ -188,7 +162,7 @@ class Timer:
 
     def start(self, task_note=''):
         if task_note:
-            jilog("[%s]" % (str(task_note),))
+            logger.info("[%s]" % (str(task_note),))
         self.start_time = time.time()
         return self
 
@@ -200,7 +174,7 @@ class Timer:
         return "Execution time: %.2f sec(s)" % (self.end_time - self.start_time)
 
     def log(self, task_note=''):
-        jilog("%s - Note=[%s]" % (self, str(task_note)))
+        logger.info("%s - Note=[%s]" % (self, str(task_note)))
         return self
 
     def end(self, task_note=''):
@@ -234,6 +208,9 @@ class Counter:
         self.priority = [x for x in priority]
 
     def get_report_order(self):
+        ''' Keys are sorted based on report order (i.e. some keys to be shown first)
+            Related: see sorted_by_count
+        '''
         order_list = []
         for x in self.priority:
             order_list.append([x, self[x]])
@@ -325,6 +302,12 @@ class FileHub:
         for key in self.files.keys():
             self[key].flush()
             self[key].close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
 
 ###############################################################################
@@ -431,7 +414,7 @@ class FileHelper:
             try:
                 os.makedirs(dir_path)
             except Exception as e:
-                jilog("Error was raised while attempting to create folder [%s]: %s" % (dir_path, e))
+                logger.exception("Cannot create folder [%s]" % (dir_path,))
                 raise
 
     @staticmethod
@@ -465,7 +448,7 @@ class FileHelper:
                     local_file.write(content)
             return True
         except Exception as e:
-            logging.debug("Error while saving content to {file}\r\n{e}".format(file=path, e=e))
+            logger.debug("Error while saving content to {file}\r\n{e}".format(file=path, e=e))
         return False
 
     @staticmethod
@@ -474,7 +457,9 @@ class FileHelper:
             return fileobj.read()
 
 
+# TODO: Should we switch to JSON?
 class ConfigFile:
+
     def __init__(self, filename, splitter='='):
         self.filename = os.path.abspath(os.path.expanduser(filename))
         self.splitter = splitter
@@ -498,10 +483,6 @@ class ConfigFile:
 
 ###############################################################################
 
-def main():
+if __name__ == "__main__":
     print("This is an utility module, not an application.")
     pass
-
-
-if __name__ == "__main__":
-    main()
