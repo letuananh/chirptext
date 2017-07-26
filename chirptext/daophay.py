@@ -6,10 +6,10 @@ Dao Phay library: A collection of tools for processing Vietnamese text using Pyt
 Latest version can be found at https://github.com/letuananh/chirptext
 
 References:
-	Python documentation:
-		https://docs.python.org/
-	PEP 257 - Python Docstring Conventions:
-		https://www.python.org/dev/peps/pep-0257/
+    Python documentation:
+        https://docs.python.org/
+    PEP 257 - Python Docstring Conventions:
+        https://www.python.org/dev/peps/pep-0257/
 
 @author: Le Tuan Anh <tuananh.ke@gmail.com>
 '''
@@ -36,7 +36,7 @@ References:
 
 __author__ = "Le Tuan Anh <tuananh.ke@gmail.com>"
 __copyright__ = "Copyright 2015, chirptext"
-__credits__ = [ "Le Tuan Anh" ]
+__credits__ = []
 __license__ = "MIT"
 __version__ = "0.1"
 __maintainer__ = "Le Tuan Anh"
@@ -45,8 +45,8 @@ __status__ = "Prototype"
 
 ########################################################################
 
-import sys
-import os
+# import os
+
 
 ########################################################################
 
@@ -54,15 +54,14 @@ import os
 VIETNAMESE_ALPHABET_ORDER = 'aAàÀảẢãÃáÁạẠăĂằẰẳẲẵẴắẮặẶâÂầẦẩẨẫẪấẤậẬbBcCdDđĐeEèÈẻẺẽẼéÉẹẸêÊềỀểỂễỄếẾệỆgGhHiIìÌỉỈĩĨíÍịỊkKlLmMnNoOòÒỏỎõÕóÓọỌôÔồỒổỔỗỖốỐộỘơƠờỜởỞỡỠớỚợỢpPqQrRsStTuUùÙủỦũŨúÚụỤưƯừỪửỬữỮứỨựỰvVxXyYỳỲỷỶỹỸýÝỵỴ'
 VIETNAMESE_SORTING_DICT = dict((x, VIETNAMESE_ALPHABET_ORDER.index(x)) for x in VIETNAMESE_ALPHABET_ORDER)
 
+
 class DaoPhay:
-	@staticmethod
-	def vn_sorted(list_of_strings):
-		return sorted(list_of_strings, key=lambda x: [VIETNAMESE_SORTING_DICT[c] for c in x])
+    @staticmethod
+    def vn_sorted(list_of_strings):
+        return sorted(list_of_strings, key=lambda x: [VIETNAMESE_SORTING_DICT[c] for c in x])
+
+
 ########################################################################
 
-def main():
-	print("Dao phay is a library, not an application.")
-	pass
-
 if __name__ == "__main__":
-	main()
+    print("Dao phay is a library, not an application.")
