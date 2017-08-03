@@ -53,7 +53,7 @@ __status__ = "Prototype"
 import os
 import unittest
 from chirptext import header
-from chirptext.texttaglib import TagInfo, TaggedSentence, TaggedDoc
+from chirptext.texttaglib import TagInfo, TaggedSentence, TaggedDoc, Token
 from chirptext.deko import txt2mecab
 
 ########################################################################
@@ -61,8 +61,35 @@ from chirptext.deko import txt2mecab
 TEST_DIR = os.path.dirname(__file__)
 TEST_DATA = os.path.join(TEST_DIR, 'data')
 
+BARK_SID = '01047745-v'
+GDOG_SID = '02103841-n'
 
-class TestMain(unittest.TestCase):
+
+class TestBuildTags(unittest.TestCase):
+
+    def test_create_sent(self):
+        doc = TaggedDoc(TEST_DATA, 'test')
+        # add words
+        sent = doc.add_sent('Some happy guard-dogs barked.', 1)
+        sent.import_tokens('Some happy guard dogs barked .'.split())
+        self.assertEqual(len(sent), 6)
+        # sense tagging
+        sent.add_concept(0, 'happy', '01148283-a', [sent[1]])
+        sent.add_concept(1, 'dog', '02084071-n')
+        sent.concept(1).add_word(sent[3])
+        sent.tag('bark', BARK_SID, 4)
+        sent.tag('guard-dog', GDOG_SID, 2, 3)  # MWE example
+        # verification
+        wcl = sent.wclinks
+        self.assertEqual(wcl[sent[3]][0].clemma, 'dog')
+        self.assertEqual(wcl[sent[3]][1].clemma, 'guard-dog')
+        self.assertEqual(wcl[sent[3]][1].tag, GDOG_SID)
+        self.assertEqual(wcl[sent[4]][0].tag, BARK_SID)
+        self.assertTrue(sent.mwe)
+        self.assertEqual(sent.mwe[0].tag, GDOG_SID)
+
+
+class TestTagging(unittest.TestCase):
 
     def test_taginfo(self):
         print("Test tag info")
@@ -86,10 +113,15 @@ class TestMain(unittest.TestCase):
         sent.import_tokens(mecab_sent.words)
         for mtoken, token in zip(mecab_sent, sent.tokens):
             if mtoken.reading_hira() != token.label:
+                if token.label == '猫':
+                    token.tag(mtoken.reading_hira(), tagtype=Token.LEMMA)
                 token.tag(mtoken.reading_hira())
         self.assertEqual(mecab_sent.words, [x.label for x in sent.tokens])
         self.assertEqual(sent.tokens[0].tags[0].label, 'ねこ')
+        self.assertEqual(sent.tokens[0].lemma, 'ねこ')
         self.assertEqual(sent.tokens[2].tags[0].label, 'すき')
+        self.assertEqual(sent.tokens[2].lemma, '')  # if there is no lemma label => return ''
+        self.assertEqual(sent.tokens[2].surface, '好き')
         self.assertFalse(sent.tokens[1].tags)
         self.assertFalse(sent.tokens[3].tags)
         self.assertFalse(sent.tokens[4].tags)
@@ -131,7 +163,6 @@ class TestMain(unittest.TestCase):
     def test_multiple_tags(self):
         doc = TaggedDoc(TEST_DATA, 'test').read()
         mw_ms = [(len(s.mwe), len(s.msw)) for s in doc]
-        print(mw_ms)
         self.assertEqual(mw_ms, [(2, 2), (0, 0), (3, 2)])
 
 

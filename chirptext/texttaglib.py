@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2014, Le Tuan Anh <tuananh.ke@gmail.com>
@@ -27,6 +26,9 @@ from collections import namedtuple
 from collections import defaultdict as dd
 from collections import OrderedDict
 from chirptext import FileHelper
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.WARNING)
 
 OPEN_TAG = "<wnsk>"
 CLOSE_TAG = "</wnsk>"
@@ -134,11 +136,24 @@ class TaggedSentence(object):
             cfrom = cto - 1
 
     def add_concept(self, cid, clemma, tag, words=None):
+        ''' Add a new concept object '''
         c = Concept(cid, clemma, tag, self, words)
         self.concept_map[cid] = c
 
+    def tag(self, clemma, tag, *word_ids):
+        cid = 0
+        while cid in self.concept_map:
+            cid += 1
+        self.add_concept(cid, clemma, tag, [self[x] for x in word_ids])
+
+    def concept(self, cid):
+        ''' Get a concept by concept ID '''
+        return self.concept_map[cid]
+
 
 class Token(object):
+
+    LEMMA = 'lemma'
 
     def __init__(self, cfrom, cto, label, sent=None, tags=None, source=TagInfo.DEFAULT):
         ''' A token (e.g. a word in a sentence) '''
@@ -153,6 +168,21 @@ class Token(object):
 
     def __len__(self):
         return len(self._tags)
+
+    @property
+    def surface(self):
+        if self.sent and self.sent.text:
+            return self.sent.text[self.cfrom:self.cto]
+        else:
+            return ''
+
+    @property
+    def lemma(self):
+        tm = self.tag_map
+        if self.LEMMA in tm:
+            return tm[self.LEMMA][0].label
+        else:
+            return ''
 
     def __repr__(self):
         return "`{l}`<{f}:{t}>".format(l=self.label, f=self.cfrom, t=self.cto)
@@ -214,6 +244,7 @@ class TaggedDoc(object):
         sent = TaggedSentence(text, ID=ID)
         self.sents.append(sent)
         self.sent_map[ID] = sent
+        return sent
 
     def read(self):
         with open(self.sent_path) as sentfile:
@@ -268,7 +299,16 @@ class Concept(object):
         self.clemma = clemma
         self.tag = tag
         self.sent = sent
-        self.words = words if words else []
+        if words:
+            if type(words) == list:
+                self.words = words
+            else:
+                self.words = list(words)
+        else:
+            self.words = []
+
+    def add_word(self, word):
+        self.words.append(word)
 
     def __repr__(self):
         return '<{t}:"{l}">'.format(l=self.clemma, t=self.tag)
@@ -404,9 +444,5 @@ def writelines(lines, filepath, verbose=True):
             afile.write('\n')
 
 
-def main():
-    print("This is a library, not an application.")
-    pass
-
 if __name__ == "__main__":
-    main()
+    print("This is a library, not an application.")
