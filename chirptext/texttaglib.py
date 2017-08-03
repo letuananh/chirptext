@@ -44,6 +44,8 @@ class TagInfo(object):
     LELESK = 'lelesk'
     OTHER = 'other'
     NTUMC = 'ntumc'
+    MECAB = 'mecab'
+    NLTK = 'nltk'
     DEFAULT = 'n/a'
 
     def __init__(self, cfrom=-1, cto=-1, label='', source=DEFAULT, tagtype=''):
@@ -154,6 +156,7 @@ class TaggedSentence(object):
 class Token(object):
 
     LEMMA = 'lemma'
+    POS = 'pos'
 
     def __init__(self, cfrom, cto, label, sent=None, tags=None, source=TagInfo.DEFAULT):
         ''' A token (e.g. a word in a sentence) '''
@@ -173,6 +176,14 @@ class Token(object):
     def surface(self):
         if self.sent and self.sent.text:
             return self.sent.text[self.cfrom:self.cto]
+        else:
+            return ''
+
+    @property
+    def pos(self):
+        tm = self.tag_map
+        if self.POS in tm:
+            return tm[self.POS][0].label
         else:
             return ''
 

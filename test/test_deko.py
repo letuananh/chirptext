@@ -123,6 +123,14 @@ EOS
 '''
         self.assertEqual(c, e)
 
+    def test_pos(self):
+        sent = txt2mecab(txt)
+        poses = [tk.pos3() for tk in sent if not tk.is_eos]
+        print(sent[-1])
+        self.assertEqual(poses, ['名詞-一般', '助詞-格助詞-一般', '動詞-自立', '記号-句点'])
+        for tk in sent:
+            print(tk.pos3())
+
 
 #-------------------------------------------------------------------------------
 # MAIN
