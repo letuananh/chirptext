@@ -88,11 +88,18 @@ def to_obj(cls, obj_data=None, *fields, **field_map):
     obj_dict = obj_data.__dict__ if hasattr(obj_data, '__dict__') else obj_data
     if not fields:
         fields = obj_dict.keys()
-    obj_kwargs = {}
-    for k in fields:
-        f = k if k not in field_map else field_map[k]
-        obj_kwargs[f] = obj_dict[k]
-    obj = cls(**obj_kwargs)
+
+    try:
+        # try creating a new instance with no args
+        obj = cls()
+        update_data(obj_dict, obj, *fields, **field_map)
+    except TypeError as e:
+        # there are mandatory fields
+        obj_kwargs = {}
+        for k in fields:
+            f = k if k not in field_map else field_map[k]
+            obj_kwargs[f] = obj_dict[k]
+        obj = cls(**obj_kwargs)
     return obj
 
 
