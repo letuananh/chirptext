@@ -103,8 +103,8 @@ class CSV(object):
                     writer.writerow(row)
 
     @staticmethod
-    def write_tsv(file_name, rows, quoting=csv.QUOTE_ALL):
-        CSV.write(file_name, rows, dialect='excel-tab', quoting=quoting)
+    def write_tsv(file_name, rows, quoting=csv.QUOTE_ALL, **kwargs):
+        CSV.write(file_name, rows, dialect='excel-tab', quoting=quoting, **kwargs)
 
 
 #-------------------------------------------------------------------------------
