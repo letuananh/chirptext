@@ -126,6 +126,9 @@ class KangxiMap:
     def strokes(self):
         return {sc: [r.radical for r in rads] for sc, rads in self.strokes_map.items()}
 
+    def __len__(self):
+        return len(self.radicals)
+
     def __getitem__(self, key):
         if key in self.rad_map:
             return self.rad_map[key]
