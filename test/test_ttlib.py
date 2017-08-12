@@ -52,7 +52,7 @@ __status__ = "Prototype"
 
 import os
 import unittest
-from chirptext import header
+from chirptext.anhxa import dumps
 from chirptext.texttaglib import TagInfo, TaggedSentence, TaggedDoc, Token
 from chirptext.deko import txt2mecab
 
@@ -106,6 +106,27 @@ class TestTagging(unittest.TestCase):
         self.assertEqual(t2.label, 'bark')
         self.assertEqual(t2.source, TagInfo.DEFAULT)
 
+    def test_tag_token(self):
+        token = Token(0, 4, "Words")
+        token.tag("n", tagtype="pos")
+        token.tag("plural")
+        token.tag("word-token")
+        token.tag("word", tagtype="lemma")
+        token.tag("Words", tagtype="lemma")
+        token.tag("an element of speech or writing", tagtype="comment")
+        js_token = token.to_json()
+        expected = {"tags": {"unsorted": ["plural", "word-token"]}, "cfrom": 0, "pos": "n", "cto": 4, "label": "Words", "lemma": "word, Words", 'comment': 'an element of speech or writing'}
+        self.assertEqual(js_token, expected)
+
+    def test_comment(self):
+        sent = TaggedSentence("Dogs bark.")
+        sent.import_tokens("Dogs bark .".split())
+        sent[0].tag("canine", tagtype="comment")
+        sent.tag("02084071-n", "dog", 0)
+        sent.concepts[0].comment = 'a member of the genus Canis (probably descended from the common wolf) that has been domesticated by man since prehistoric times'
+        expected = {'text': 'Dogs bark.', 'tokens': [{'cto': 4, 'cfrom': 0, 'comment': 'canine', 'label': 'Dogs'}, {'cto': 9, 'cfrom': 5, 'label': 'bark'}, {'cto': 10, 'cfrom': 9, 'label': '.'}], 'concepts': [{'tag': 'dog', 'clemma': '02084071-n', 'comment': 'a member of the genus Canis (probably descended from the common wolf) that has been domesticated by man since prehistoric times', 'words': [0]}]}
+        self.assertEqual(expected, sent.to_json())
+
     def test_tagged_sentences(self):
         sent = TaggedSentence('猫が好きです 。')
         mecab_sent = txt2mecab(sent.text)
@@ -113,18 +134,38 @@ class TestTagging(unittest.TestCase):
         sent.import_tokens(mecab_sent.words)
         for mtoken, token in zip(mecab_sent, sent.tokens):
             if mtoken.reading_hira() != token.label:
-                if token.label == '猫':
+                if token.label in ('猫', '好き'):
                     token.tag(mtoken.reading_hira(), tagtype=Token.LEMMA)
                 token.tag(mtoken.reading_hira())
+                token.tag(mtoken.pos3(), tagtype="pos")
         self.assertEqual(mecab_sent.words, [x.label for x in sent.tokens])
         self.assertEqual(sent.tokens[0].tags[0].label, 'ねこ')
         self.assertEqual(sent.tokens[0].lemma, 'ねこ')
         self.assertEqual(sent.tokens[2].tags[0].label, 'すき')
-        self.assertEqual(sent.tokens[2].lemma, '')  # if there is no lemma label => return ''
+        self.assertEqual(sent.tokens[3].lemma, '')  # if there is no lemma label => return ''
         self.assertEqual(sent.tokens[2].surface, '好き')
         self.assertFalse(sent.tokens[1].tags)
         self.assertFalse(sent.tokens[3].tags)
         self.assertFalse(sent.tokens[4].tags)
+        return sent
+
+    def test_tagged_sent_to_json(self):
+        sent = TaggedSentence("女の子は猫が好きです。")
+        sent.import_tokens("女 の 子 は 猫 が 好き です 。".split())
+        sent[0].tag("おんな", tagtype="lemma")
+        sent[2].tag("こ", tagtype="lemma")
+        sent[4].tag("ねこ", tagtype="lemma")
+        sent[4].tag("Say neh-koh", tagtype="comment")
+        sent[4].tag("名詞-一般", tagtype="pos")
+        sent[6].tag("すき", tagtype="lemma")
+        sent[6].tag("名詞-形容動詞語幹", tagtype="pos")
+        sent.tag("女の子", " 10084295-n", 0, 1, 2)
+        sent.concepts[0].comment = "若々しい女の人"
+        sent.tag("猫", "02121620-n", 4)
+        sent.tag("好き", "01292683-a", 6)
+        expected = {'tokens': [{'cfrom': 0, 'cto': 1, 'lemma': 'おんな', 'label': '女'}, {'cfrom': 1, 'cto': 2, 'label': 'の'}, {'cfrom': 2, 'cto': 3, 'lemma': 'こ', 'label': '子'}, {'cfrom': 3, 'cto': 4, 'label': 'は'}, {'pos': '名詞-一般', 'cfrom': 4, 'cto': 5, 'lemma': 'ねこ', 'label': '猫', 'comment': 'Say neh-koh'}, {'cfrom': 5, 'cto': 6, 'label': 'が'}, {'pos': '名詞-形容動詞語幹', 'cfrom': 6, 'cto': 8, 'lemma': 'すき', 'label': '好き'}, {'cfrom': 8, 'cto': 10, 'label': 'です'}, {'cfrom': 10, 'cto': 11, 'label': '。'}], 'text': '女の子は猫が好きです。', 'concepts': [{'tag': ' 10084295-n', 'words': [0, 1, 2], 'clemma': '女の子', 'comment': '若々しい女の人'}, {'tag': '02121620-n', 'words': [4], 'clemma': '猫'}, {'tag': '01292683-a', 'words': [6], 'clemma': '好き'}]}
+        actual = sent.to_json()
+        self.assertEqual(expected, actual)
 
     def test_tagging_erg_sent(self):
         txt = '''In this way I am no doubt indirectly responsible for Dr. Grimesby Roylott's death, and I cannot say that it is likely to weigh very heavily upon my conscience."'''
@@ -139,14 +180,6 @@ class TestTagging(unittest.TestCase):
         ts_count = [(len(s), len(s.concepts)) for s in doc]
         self.assertEqual(len(doc), 3)  # 3 sents
         self.assertEqual(ts_count, [(29, 15), (28, 13), (34, 23)])
-        # for sent in doc:
-        #     header(sent, 'h0')
-        #     for tk in sent:
-        #         print(tk)
-        #     header('Concepts')
-        #     for c in sent.concepts:
-        #         print(c)
-        #     print("")
 
     def test_cwl(self):
         doc = TaggedDoc(TEST_DATA, 'test').read()
@@ -156,6 +189,7 @@ class TestTagging(unittest.TestCase):
         c = sent.wclinks[w][0]
         tag = w.tag_map['pos'][0]
         self.assertEqual(tag.label, 'WP')
+        self.assertEqual(w.pos, 'WP')  # shortcut for POS
         self.assertEqual(c.words[0].tag_map['pos'][0].label, 'WP')
         tag.label = 'x'
         self.assertEqual(c.words[0].tag_map['pos'][0].label, 'x')

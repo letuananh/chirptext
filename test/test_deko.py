@@ -61,6 +61,7 @@ from chirptext.deko import wakati, tokenize, analyse, txt2mecab, tokenize_sent, 
 TEST_DIR = os.path.dirname(os.path.realpath(__file__))
 txt = '雨が降る。'
 txt2 = '猫が好きです。\n犬も好きです。'
+txt3 = '猫が好きです。\n犬も好きです。\n鳥は'
 
 #-------------------------------------------------------------------------------
 # DATA STRUCTURES
@@ -130,6 +131,12 @@ EOS
         self.assertEqual(poses, ['名詞-一般', '助詞-格助詞-一般', '動詞-自立', '記号-句点'])
         for tk in sent:
             print(tk.pos3())
+
+    def test_not_split(self):
+        doc = DekoText.parse(txt3, False)
+        docx = DekoText.parse(txt3, True)
+        self.assertEqual([x.surface for x in doc], [x.surface for x in docx])
+        print(doc)
 
 
 #-------------------------------------------------------------------------------

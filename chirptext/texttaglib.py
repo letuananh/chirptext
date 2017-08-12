@@ -152,11 +152,17 @@ class TaggedSentence(object):
         ''' Get a concept by concept ID '''
         return self.concept_map[cid]
 
+    def to_json(self):
+        return {'text': self.text,
+                'tokens': [t.to_json() for t in self.tokens],
+                'concepts': [c.to_json() for c in self.concepts]}
+
 
 class Token(object):
 
     LEMMA = 'lemma'
     POS = 'pos'
+    COMMENT = 'comment'
 
     def __init__(self, cfrom, cto, label, sent=None, tags=None, source=TagInfo.DEFAULT):
         ''' A token (e.g. a word in a sentence) '''
@@ -195,6 +201,14 @@ class Token(object):
         else:
             return ''
 
+    @property
+    def comment(self):
+        tm = self.tag_map
+        if Token.COMMENT in tm:
+            return tm[self.COMMENT][0].label
+        else:
+            return ''
+
     def __repr__(self):
         return "`{l}`<{f}:{t}>".format(l=self.label, f=self.cfrom, t=self.cto)
 
@@ -219,6 +233,25 @@ class Token(object):
             cto = self.cto
         tag = TagInfo(label=label, cfrom=cfrom, cto=cto, tagtype=tagtype)
         self._tags.append(tag)
+
+    def to_json(self):
+        tagdict = dd(list)
+        token_json = {'cfrom': self.cfrom,
+                      'cto': self.cto,
+                      'label': self.label}
+        for k, tags in self.tag_map.items():
+            if k == Token.LEMMA:
+                token_json[Token.LEMMA] = ', '.join([t.label for t in tags])
+                pass
+            elif k == Token.POS:
+                token_json[Token.POS] = ', '.join([t.label for t in tags])
+            elif k == Token.COMMENT:
+                token_json[Token.COMMENT] = '\n'.join([t.label for t in tags])
+            else:
+                tagdict[k if k else 'unsorted'].extend([t.label for t in tags])
+        if tagdict:
+            token_json['tags'] = dict(tagdict)
+        return token_json
 
 
 class TaggedDoc(object):
@@ -310,6 +343,7 @@ class Concept(object):
         self.clemma = clemma
         self.tag = tag
         self.sent = sent
+        self.comment = ''
         if words:
             if type(words) == list:
                 self.words = words
@@ -326,6 +360,21 @@ class Concept(object):
 
     def __str__(self):
         return '<{t}:"{l}">({ws})'.format(l=self.clemma, t=self.tag, ws=self.words)
+
+    def to_json(self):
+        if self.sent:
+            # get word idx from sent
+            words = [self.sent.tokens.index(w) for w in self.words]
+        else:
+            words = [w.label for w in self.words]
+        cdict = {
+            'clemma': self.clemma,
+            'tag': self.tag,
+            'words': words
+        }
+        if self.comment:
+            cdict['comment'] = self.comment
+        return cdict
 
 
 class StringBuffer:
@@ -358,101 +407,6 @@ class StringBuffer:
 
     def __str__(self):
         return ''.join(self.buff)
-
-# TODO: This is a crazy mess, should be cleaned ASAP
-
-
-def tag_to_token(tag):
-    tag_text = tag[len(OPEN_TAG): -len(CLOSE_TAG)]
-    parts = tag_text.split('|')
-    if parts and len(parts) == 2:
-        text = parts[0]
-        sk = parts[1]
-        return TokenInfo(text, sk)
-    else:
-        return None
-
-
-def find_tags(sent):
-    buff=StringBuffer()
-    cur=0
-    tags = []
-
-    while cur < len(sent):
-        #print("cur=%s - sent=%s" % (cur,len(sent)))
-        cfrom=sent.find(OPEN_TAG, cur)
-        cto=sent.find(CLOSE_TAG, cur)
-        if cfrom >= 0:
-            tag=sent[cfrom:cto+len(CLOSE_TAG)]
-            if cfrom > cur:
-                buff.append(sent[cur:cfrom])
-            token = tag_to_token(tag)
-            tags.append(TagInfo(buff.size(), buff.size()+len(token.text), token.sk))
-            buff.append(token.text)
-            cur = cto+len(CLOSE_TAG)
-        else:
-            buff.append(sent[cur:len(sent)+1])
-            cur = len(sent)
-    return TaggedSentence(str(buff), tags)
-
-
-def draw_vertical_line(buff, all_cfrom, start_from=0):
-    cur = start_from
-    for cfrom in all_cfrom:
-        if start_from > cfrom:
-            continue
-        if cfrom > cur:
-            buff.write(' ' * (cfrom - cur))
-            cur += cfrom - cur
-        if cfrom == cur:
-            buff.write('|')
-        cur = cfrom+1
-    buff.newline()  # new line
-
-
-def format_tag(tagged_sentence, show_from_to=False):
-    buff = StringBuffer()
-    buff.writeline(tagged_sentence.text)
-    cur = 0
-    # print alignment line
-    for tag in tagged_sentence.tags:
-        if tag.cfrom > cur:
-            buff.write(' ' * (tag.cfrom - cur))
-            cur += tag.cfrom - cur
-        if tag.cfrom == cur:
-            buff.write('=' * (tag.cto - tag.cfrom))
-        cur = tag.cto
-    buff.newline()
-    # print vertical lines
-    all_cfrom = sorted([x.cfrom for x in tagged_sentence.tags])
-    for tag in tagged_sentence.tags:
-        tag_label = '[ %s ]' % tag.label if not show_from_to else '[ %s (%s:%s) ]' % (tag.label, tag.cfrom, tag.cto)
-        draw_vertical_line(buff, [ x for x in all_cfrom if x >= tag.cfrom ], 0)
-        buff.write(' ' * tag.cfrom + tag_label)
-        draw_vertical_line(buff, all_cfrom, tag.cfrom+len(tag_label))
-    return str(buff)
-
-
-def replace_tag(sent, tag, something_else):
-    if not tag or tag.cfrom > tag.cto or tag.cfrom < 0:
-        return None 
-    return sent[0:tag.cfrom] + something_else + sent[tag.cto:len(sent)+1]
-
-
-def tag_sent(sent):
-    taginfo = find_tags(sent)
-    print('-' * 80)
-    # Nice formatting
-    print(format_tag(taginfo))
-
-
-def writelines(lines, filepath, verbose=True):
-    if verbose:
-        print("Writing to: %s" % (filepath,))
-    with open(filepath, 'w') as afile:
-        for line in lines:
-            afile.write(line)
-            afile.write('\n')
 
 
 if __name__ == "__main__":

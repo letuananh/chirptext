@@ -153,6 +153,8 @@ class MeCabToken(object):
 
 class MeCabSent(object):
 
+    mecab = MeCab.Tagger()
+
     def __init__(self, surface, tokens):
         self.surface = surface
         self.tokens = []
@@ -181,6 +183,13 @@ class MeCabSent(object):
     def __str__(self):
         return ' '.join([x.surface for x in self.tokens if not x.is_eos])
 
+    @staticmethod
+    def parse(text):
+        ''' Use mecab to parse one sentence '''
+        mecab_out = MeCabSent.mecab.parse(text).splitlines()
+        tokens = [MeCabToken.parse(x) for x in mecab_out]
+        return MeCabSent(text, tokens)
+
 
 class DekoText(object):
 
@@ -193,16 +202,29 @@ class DekoText(object):
     def __getitem__(self, name):
         return self.sents[name]
 
+    def add(self, sentence_text):
+        ''' Parse a text string and add it to this doc '''
+        sent = MeCabSent.parse(sentence_text)
+        self.sents.append(sent)
+        return sent
+
+    def __str__(self):
+        return "\n".join(["#{}. {}".format(idx + 1, x) for idx, x in enumerate(self)])
+
     @staticmethod
-    def parse(text, splitlines=True):
+    def parse(text, splitlines=True, auto_strip=True):
         doc = DekoText()
         if not splitlines:
             # surface is broken right now ...
             tokens = txt2mecab(text)
-            doc.sents = tokenize_sent(tokens)
+            doc.sents = tokenize_sent(tokens, text, auto_strip)
         else:
             lines = text.splitlines()
-            doc.sents = lines2mecab(lines)
+            for line in lines:
+                if auto_strip:
+                    doc.add(line.strip())
+                else:
+                    doc.add(line)
         return doc
 
 
@@ -228,17 +250,31 @@ def lines2mecab(lines):
 
 
 # TODO: Need to calculate cfrom, cto to get surfaces
-def tokenize_sent(mtokens):
+def tokenize_sent(mtokens, raw='', auto_strip=True):
     sents = []
     bucket = []
+    cfrom = 0
+    cto = 0
+    token_cfrom = 0
     for t in mtokens:
+        if t.is_eos:
+            break
+        token_cfrom = raw.find(t.surface, cto)
+        cto = token_cfrom + len(t.surface)
         if not t.is_eos:
             bucket.append(t)
         if t.pos == '記号' and t.sc1 == '句点':
-            sents.append(MeCabSent('', bucket))
+            sent_text = raw[cfrom:cto]
+            if auto_strip:
+                sent_text = sent_text.strip()
+            sents.append(MeCabSent(sent_text, bucket))
+            cfrom = cto
             bucket = []
     if bucket:
-        sents.append(MeCabSent('', bucket))
+        sent_text = raw[cfrom:cto]
+        if auto_strip:
+            sent_text = sent_text.strip()
+        sents.append(MeCabSent(sent_text, bucket))
     return sents
 
 
