@@ -271,27 +271,40 @@ class StringTool:
 class FileHub:
     ''' A helper class for working with multiple files at the same time
     '''
-    def __init__(self, ext='.log'):
+    def __init__(self, *filenames, working_dir='.', default_mode='a', auto_flush=True, ext='.log'):
         self.files = {}
         self.ext = ext if ext else ''
+        self.auto_flush = auto_flush
+        self.default_mode = default_mode
+        for filename in filenames:
+            self.open(filename)
 
     def __getitem__(self, key):
         if key not in self.files:
-            self.addtext(key)
+            self.open(key)
         return self.files[key]
 
     def __setitem__(self, key, value):
         self.files[key] = value
 
+    def get_path(self, key):
+        if os.path.isabs(key):
+            return key
+        else:
+            return os.path.join(self.working_dir, key + self.ext)
+
+    def open(self, key, mode=None):
+        self.files[key] = open(key + self.ext, mode if mode else self.default_mode)
+
     def addtext(self, key):
-        self.files[key] = open(key + self.ext, 'a')
+        self.open(key, 'a')
 
     def create(self, key):
-        self.files[key] = open(key + self.ext, 'w')
+        self.open(key, 'w')
 
     def writeline(self, key, text, auto_flush=True):
         self[key].write('%s\n' % (text,))
-        if auto_flush:
+        if auto_flush or self.auto_flush:
             self[key].flush()
 
     def flush(self):

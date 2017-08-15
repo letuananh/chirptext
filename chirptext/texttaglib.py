@@ -121,6 +121,7 @@ class TaggedSentence(object):
     def add_token(self, label, cfrom=-1, cto=-1, source=TagInfo.DEFAULT):
         tk = Token(cfrom, cto, label, self)
         self._tokens.append(tk)
+        return tk
 
     def import_tokens(self, tokens, import_hook=None, ignorecase=True):
         text = self.text.lower() if ignorecase else self.text
@@ -141,12 +142,13 @@ class TaggedSentence(object):
         ''' Add a new concept object '''
         c = Concept(cid, clemma, tag, self, words)
         self.concept_map[cid] = c
+        return c
 
     def tag(self, clemma, tag, *word_ids):
         cid = 0
         while cid in self.concept_map:
             cid += 1
-        self.add_concept(cid, clemma, tag, [self[x] for x in word_ids])
+        return self.add_concept(cid, clemma, tag, [self[x] for x in word_ids])
 
     def concept(self, cid):
         ''' Get a concept by concept ID '''
@@ -156,6 +158,30 @@ class TaggedSentence(object):
         return {'text': self.text,
                 'tokens': [t.to_json() for t in self.tokens],
                 'concepts': [c.to_json() for c in self.concepts]}
+
+    @staticmethod
+    def from_json(json_sent):
+        sent = TaggedSentence(json_sent['text'])
+        for json_token in json_sent['tokens']:
+            token = sent.add_token(json_token['label'], json_token['cfrom'], json_token['cto'])
+            if Token.POS in json_token:
+                token.tag(json_token[Token.POS], tagtype=Token.POS)
+            if Token.LEMMA in json_token:
+                token.tag(json_token[Token.LEMMA], tagtype=Token.LEMMA)
+            if Token.COMMENT in json_token:
+                token.tag(json_token[Token.COMMENT], tagtype=Token.COMMENT)
+        # import concepts
+        for json_concept in json_sent['concepts']:
+            clemma = json_concept['clemma']
+            tag = json_concept['tag']
+            wordids = json_concept['words']
+            concept = sent.tag(clemma, tag, *wordids)
+            if Concept.COMMENT in json_concept:
+                concept.comment = json_concept[Concept.COMMENT]
+            if Concept.FLAG in json_concept:
+                concept.flag = json_concept[Concept.FLAG]
+
+        return sent
 
 
 class Token(object):
@@ -291,6 +317,7 @@ class TaggedDoc(object):
         return sent
 
     def read(self):
+        ''' Read tagged doc from files (sents, words, concepts, links) '''
         with open(self.sent_path) as sentfile:
             for line in sentfile:
                 if not line.strip():
@@ -324,21 +351,16 @@ class TaggedDoc(object):
                 sent = self.sent_map[sid]
                 wid = int(wid.strip())
                 sent.concept_map[cid].words.append(sent[wid])
-        # tag words
-        # for sent in self.sents:
-        #     sent_concepts = sent_concepts_map[sent.ID]
-        #     for cid, clemma, tag in sent_concepts:
-        #         wids = concept_links_map[(sent.ID, cid)]
-        #         for wid in wids:
-        #             logging.debug("wid {} of {} ({})".format(wid, len(sent), sent))
-        #             sent[int(wid)].tag(label='clemma', value=clemma)
-        #             sent[int(wid)].tag(tag)
         return self
 
 
 class Concept(object):
 
-    def __init__(self, cid, clemma, tag, sent, words=None):
+    FLAG = 'flag'
+    COMMENT = 'comment'
+    NOT_MATCHED = 'E'
+
+    def __init__(self, cid, clemma, tag, sent, words=None, comment=None):
         self.cid = cid
         self.clemma = clemma
         self.tag = tag
@@ -351,6 +373,7 @@ class Concept(object):
                 self.words = list(words)
         else:
             self.words = []
+        self.flag = None
 
     def add_word(self, word):
         self.words.append(word)
@@ -373,7 +396,9 @@ class Concept(object):
             'words': words
         }
         if self.comment:
-            cdict['comment'] = self.comment
+            cdict[Concept.COMMENT] = self.comment
+        if self.flag:
+            cdict[Concept.FLAG] = self.flag
         return cdict
 
 

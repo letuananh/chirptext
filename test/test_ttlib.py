@@ -167,6 +167,15 @@ class TestTagging(unittest.TestCase):
         actual = sent.to_json()
         self.assertEqual(expected, actual)
 
+    def test_json_tagged_sent(self):
+        raw = {'tokens': [{'cfrom': 0, 'cto': 1, 'lemma': 'おんな', 'label': '女'}, {'cfrom': 1, 'cto': 2, 'label': 'の'}, {'cfrom': 2, 'cto': 3, 'lemma': 'こ', 'label': '子'}, {'cfrom': 3, 'cto': 4, 'label': 'は'}, {'pos': '名詞-一般', 'cfrom': 4, 'cto': 5, 'lemma': 'ねこ', 'label': '猫', 'comment': 'Say neh-koh'}, {'cfrom': 5, 'cto': 6, 'label': 'が'}, {'pos': '名詞-形容動詞語幹', 'cfrom': 6, 'cto': 8, 'lemma': 'すき', 'label': '好き'}, {'cfrom': 8, 'cto': 10, 'label': 'です'}, {'cfrom': 10, 'cto': 11, 'label': '。'}], 'text': '女の子は猫が好きです。', 'concepts': [{'tag': ' 10084295-n', 'words': [0, 1, 2], 'clemma': '女の子', 'comment': '若々しい女の人', 'flag': 'G'}, {'tag': '02121620-n', 'words': [4], 'clemma': '猫'}, {'tag': '01292683-a', 'words': [6], 'clemma': '好き'}]}
+        # json => TaggedSentence => json
+        sent = TaggedSentence.from_json(raw)
+        sent_json = sent.to_json()
+        self.assertEqual(raw, sent_json)
+        self.assertEqual(sent_json['concepts'][0]['flag'], 'G')
+        pass
+
     def test_tagging_erg_sent(self):
         txt = '''In this way I am no doubt indirectly responsible for Dr. Grimesby Roylott's death, and I cannot say that it is likely to weigh very heavily upon my conscience."'''
         words = ['in', 'this', 'way', 'i', 'am', 'no', 'doubt', 'indirectly', 'responsible', 'for', 'dr.', 'Grimesby', 'Roylott', "'s", 'death', ',', 'and', 'i', 'can', 'not', 'say', 'that', 'it', 'is', 'likely', 'to', 'weigh', 'very', 'heavily', 'upon', 'my', 'conscience', '.', '"']
