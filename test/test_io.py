@@ -92,6 +92,17 @@ class Person:
 # TESTS
 #-------------------------------------------------------------------------------
 
+
+class TestUsingCSV(unittest.TestCase):
+
+    def test_csv(self):
+        data = [['abc', 'def\n"xyz'],
+                ["'", '"', ',']]
+        CSV.write(TEST_CSV, data)
+        indata = CSV.read(TEST_CSV)
+        self.assertEqual(data, indata)
+
+
 class TestReaders(unittest.TestCase):
 
     def test_csv(self):
