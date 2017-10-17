@@ -19,7 +19,7 @@ References:
 @author: Le Tuan Anh <tuananh.ke@gmail.com>
 '''
 
-#Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
+# Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -50,11 +50,8 @@ __status__ = "Prototype"
 
 ########################################################################
 
-import sys
-import os
-import argparse
 import unittest
-from chirptext.leutile import Counter
+from chirptext.leutile import Counter, TextReport
 
 
 ########################################################################
@@ -70,6 +67,18 @@ class TestLeUtile(unittest.TestCase):
         self.assertEqual(c['A'], 1)
         self.assertEqual(c[None], 2)
         self.assertEqual(c.sorted_by_count(), [(None, 2), ('A', 1)])
+
+    def test_textreport(self):
+        with TextReport.null() as rp:
+            rp.writeline("null")
+            rp.writeline(123)
+        with TextReport() as rp:
+            rp.writeline("stdout")
+            rp.writeline(123)
+        with TextReport("~/tmp/del.me") as rp:
+            rp.writeline("ABC")
+            rp.writeline(123)
+        self.assertTrue(rp.closed)
 
 
 ########################################################################

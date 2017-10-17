@@ -100,27 +100,36 @@ else:
 
 
 class TextReport:
+
+    STDOUT = '* stdout *'
+
     ''' Helper for creating text report with indentation, tables and flexible output (to stdout or a file)
     '''
-    def __init__(self, report_path=None, mode='w', auto_flush=True, encoding='utf8'):
+    def __init__(self, report_path=None, mode='w', name=None, auto_flush=True, encoding='utf8'):
         ''' Create a text report.
 
         Arguments:
             report_path -- Path to report file
             mode        -- a for append, w (default) for create from scratch (overwrite existing file)
         '''
-        if not report_path:
-            self.report_path = "* stdout *"
+        if not report_path or report_path == TextReport.STDOUT:
+            self.report_path = TextReport.STDOUT
             self.report_file = sys.stdout
+            self.name = 'stdout'
             self.mode = None
             self.auto_flush = False
             pass
         else:
             self.report_path = os.path.expanduser(report_path)
             self.report_file = open(self.report_path, mode, encoding=encoding)
+            self.name = name if name else FileHelper.getfilename(self.report_path)
             self.auto_flush = auto_flush
             self.mode = mode
         self.print = self.writeline  # just an alias
+
+    @property
+    def closed(self):
+        return self.report_file is None or self.report_file.closed
 
     def write(self, msg=None, level=0):
         self.report_file.write("\t" * level)
@@ -135,12 +144,19 @@ class TextReport:
         header(msg, level, print_out=self.writeline)
 
     def close(self):
-        if self.mode:
+        if self.mode and self.report_file != sys.stdout:
             try:
                 self.report_file.flush()
                 self.report_file.close()
+                self.report_file = None
             except Exception as e:
-                print("Error raised while saving report: %s" % e)
+                logger.exception("Error raised while saving report")
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
     def get_path(self):
         return self.report_path
@@ -149,6 +165,7 @@ class TextReport:
     def null():
         ''' Get a dev null report (print to nowhere)'''
         return TextReport('/dev/null')
+
 
 ###############################################################################
 

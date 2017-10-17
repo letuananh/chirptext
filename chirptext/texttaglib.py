@@ -22,9 +22,11 @@
 
 import os
 import logging
+import json
 from collections import namedtuple
 from collections import defaultdict as dd
 from collections import OrderedDict
+
 from chirptext import FileHelper
 
 logger = logging.getLogger(__name__)
@@ -138,16 +140,38 @@ class TaggedSentence(object):
             self.add_token(token, cfrom, cto)
             cfrom = cto - 1
 
-    def add_concept(self, cid, clemma, tag, words=None):
+    def fix_cfrom_cto(self, import_hook=None, ignorecase=True):
+        text = self.text.lower() if ignorecase else self.text
+        has_hooker = import_hook and callable(import_hook)
+        cfrom = 0
+        for token in self.tokens:
+            if has_hooker:
+                import_hook(token.label)
+            start = text.find(token.label.lower() if ignorecase else token.label, cfrom)
+            if start == -1:
+                raise LookupError('Cannot find token `{t}` in sent `{s}`({l}) from {i} ({p})'.format(t=token, s=self.text, l=len(self.text), i=cfrom, p=self.text[cfrom:cfrom + 20]))
+            cfrom = start
+            cto = cfrom + len(token.label)
+            token.cfrom = cfrom
+            token.cto = cto
+            cfrom = cto - 1
+
+    def add_concept(self, cid=None, clemma="", tag="", words=None):
         ''' Add a new concept object '''
-        c = Concept(cid, clemma, tag, self, words)
+        if cid is None:
+            cid = self.new_concept_id()
+        c = Concept(cid, clemma, tag, self, list(words) if words is not None else None)
         self.concept_map[cid] = c
         return c
 
-    def tag(self, clemma, tag, *word_ids):
+    def new_concept_id(self):
         cid = 0
         while cid in self.concept_map:
             cid += 1
+        return cid
+
+    def tag(self, clemma, tag, *word_ids):
+        cid = self.new_concept_id()
         return self.add_concept(cid, clemma, tag, [self[x] for x in word_ids])
 
     def concept(self, cid):
@@ -155,13 +179,18 @@ class TaggedSentence(object):
         return self.concept_map[cid]
 
     def to_json(self):
-        return {'text': self.text,
-                'tokens': [t.to_json() for t in self.tokens],
-                'concepts': [c.to_json() for c in self.concepts]}
+        sent_dict = {'text': self.text,
+                     'tokens': [t.to_json() for t in self.tokens],
+                     'concepts': [c.to_json() for c in self.concepts]}
+        if self.ID is not None:
+            sent_dict['ID'] = self.ID
+        return sent_dict
 
     @staticmethod
     def from_json(json_sent):
         sent = TaggedSentence(json_sent['text'])
+        if 'ID' in json_sent:
+            sent.ID = json_sent['ID']
         for json_token in json_sent['tokens']:
             token = sent.add_token(json_token['label'], json_token['cfrom'], json_token['cto'])
             if Token.POS in json_token:
@@ -294,6 +323,27 @@ class TaggedDoc(object):
     def __getitem__(self, idx):
         return self.sents[idx]
 
+    def add_sent(self, text, ID):
+        sent = TaggedSentence(text, ID=ID)
+        self.sents.append(sent)
+        self.sent_map[ID] = sent
+        return sent
+
+    @staticmethod
+    def from_json_file(doc_path, doc_name=None):
+        if not os.path.isfile(doc_path):
+            raise Exception("Document file could not be found: {}".format(doc_path))
+        if not doc_name:
+            doc_name = FileHelper.getfilename(doc_path)
+        doc = TaggedDoc(doc_path, doc_name)
+        with open(doc_path, 'rt') as infile:
+            for line in infile:
+                j = json.loads(line)
+                sent = TaggedSentence.from_json(j)
+                doc.sents.append(sent)
+                doc.sent_map[sent.ID] = sent
+        return doc
+
     @property
     def sent_path(self):
         return os.path.join(self.path, '{}_sents.txt'.format(self.name))
@@ -309,12 +359,6 @@ class TaggedDoc(object):
     @property
     def link_path(self):
         return os.path.join(self.path, '{}_links.txt'.format(self.name))
-
-    def add_sent(self, text, ID):
-        sent = TaggedSentence(text, ID=ID)
-        self.sents.append(sent)
-        self.sent_map[ID] = sent
-        return sent
 
     def read(self):
         ''' Read tagged doc from files (sents, words, concepts, links) '''
