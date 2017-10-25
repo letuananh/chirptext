@@ -72,6 +72,10 @@ logger.setLevel(logging.INFO)
 
 class CSV(object):
 
+    QUOTE_MINIMAL = csv.QUOTE_MINIMAL
+    QUOTE_NONE = csv.QUOTE_NONE
+    QUOTE_ALL = csv.QUOTE_ALL
+
     @staticmethod
     def read(file_name, dialect=None, header=False):
         with open(file_name, newline='') as csvfile:
