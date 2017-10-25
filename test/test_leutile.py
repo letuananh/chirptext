@@ -51,12 +51,26 @@ __status__ = "Prototype"
 ########################################################################
 
 import unittest
-from chirptext.leutile import Counter, TextReport
+from chirptext.leutile import Counter, TextReport, StringTool
 
 
 ########################################################################
 
 class TestLeUtile(unittest.TestCase):
+
+    def test_string_tool(self):
+        self.assertEqual(StringTool.strip(None), '')
+        self.assertEqual(StringTool.strip(' '), '')
+        self.assertEqual(StringTool.to_str(None), '')
+        # detokenize
+        words = ["I", "'ll", "go", "home", "."]
+        self.assertEqual(StringTool.detokenize(words), "I'll go home.")
+        self.assertEqual(StringTool.detokenize(["This", "(", "thing", ")", "is", "a", "comment", "!"]), "This (thing) is a comment!")
+        self.assertEqual(StringTool.detokenize("He said `` why ? '' .".split()), "He said “why?”.")
+        self.assertEqual(StringTool.detokenize("Where are you ?".split()), "Where are you?")
+        self.assertEqual(StringTool.detokenize("Note : It works .".split()), "Note: It works.")
+        self.assertEqual(StringTool.detokenize("( A ) ; ".split()), "(A);")
+        self.assertEqual(StringTool.detokenize("( A ) ; B ".split()), "(A); B")
 
     def test_counter(self):
         print("Test counter")

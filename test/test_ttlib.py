@@ -208,6 +208,14 @@ class TestTagging(unittest.TestCase):
         mw_ms = [(len(s.mwe), len(s.msw)) for s in doc]
         self.assertEqual(mw_ms, [(2, 2), (0, 0), (3, 2)])
 
+    def test_recover_surface_string(self):
+        s = TaggedSentence('''a religious sect founded in the United States in 1966; based on Vedic scriptures; groups engage in joyful chanting of `Hare Krishna' and other mantras based on the name of the Hindu god Krishna; devotees usually wear saffron robes and practice vegetarianism and celibacy''')
+        tokens = ['a', 'religious', 'sect', 'founded', 'in', 'the', 'United', 'States', 'in', '1966', ';', 'based', 'on', 'Vedic', 'scriptures', ';', 'groups', 'engage', 'in', 'joyful', 'chanting', 'of', 'Hare', 'Krishna', 'and', 'other', 'mantras', 'based', 'on', 'the', 'name', 'of', 'the', 'Hindu', 'god', 'Krishna', ';', 'devotees', 'usually', 'wear', 'saffron', 'robes', 'and', 'practice', 'vegetarianism', 'and', 'celibacy']
+        s.import_tokens(tokens)
+        cfrom = min(x.cfrom for x in s.tokens)
+        cto = max(x.cto for x in s.tokens)
+        self.assertEqual(s.text, s.text[cfrom:cto])
+
 
 ########################################################################
 
