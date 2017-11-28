@@ -298,7 +298,7 @@ def analyse(content, splitlines=True, format=None):
     if format == 'html':
         for sent in sents:
             doc.append(sent.to_ruby())
-        final = '<br/>'.join(doc)
+        final = '<br/>\n'.join(doc)
     elif format == 'csv':
         for sent in sents:
             doc.append('\n'.join([x.to_csv() for x in sent]) + '\n')
