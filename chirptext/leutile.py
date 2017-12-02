@@ -28,6 +28,7 @@ import sys
 import time
 import errno
 import operator
+
 if sys.version_info >= (3, 0):
     from itertools import zip_longest
 else:
@@ -36,10 +37,12 @@ else:
 from collections import OrderedDict
 
 
-###############################################################################
+# -------------------------------------------------------------------------------
+# CONFIGURATION
+# ------------------------------------------------------------------------------
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+def getLogger():
+    return logging.getLogger(__name__)
 
 
 LOREM_IPSUM = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
@@ -101,7 +104,7 @@ else:
 
 class TextReport:
 
-    STDOUT = '* stdout *'
+    STDOUT = '*stdout*'
 
     ''' Helper for creating text report with indentation, tables and flexible output (to stdout or a file)
     '''
@@ -150,7 +153,7 @@ class TextReport:
                 self.report_file.close()
                 self.report_file = None
             except Exception as e:
-                logger.exception("Error raised while saving report")
+                getLogger().exception("Error raised while saving report")
 
     def __enter__(self):
         return self
@@ -179,7 +182,7 @@ class Timer:
 
     def start(self, task_note=''):
         if task_note:
-            logger.info("[%s]" % (str(task_note),))
+            getLogger().info("[%s]" % (str(task_note),))
         self.start_time = time.time()
         return self
 
@@ -191,7 +194,7 @@ class Timer:
         return "Execution time: %.2f sec(s)" % (self.end_time - self.start_time)
 
     def log(self, task_note=''):
-        logger.info("%s - Note=[%s]" % (self, str(task_note)))
+        getLogger().info("%s - Note=[%s]" % (self, str(task_note)))
         return self
 
     def end(self, task_note=''):
@@ -467,7 +470,7 @@ class FileHelper:
             try:
                 os.makedirs(dir_path)
             except Exception as e:
-                logger.exception("Cannot create folder [%s]" % (dir_path,))
+                getLogger().exception("Cannot create folder [%s]" % (dir_path,))
                 raise
 
     @staticmethod
@@ -501,7 +504,7 @@ class FileHelper:
                     local_file.write(content)
             return True
         except Exception as e:
-            logger.debug("Error while saving content to {file}\r\n{e}".format(file=path, e=e))
+            getLogger().debug("Error while saving content to {file}\r\n{e}".format(file=path, e=e))
         return False
 
     @staticmethod
