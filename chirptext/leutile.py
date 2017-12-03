@@ -142,7 +142,7 @@ class TextReport:
 
     def writeline(self, *msg, level=0):
         msg = msg + ('\n',)
-        self.write(*msg, level)
+        self.write(*msg, level=level)
 
     def header(self, *msg, **kwargs):
         header(*msg, print_out=self.writeline, **kwargs)
