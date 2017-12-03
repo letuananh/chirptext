@@ -476,7 +476,3 @@ class StringBuffer:
 
     def __str__(self):
         return ''.join(self.buff)
-
-
-if __name__ == "__main__":
-    print("This is a library, not an application.")

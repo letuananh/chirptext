@@ -19,7 +19,7 @@ References:
 @author: Le Tuan Anh <tuananh.ke@gmail.com>
 '''
 
-#Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
+# Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -57,12 +57,16 @@ import unittest
 from chirptext.leutile import LOREM_IPSUM
 from chirptext import JiCache
 
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Configuration
-#----------------------------------------------------------------------
-logging.basicConfig(level=logging.DEBUG)
+# ----------------------------------------------------------------------
+
 TEST_DIR = os.path.dirname(__file__)
-TEST_CACHE = os.path.join(TEST_DIR, 'test_cache.db')
+TEST_CACHE = os.path.join(TEST_DIR, 'data', 'test_cache.db')
+
+
+def getLogger():
+    return logging.getLogger(__name__)
 
 
 ########################################################################
@@ -82,7 +86,7 @@ class TestMain(unittest.TestCase):
         self.assertFalse(os.path.exists(TEST_CACHE2))
 
     def test_arsenal(self):
-        print("Test JiCache")
+        print("Test arsenal module")
         cache = JiCache(TEST_CACHE)
         # test insert blob
         self.try_cache(cache, 'lorem', LOREM_IPSUM)
@@ -92,9 +96,5 @@ class TestMain(unittest.TestCase):
 
 ########################################################################
 
-def main():
-    unittest.main()
-
-
 if __name__ == "__main__":
-    main()
+    unittest.main()

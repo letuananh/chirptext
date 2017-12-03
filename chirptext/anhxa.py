@@ -17,23 +17,23 @@ References:
 
 # Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
 #
-#Permission is hereby granted, free of charge, to any person obtaining a copy
-#of this software and associated documentation files (the "Software"), to deal
-#in the Software without restriction, including without limitation the rights
-#to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-#copies of the Software, and to permit persons to whom the Software is
-#furnished to do so, subject to the following conditions:
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
 #
-#The above copyright notice and this permission notice shall be included in
-#all copies or substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 #
-#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-#IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-#FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-#AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-#LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-#OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-#THE SOFTWARE.
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
 
 __author__ = "Le Tuan Anh"
 __email__ = "<tuananh.ke@gmail.com>"
@@ -51,28 +51,30 @@ import json
 from json import JSONDecoder, JSONEncoder
 
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # CONFIGURATION
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
+
+def getLogger():
+    return logging.getLogger(__name__)
 
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # FUNCTIONS
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 def dumps(obj, *args, **kwargs):
     ''' Typeless dump an object to json '''
     return json.dumps(obj, *args, cls=TypelessSONEncoder, **kwargs)
 
 
-def update_data(source, target, *fields, **field_map):
+def update_obj(source, target, *fields, **field_map):
     source_dict = source.__dict__ if hasattr(source, '__dict__') else source
-    target_dict = target.__dict__ if hasattr(target, '__dict__') else target
     if not fields:
         fields = source_dict.keys()
     for f in fields:
         target_f = f if f not in field_map else field_map[f]
-        target_dict[target_f] = source_dict[f]
+        setattr(target, target_f, source_dict[f])
 
 
 def to_json(obj, *fields, **field_map):
@@ -84,22 +86,18 @@ def to_json(obj, *fields, **field_map):
 
 
 def to_obj(cls, obj_data=None, *fields, **field_map):
-    ''' prioritize obj_dict when there are conficts '''
-    obj_dict = obj_data.__dict__ if hasattr(obj_data, '__dict__') else obj_data
+    ''' Use obj_data (dict-like) to construct an object of type cls
+    prioritize obj_dict when there are conficts '''
     if not fields:
-        fields = obj_dict.keys()
-
+        fields = [k if k not in field_map else field_map[k] for k in obj_data.keys()]
     try:
-        # try creating a new instance with no args
+        kwargs = {f: obj_data[f] for f in fields if f in obj_data}
+        obj = cls(**kwargs)
+    except:
+        getLogger().exception("Couldn't use kwargs to construct object")
+        # use default constructor
         obj = cls()
-        update_data(obj_dict, obj, *fields, **field_map)
-    except TypeError as e:
-        # there are mandatory fields
-        obj_kwargs = {}
-        for k in fields:
-            f = k if k not in field_map else field_map[k]
-            obj_kwargs[f] = obj_dict[k]
-        obj = cls(**obj_kwargs)
+        update_obj(obj_data, obj, *fields, **field_map)
     return obj
 
 
@@ -147,6 +145,6 @@ class TypedJSONDecoder(JSONDecoder):
                 obj_type = obj_dict.pop('__type__')
                 return to_obj(self.type_map[obj_type], obj_dict)
             else:
-                logging.warning("Unknown type: {}".format(obj_dict['__type__']))
+                getLogger().warning("Unknown type: {}".format(obj_dict['__type__']))
         else:
             return obj_dict

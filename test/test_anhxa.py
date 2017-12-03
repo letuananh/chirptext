@@ -20,23 +20,23 @@ References:
 
 # Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
 #
-#Permission is hereby granted, free of charge, to any person obtaining a copy
-#of this software and associated documentation files (the "Software"), to deal
-#in the Software without restriction, including without limitation the rights
-#to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-#copies of the Software, and to permit persons to whom the Software is
-#furnished to do so, subject to the following conditions:
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
 #
-#The above copyright notice and this permission notice shall be included in
-#all copies or substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 #
-#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-#IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-#FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-#AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-#LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-#OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-#THE SOFTWARE.
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
 
 __author__ = "Le Tuan Anh"
 __email__ = "<tuananh.ke@gmail.com>"
@@ -52,20 +52,20 @@ __credits__ = []
 import os
 import unittest
 import json
-from chirptext.anhxa import to_json, to_obj, dumps, update_data
+from chirptext.anhxa import to_json, to_obj, dumps, update_obj
 from chirptext.anhxa import TypedJSONDecoder, TypelessSONEncoder, TypedJSONEncoder
 
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # CONFIGURATION
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 TEST_DIR = os.path.dirname(os.path.realpath(__file__))
 
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # DATA STRUCTURES
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 class PersonifyJSONEncoder(TypedJSONEncoder):
 
@@ -119,9 +119,9 @@ class Person(object):
         return self.name == other.name and self.age == other.age and self.job == other.job
 
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # TESTS
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 class TestAnhxa(unittest.TestCase):
 
@@ -137,7 +137,7 @@ class TestAnhxa(unittest.TestCase):
         p3 = to_obj(Person, pj2)
         self.assertFalse(p3.job)
         # obj to obj
-        p4 = to_obj(Person, p3)
+        p4 = to_obj(Person, p3.__dict__)
         self.assertEqual(p3, p4)
 
     def test_json_encoder(self):
@@ -187,7 +187,7 @@ class TestAnhxa(unittest.TestCase):
         p2.job = Job("pupil", -100)
         # p2 > json
         p2json = json.loads(dumps(p2))
-        update_data(p2json, p1, 'name', 'age', 'pid')
+        update_obj(p2json, p1, 'name', 'age', 'pid')
         p1.job = to_obj(Job, p2json['job'])
         self.assertEqual(p1, p2)
         # now change p1 salary
@@ -203,9 +203,9 @@ class TestAnhxa(unittest.TestCase):
         self.assertEqual(p1, p2)
 
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # MAIN
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 if __name__ == "__main__":
     unittest.main()

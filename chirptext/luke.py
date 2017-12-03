@@ -50,7 +50,6 @@ __credits__ = []
 import os
 import codecs
 import logging
-from collections import namedtuple
 
 # -------------------------------------------------------------------------------
 # Configuration

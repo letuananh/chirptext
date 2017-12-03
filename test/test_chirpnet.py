@@ -19,7 +19,7 @@ References:
 @author: Le Tuan Anh <tuananh.ke@gmail.com>
 '''
 
-#Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
+# Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -56,14 +56,17 @@ import unittest
 
 from chirptext import JiCache, WebHelper, FileHelper
 
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Configuration
-#----------------------------------------------------------------------
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# ----------------------------------------------------------------------
+
 TEST_DIR = os.path.dirname(__file__)
 TEST_DATA = os.path.join(TEST_DIR, 'data')
 TEST_CACHE = os.path.join(TEST_DATA, 'test_cache.db')
+
+
+def getLogger():
+    return logging.getLogger(__name__)
 
 
 ########################################################################
@@ -73,7 +76,7 @@ class TestMain(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         if not os.path.isdir(TEST_DATA):
-            logger.info("Creating TEST DATA folder at {}".format(TEST_DATA))
+            getLogger().info("Creating TEST DATA folder at {}".format(TEST_DATA))
             FileHelper.create_dir(TEST_DATA)
 
     def test_chirpnet(self):
@@ -87,9 +90,5 @@ class TestMain(unittest.TestCase):
 
 ########################################################################
 
-def main():
-    unittest.main()
-
-
 if __name__ == "__main__":
-    main()
+    unittest.main()

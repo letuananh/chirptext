@@ -20,27 +20,27 @@ References:
 
 # Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
 #
-#Permission is hereby granted, free of charge, to any person obtaining a copy
-#of this software and associated documentation files (the "Software"), to deal
-#in the Software without restriction, including without limitation the rights
-#to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-#copies of the Software, and to permit persons to whom the Software is
-#furnished to do so, subject to the following conditions:
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
 #
-#The above copyright notice and this permission notice shall be included in
-#all copies or substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 #
-#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-#IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-#FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-#AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-#LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-#OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-#THE SOFTWARE.
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
 
 __author__ = "Le Tuan Anh"
 __email__ = "<tuananh.ke@gmail.com>"
-__copyright__ = "Copyright 2017, deko"
+__copyright__ = "Copyright 2017, chirptext"
 __license__ = "MIT"
 __maintainer__ = "Le Tuan Anh"
 __version__ = "0.1"
@@ -51,28 +51,33 @@ __credits__ = []
 
 import os
 import unittest
+import logging
 
 from chirptext.deko import wakati, tokenize, analyse, txt2mecab, tokenize_sent, DekoText
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # CONFIGURATION
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 TEST_DIR = os.path.dirname(os.path.realpath(__file__))
 txt = '雨が降る。'
 txt2 = '猫が好きです。\n犬も好きです。'
 txt3 = '猫が好きです。\n犬も好きです。\n鳥は'
 
-#-------------------------------------------------------------------------------
-# DATA STRUCTURES
-#-------------------------------------------------------------------------------
 
+def getLogger():
+    return logging.getLogger(__name__)
+
+
+# -------------------------------------------------------------------------------
+# DATA STRUCTURES
+# -------------------------------------------------------------------------------
 
 class TestMainApp(unittest.TestCase):
 
     def test_mecab(self):
         tokens = txt2mecab(txt)
-        print(tokens[-1].is_eos)
+        self.assertTrue(tokens[-1].is_eos)
 
     def test_wakati(self):
         tks = wakati(txt)
@@ -126,22 +131,22 @@ EOS
 
     def test_pos(self):
         sent = txt2mecab(txt)
+        self.assertTrue(sent[-1].is_eos)
         poses = [tk.pos3() for tk in sent if not tk.is_eos]
-        print(sent[-1])
         self.assertEqual(poses, ['名詞-一般', '助詞-格助詞-一般', '動詞-自立', '記号-句点'])
         for tk in sent:
-            print(tk.pos3())
+            getLogger().debug(tk.pos3())
 
     def test_not_split(self):
         doc = DekoText.parse(txt3, False)
         docx = DekoText.parse(txt3, True)
         self.assertEqual([x.surface for x in doc], [x.surface for x in docx])
-        print(doc)
+        getLogger().debug(doc)
 
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # MAIN
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 if __name__ == "__main__":
     unittest.main()

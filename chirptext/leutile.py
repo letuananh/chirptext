@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2014, Le Tuan Anh <tuananh.ke@gmail.com>
@@ -27,14 +26,13 @@ import logging
 import sys
 import time
 import errno
-import operator
+from collections import Counter as PythonCounter
+from collections import OrderedDict
 
 if sys.version_info >= (3, 0):
     from itertools import zip_longest
 else:
     from itertools import izip_longest
-
-from collections import OrderedDict
 
 
 # -------------------------------------------------------------------------------
@@ -58,24 +56,25 @@ def uniquify(a_list):
     return list(OrderedDict(zip(a_list, range(len(a_list)))).keys())
 
 
-def header(msg, level='h1', print_out=print):
+def header(*msg, level='h1', separator=" ", print_out=print):
     ''' Print header block in text mode
     '''
+    out_string = separator.join(str(x) for x in msg)
     if level == 'h0':
         # box_len = 80 if len(msg) < 80 else len(msg)
         box_len = 80
         print_out('+' + '-' * (box_len + 2))
-        print_out("| %s" % msg)
+        print_out("| %s" % out_string)
         print_out('+' + '-' * (box_len + 2))
     elif level == 'h1':
         print_out("")
-        print_out('%s' % msg)
-        print_out('' + ('-' * 60))
+        print_out(out_string)
+        print_out('-' * 60)
     elif level == 'h2':
-        print_out('\t%s' % msg)
+        print_out('\t%s' % out_string)
         print_out('\t' + ('-' * 40))
     else:
-        print_out('\t\t%s' % msg)
+        print_out('\t\t%s' % out_string)
         print_out('\t\t' + ('-' * 20))
 
 
@@ -134,17 +133,19 @@ class TextReport:
     def closed(self):
         return self.report_file is None or self.report_file.closed
 
-    def write(self, msg=None, level=0):
+    def write(self, *msg, separator=" ", level=0):
+        out_string = separator.join(str(x) for x in msg)
         self.report_file.write("\t" * level)
-        self.report_file.write(str(msg) if msg else '')
+        self.report_file.write(out_string)
         if self.auto_flush:
             self.report_file.flush()
 
-    def writeline(self, msg='', level=0):
-        self.write("%s\n" % msg, level)
+    def writeline(self, *msg, level=0):
+        msg = msg + ('\n',)
+        self.write(*msg, level)
 
-    def header(self, msg, level='h1'):
-        header(msg, level, print_out=self.writeline)
+    def header(self, *msg, **kwargs):
+        header(*msg, print_out=self.writeline, **kwargs)
 
     def close(self):
         if self.mode and self.report_file != sys.stdout:
@@ -176,75 +177,80 @@ class TextReport:
 class Timer:
     ''' Measure tasks' runtime
     '''
-    def __init__(self):
+    def __init__(self, logger=None, report=None):
         self.start_time = time.time()
         self.end_time = time.time()
+        self.__logger = logger
+        self.__report = report
+        self.end = self.stop  # just an alias
 
-    def start(self, task_note=''):
-        if task_note:
-            getLogger().info("[%s]" % (str(task_note),))
+    @property
+    def logger(self):
+        return self.__logger if self.__logger is not None else getLogger()
+
+    def exec_time(self):
+        ''' Calculate run time '''
+        return self.end_time - self.start_time
+
+    def log(self, action, desc=None):
+        msg = '{action} - [{note}]'.format(action, desc) if desc else action
+        self.logger.info(msg)
+        if self.report:
+            self.report.writeline(msg)
+        return self
+
+    def start(self, desc=''):
+        self.log("Started", desc=desc)
         self.start_time = time.time()
         return self
 
-    def stop(self):
+    def stop(self, desc=''):
         self.end_time = time.time()
+        msg = "[{} | {}]".format(desc, str(self)) if desc else str(self)
+        self.log("Stopped", desc=msg)
         return self
 
     def __str__(self):
-        return "Execution time: %.2f sec(s)" % (self.end_time - self.start_time)
-
-    def log(self, task_note=''):
-        getLogger().info("%s - Note=[%s]" % (self, str(task_note)))
-        return self
-
-    def end(self, task_note=''):
-            self.stop().log(task_note)
+        return "Execution time: %.2f sec(s)" % (self.exec_time(),)
 
 
 ###############################################################################
 
-class Counter:
+class Counter(PythonCounter):
     ''' Powerful counter class
     '''
-    def __init__(self, priority=None):
-        self.count_map = {}
-        self.priority = priority if priority else []
-
-    def __getitem__(self, key):
-        if key not in self.count_map:
-            self.count_map[key] = 0
-        return self.count_map[key]
-
-    def __setitem__(self, key, value):
-        self.count_map[key] = value
-
-    def __len__(self):
-        return len(self.count_map)
+    def __init__(self, priority=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.__priority = priority if priority else []
 
     def count(self, key):
-        self[key] += 1
+        self.update({key: 1})
 
-    def order(self, priority):
-        self.priority = [x for x in priority]
+    @property
+    def priority(self):
+        return list(self.__priority)
+
+    @priority.setter
+    def priority(self, priority):
+        self.priority = list(priority)
 
     def get_report_order(self):
         ''' Keys are sorted based on report order (i.e. some keys to be shown first)
             Related: see sorted_by_count
         '''
         order_list = []
-        for x in self.priority:
+        for x in self.__priority:
             order_list.append([x, self[x]])
         for x in sorted(list(self.count_map.keys())):
-            if x not in self.priority:
+            if x not in self.__priority:
                 order_list.append([x, self[x]])
         return order_list
 
-    def summarise(self, report=None):
+    def summarise(self, report=None, byfreq=True):
+        if not report:
+            report = TextReport()
         for k, v in self.get_report_order():
-            if report is not None:
-                report.writeline("%s: %d" % (k, v))
-            else:
-                print("%s: %d" % (k, v))
+            report.writeline("%s: %d" % (k, v))
 
     def save(self, file_loc):
         '''Save counter information to files'''
@@ -252,27 +258,21 @@ class Counter:
             for k, v in self.get_report_order():
                 outfile.write("%s: %d\n" % (k, v))
 
-    def sorted_by_count(self):
+    def sorted_by_count(self, top_k=None):
         ''' Return a list of 2-element arrays that are sorted by count in descending order
-
             E.g. (['label1', 23], ['label2', 5])
+            :deprecated: This function will be removed in the future
         '''
-        if sys.version_info >= (3, 0):
-            return sorted(self.count_map.items(), key=operator.itemgetter(1), reverse=True)
-        else:
-            return sorted(self.count_map.iteritems(), key=operator.itemgetter(1), reverse=True)
+        return self.most_common(top_k)
 
     def group_by_count(self):
-        count_groups = self.sorted_by_count()
         d = OrderedDict()
-        for cgroup in count_groups:
-            if cgroup[1] not in d:
-                d[cgroup[1]] = []
-            d[cgroup[1]].append(cgroup[0])
+        for item, count in self.most_common():
+            if count not in d:
+                d[count] = []
+            d[count].append(item)
         return d.items()
 
-
-###############################################################################        
 
 class StringTool:
     ''' Common string function
@@ -312,15 +312,12 @@ class StringTool:
 ###############################################################################
 
 class FileHub:
-    ''' A helper class for working with multiple files at the same time
+    ''' A helper class for working with multiple text reports at the same time
     '''
-    def __init__(self, *filenames, working_dir='.', default_mode='a', auto_flush=True, ext='.log'):
+    def __init__(self, *filenames, working_dir='.', default_mode='a', ext='txt'):
         self.files = {}
         self.ext = ext if ext else ''
-        self.auto_flush = auto_flush
         self.default_mode = default_mode
-        for filename in filenames:
-            self.open(filename)
 
     def __getitem__(self, key):
         if key not in self.files:
@@ -334,29 +331,16 @@ class FileHub:
         if os.path.isabs(key):
             return key
         else:
-            return os.path.join(self.working_dir, key + self.ext)
+            return os.path.join(self.working_dir, key + '.' + self.ext)
 
-    def open(self, key, mode=None):
-        self.files[key] = open(key + self.ext, mode if mode else self.default_mode)
-
-    def addtext(self, key):
-        self.open(key, 'a')
-
-    def create(self, key):
-        self.open(key, 'w')
-
-    def writeline(self, key, text, auto_flush=True):
-        self[key].write('%s\n' % (text,))
-        if auto_flush or self.auto_flush:
-            self[key].flush()
-
-    def flush(self):
-        for key in self.files.keys():
-            self[key].flush()
+    def open(self, key, mode=None, **kwargs):
+        if not mode:
+            mode = self.default_mode
+        self.files[key] = TextReport(self.get_path(key), mode=mode, **kwargs)
+        return self.files[key]
 
     def close(self):
         for key in self.files.keys():
-            self[key].flush()
             self[key].close()
 
     def __enter__(self):
@@ -535,10 +519,3 @@ class ConfigFile:
                     k, v = line.split(self.splitter, 1)
                     kvdict[k] = v
             return kvdict
-
-
-###############################################################################
-
-if __name__ == "__main__":
-    print("This is an utility module, not an application.")
-    pass

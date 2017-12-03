@@ -14,7 +14,7 @@ References:
         https://www.python.org/dev/peps/pep-0257/
 '''
 
-#Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
+# Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -36,14 +36,14 @@ References:
 
 __author__ = "Le Tuan Anh <tuananh.ke@gmail.com>"
 __copyright__ = "Copyright 2017, chirptext"
-__credits__ = ["Le Tuan Anh"]
+__credits__ = []
 __license__ = "MIT"
 __version__ = "0.1"
 __maintainer__ = "Le Tuan Anh"
 __email__ = "<tuananh.ke@gmail.com>"
 __status__ = "Prototype"
 
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 import os
 import uuid
@@ -53,11 +53,11 @@ import zlib
 
 from .leutile import FileHelper
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+
+def getLogger():
+    return logging.getLogger(__name__)
 
 
-# TODO: Use puchikarui for better DB access
 class JiCache:
     ''' Cache textual/binary content using an SQLite file (with internal blob or an external folder)
     '''
@@ -65,6 +65,7 @@ class JiCache:
         self.location = os.path.abspath(os.path.expanduser(location))
         self.blob_location = os.path.abspath(os.path.expanduser(blob_location)) if blob_location else self.location + '.blob'
         self.use_internal_blob = use_internal_blob
+        logger = getLogger()
         logger.info("Cache DB location    : {location}".format(location=self.location))
         if not use_internal_blob:
             logger.info("Blob location        : {blob_loc}".format(blob_loc=self.blob_location))
@@ -74,7 +75,7 @@ class JiCache:
 
     def setup(self):
         if not os.path.isfile(self.location) or os.path.getsize(self.location) == 0:
-            logger.debug("Setting up DB")
+            getLogger().debug("Setting up DB")
             # create dir to store blobs
             if not self.use_internal_blob:
                 FileHelper.create_dir(self.blob_location)
@@ -97,8 +98,8 @@ class JiCache:
                 c = conn.cursor()
                 c.execute("SELECT COUNT(value) FROM cache_entries")
                 return c.fetchone()[0]
-            except Exception as e:
-                logger.debug("Cannot count entries. error = {err}".format(err=e))
+            except:
+                getLogger().exception("Cannot count entries")
                 return None
 
     def retrieve_keys(self):
@@ -109,8 +110,8 @@ class JiCache:
                 rows = c.fetchall()
                 if rows:
                     return [x[0] for x in rows]
-            except Exception as e:
-                logger.debug("Cannot count entries. error = {err}".format(err=e))
+            except:
+                getLogger().exception("Cannot retrieve keys")
                 return None
 
     def __retrieve(self, key):
@@ -125,12 +126,12 @@ class JiCache:
                     c.execute("SELECT value FROM cache_entries WHERE key = ?", (key,))
                 result = c.fetchone()
                 if result is None or len(result) != 1:
-                    logger.debug("There's no entry with key={key}".format(key=key))
+                    getLogger().warning("There's no entry with key={key}".format(key=key))
                     return None
                 else:
                     return result[0]
-            except Exception as e:
-                logger.debug("Cannot retrieve. Error = {e}".format(e=e))
+            except:
+                getLogger().exception("Cannot retrieve")
                 return None
 
     def has_key(self, key):
@@ -144,7 +145,7 @@ class JiCache:
         Insert a new key to database
         '''
         if self.__retrieve(key) is not None:
-            logger.debug("Cache entry exists, cannot insert a new entry with key='{key}'".format(key=key))
+            getLogger().debug("Cache entry exists, cannot insert a new entry with key='{key}'".format(key=key))
             return False
         with self.get_conn() as conn:
             try:
@@ -154,7 +155,7 @@ class JiCache:
                 return True
             except Exception as e:
                 # NOTE: A cache error can be forgiven, no?
-                logger.debug("Cache Error: Cannot insert | Detail = %s" % (e,))
+                getLogger().debug("Cache Error: Cannot insert | Detail = %s" % (e,))
                 return False
                 pass
 
@@ -166,10 +167,9 @@ class JiCache:
                 c = conn.cursor()
                 c.execute("DELETE FROM cache_entries WHERE key = ?", (key,))
                 conn.commit()
-            except Exception as e:
-                logger.debug("Cannot delete: {e}".format(e=e))
+            except:
+                getLogger().exception("Cannot delete")
                 return None
-                pass
 
     INTERNAL_BLOB = "JICACHE_INTERNAL_BLOB"
 
@@ -188,8 +188,8 @@ class JiCache:
                 c.execute("INSERT INTO blob_entries (key, compressed, blob_data) VALUES (?,?,?)", (key, compressed_flag, sqlite3.Binary(blob),))
                 c.execute("COMMIT")
                 return True
-            except Exception as e:
-                logger.debug("Cannot insert: {e}".format(e=e))
+            except:
+                getLogger().debug("Cannot insert")
                 return False
 
     def __delete_internal_blob(self, key):
@@ -203,14 +203,15 @@ class JiCache:
                 c.execute("DELETE FROM cache_entries WHERE key = ?", (key,))
                 c.execute("DELETE FROM blob_entries WHERE KEY = ?", (key,))
                 c.execute("COMMIT")
-            except Exception as e:
-                logger.debug("Cannot delete: {e}".format(e=e))
+            except:
+                getLogger().debug("Cannot delete")
                 return False
             return True
 
     def __retrieve_internal_blob(self, key):
         ''' Retrieve file location from cache DB
         '''
+        logger = getLogger()
         with self.get_conn() as conn:
             try:
                 c = conn.cursor()
@@ -227,22 +228,22 @@ class JiCache:
                     compressed, blob_data = result
                     logger.debug("retrieving internal BLOB (key={key} | len={ln} | compressed={c})".format(key=key, ln=len(blob_data), c=compressed))
                     return blob_data if not compressed else zlib.decompress(blob_data)
-            except Exception as e:
-                logger.debug("Cannot retrieve: {e}".format(e=e))
+            except:
+                getLogger().exception("Cannot retrieve internal blob (key={})".format(key))
                 return None
             return True
 
     def insert_blob(self, key, blob):
         if self.__retrieve(key) is not None:
-            logger.warning("Key exists, cannot insert entry with key='{key}'".format(key=key))
+            getLogger().warning("Key exists, cannot insert entry with key='{key}'".format(key=key))
             return False
         elif self.use_internal_blob:
             # insert to database
-            logger.debug("Insert BLOB internally")
+            getLogger().debug("Insert BLOB internally")
             # TODO: should the compressed field be in the cache_entries table instead?
             return self.__insert_internal_blob(key, blob, compressed=True)
         else:
-            logger.debug("Inserting a new blob with key = {key}".format(key=key))
+            getLogger().debug("Inserting a new blob with key = {key}".format(key=key))
             # Allocate a new cache file
             blob_key = str(uuid.uuid1())
             blob_file = os.path.join(self.blob_location, blob_key)
@@ -269,12 +270,13 @@ class JiCache:
             blob_data = self.__retrieve_internal_blob(key)
             return blob_data if not encoding else blob_data.decode(encoding)
         else:
-            logger.debug("Key[{key}] -> [{blob_key}]".format(key=key, blob_key=blob_key))
+            getLogger().debug("Key[{key}] -> [{blob_key}]".format(key=key, blob_key=blob_key))
             blob_file = os.path.join(self.blob_location, blob_key)
             return FileHelper.read(blob_file)
 
     def delete_blob(self, key):
         blob_key = self.__retrieve(key)
+        logger = getLogger()
         if blob_key is None:
             logger.debug("Nothing to delete for key = {}".format(key))
         elif blob_key == JiCache.INTERNAL_BLOB:

@@ -51,7 +51,7 @@ __credits__ = []
 
 import os
 import unittest
-from chirptext.luke import Word, read_swadesh_1971, read_swadesh_ranked, read_swadesh_sign
+from chirptext.luke import read_swadesh_1971, read_swadesh_ranked, read_swadesh_sign
 
 # -------------------------------------------------------------------------------
 # Configuration

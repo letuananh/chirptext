@@ -20,23 +20,23 @@ References:
 
 # Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
 #
-#Permission is hereby granted, free of charge, to any person obtaining a copy
-#of this software and associated documentation files (the "Software"), to deal
-#in the Software without restriction, including without limitation the rights
-#to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-#copies of the Software, and to permit persons to whom the Software is
-#furnished to do so, subject to the following conditions:
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
 #
-#The above copyright notice and this permission notice shall be included in
-#all copies or substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 #
-#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-#IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-#FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-#AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-#LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-#OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-#THE SOFTWARE.
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
 
 __author__ = "Le Tuan Anh"
 __email__ = "<tuananh.ke@gmail.com>"
@@ -54,22 +54,22 @@ import unittest
 from chirptext.anhxa import to_json, to_obj
 from chirptext.io import CSV
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # CONFIGURATION
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 TEST_DIR = os.path.dirname(os.path.realpath(__file__))
 TEST_DATA = os.path.join(TEST_DIR, 'data')
 TEST_CSV = os.path.join(TEST_DATA, 'test.csv')
 
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # DATA STRUCTURES
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 class Person:
 
-    def __init__(self, first, last='', idno=''):
+    def __init__(self, first='', last='', idno=''):
         self.first = first
         self.last = last
         self.idno = idno
@@ -84,13 +84,16 @@ class Person:
         else:
             return Person(parts[0], parts[1], parts[2])
 
+    def __repr__(self):
+        return "Person(first={}, last={}, idno={})".format(repr(self.first), repr(self.last), repr(self.idno))
+
     def __eq__(self, other):
-        return type(other) == Person and self.first == other.first and self.last == other.last and self.idno == other.idno
+        return other and type(other) == Person and self.first == other.first and self.last == other.last and self.idno == other.idno
 
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # TESTS
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 
 class TestUsingCSV(unittest.TestCase):
@@ -146,7 +149,8 @@ class TestReaders(unittest.TestCase):
         expected = [{'first': 'Doraemon', 'last': '-'}, {'first': 'Nobita', 'last': 'Nobi'}, {'first': 'Shizuka', 'last': 'Minamoto'}, {'first': 'Dorami', 'last': '-'}, {'first': 'Takeshi', 'last': 'Goda'}, {'first': 'Suneo', 'last': 'Honekawa'}, {'first': 'Jaiko', 'last': '-'}, {'first': 'Hidetoshi', 'last': 'Dekisugi'}]
         self.assertEqual(inrows, expected)
         # read in as objects
-        inpersons = [to_obj(Person, row) for row in CSV.read(TEST_CSV, header=header)]
+        csv_rows = CSV.read(TEST_CSV, header=header)
+        inpersons = [to_obj(Person, row) for row in csv_rows]
         expected_names = [to_obj(Person, row) for row in expected]  # without idno
         self.assertEqual(inpersons, expected_names)
 
@@ -157,9 +161,9 @@ class TestReaders(unittest.TestCase):
         self.assertEqual(persons, inpersons)
 
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # MAIN
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 if __name__ == "__main__":
     unittest.main()

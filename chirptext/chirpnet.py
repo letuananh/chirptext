@@ -14,7 +14,7 @@ References:
         https://www.python.org/dev/peps/pep-0257/
 '''
 
-#Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
+# Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -43,7 +43,7 @@ __maintainer__ = "Le Tuan Anh"
 __email__ = "<tuananh.ke@gmail.com>"
 __status__ = "Prototype"
 
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 import os
 from io import BytesIO
@@ -52,6 +52,10 @@ import logging
 from urllib.request import Request, urlopen
 from urllib.error import URLError
 from urllib.parse import urlparse, urlunparse, parse_qs, urlencode, quote
+
+
+def getLogger():
+    return logging.getLogger(__name__)
 
 
 class SmartURL(object):
@@ -117,7 +121,7 @@ class WebHelper(object):
             # support gzip
             req.add_header('Accept-encoding', 'gzip, deflate')
             # Open URL
-            logging.info("Fetching: {url} |".format(url=url))
+            getLogger().info("Fetching: {url} |".format(url=url))
             response = urlopen(req)
             content = response.read()
             # unzip if required
@@ -132,12 +136,12 @@ class WebHelper(object):
             return content.decode(encoding) if content and encoding else content
         except URLError as e:
             if hasattr(e, 'reason'):
-                logging.exception(e, 'We failed to reach a server. Reason: {}'.format(e.reason))
+                getLogger().exception('We failed to reach a server. Reason: {}'.format(e.reason))
             elif hasattr(e, 'code'):
-                logging.exception('The server couldn\'t fulfill the request. Error code: {}'.format(e.code))
+                getLogger().exception('The server couldn\'t fulfill the request. Error code: {}'.format(e.code))
             else:
                 # Other exception ...
-                logging.exception(e, "Fetching error")
+                getLogger().exception("Fetching error")
         return None
 
     def download(self, url, path, force_refetch=False, nocache=False):
@@ -145,11 +149,11 @@ class WebHelper(object):
         '''
         # Enable cache
         if os.path.isfile(path):
-            logging.info("File exists, download task skipped -> {path}".format(path=path))
+            getLogger().info("File exists, download task skipped -> {path}".format(path=path))
             return True
         try:
             # Open URL
-            logging.info("Downloading: {url} -> {path}".format(url=url, path=path))
+            getLogger().info("Downloading: {url} -> {path}".format(url=url, path=path))
             response = self.fetch(url, force_refetch=force_refetch, nocache=nocache)
             if response is not None:
                 # Download file
@@ -162,10 +166,10 @@ class WebHelper(object):
                 return False
         except Exception as e:
             if hasattr(e, 'reason'):
-                logging.warning('We failed to reach a server. Reason: %s' % (e.reason,))
+                getLogger().exception('We failed to reach a server. Reason: %s' % (e.reason,))
             elif hasattr(e, 'code'):
-                logging.warning("The server couldn't fulfill the request. Error code: {code}".format(code=e.code))
+                getLogger().exception("The server couldn't fulfill the request. Error code: {code}".format(code=e.code))
             else:
                 # everything is fine
-                logging.warning("Unknown error: %s" % (e,))
+                getLogger().exception("Unknown error: %s" % (e,))
         return False
