@@ -63,6 +63,10 @@ def getLogger():
 # FUNCTIONS
 # -------------------------------------------------------------------------------
 
+def field(f, field_map):
+    return f if f not in field_map else field_map[f]
+
+
 def dumps(obj, *args, **kwargs):
     ''' Typeless dump an object to json '''
     return json.dumps(obj, *args, cls=TypelessSONEncoder, **kwargs)
@@ -81,7 +85,7 @@ def to_json(obj, *fields, **field_map):
     obj_dict = obj.__dict__ if hasattr(obj, '__dict__') else obj
     if not fields:
         fields = obj_dict.keys()
-    json_dict = {(k if k not in field_map else field_map[k]): obj_dict[k] for k in fields}
+    json_dict = {field(k, field_map): obj_dict[k] for k in fields}
     return json_dict
 
 
@@ -89,9 +93,9 @@ def to_obj(cls, obj_data=None, *fields, **field_map):
     ''' Use obj_data (dict-like) to construct an object of type cls
     prioritize obj_dict when there are conficts '''
     if not fields:
-        fields = [k if k not in field_map else field_map[k] for k in obj_data.keys()]
+        fields = obj_data.keys()
     try:
-        kwargs = {f: obj_data[f] for f in fields if f in obj_data}
+        kwargs = {field(f, field_map): obj_data[f] for f in fields if f in obj_data}
         obj = cls(**kwargs)
     except:
         getLogger().exception("Couldn't use kwargs to construct object")
