@@ -111,6 +111,20 @@ class TestFileHelper(unittest.TestCase):
         self.assertRaises(Exception, lambda: FileHelper.replace_ext('', None))
         self.assertRaises(Exception, lambda: FileHelper.replace_ext((1, 2, 3, 4), None))
 
+    def test_rename(self):
+        self.assertEqual(FileHelper.replace_name('/data/foo.xml', 'bar'),
+                         '/data/bar.xml')
+        self.assertEqual(FileHelper.replace_name('../data/foo', 'bar'),
+                         '../data/bar')
+        self.assertEqual(FileHelper.replace_name('../foo.xml', 'bar'),
+                         '../bar.xml')
+        self.assertRaises(Exception, lambda: FileHelper.replace_name(None, None))
+        self.assertRaises(Exception, lambda: FileHelper.replace_name('', None))
+        self.assertRaises(Exception, lambda: FileHelper.replace_name((1, 2, 3, 4), None))
+        self.assertRaises(Exception, lambda: FileHelper.replace_name("/usr/foo", None))
+        self.assertRaises(Exception, lambda: FileHelper.replace_name("/usr/foo", ''))
+        self.assertRaises(Exception, lambda: FileHelper.replace_name("/usr/foo", (1, 2, 3)))
+
 
 ########################################################################
 

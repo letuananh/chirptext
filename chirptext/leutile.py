@@ -29,11 +29,7 @@ import errno
 from collections import Counter as PythonCounter
 from collections import OrderedDict
 
-if sys.version_info >= (3, 0):
-    from itertools import zip_longest
-else:
-    from itertools import izip_longest
-
+from itertools import zip_longest
 
 # -------------------------------------------------------------------------------
 # CONFIGURATION
@@ -89,14 +85,9 @@ def is_number(s):
     return False
 
 
-if sys.version_info >= (3, 0):
-    def grouper(iterable, n, fillvalue=None):
-        args = [iter(iterable)] * n
-        return zip_longest(fillvalue=fillvalue, *args)
-else:
-    def grouper(iterable, n, fillvalue=None):
-        args = [iter(iterable)] * n
-        return izip_longest(fillvalue=fillvalue, *args)
+def grouper(iterable, n, fillvalue=None):
+    args = [iter(iterable)] * n
+    return zip_longest(fillvalue=fillvalue, *args)
 
 ###############################################################################
 
@@ -455,6 +446,17 @@ class FileHelper:
         if ext:
             filename = filename + '.' + ext
         return os.path.join(dirname, filename)
+
+    @staticmethod
+    def replace_name(file_path, new_name):
+        ''' Change the file name in a path but keep the extension '''
+        if not file_path:
+            raise Exception("File path cannot be empty")
+        elif not new_name:
+            raise Exception("New name cannot be empty")
+        dirname = os.path.dirname(file_path)
+        name, ext = os.path.splitext(os.path.basename(file_path))
+        return os.path.join(dirname, new_name + ext)
 
     @staticmethod
     def abspath(a_path):
