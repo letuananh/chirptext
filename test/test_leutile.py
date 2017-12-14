@@ -52,6 +52,7 @@ __status__ = "Prototype"
 
 import unittest
 from chirptext.leutile import Counter, TextReport, StringTool
+from chirptext.leutile import FileHelper
 
 
 ########################################################################
@@ -93,6 +94,22 @@ class TestLeUtile(unittest.TestCase):
             rp.writeline("ABC")
             rp.writeline(123)
         self.assertTrue(rp.closed)
+
+
+class TestFileHelper(unittest.TestCase):
+
+    def test_replace_ext(self):
+        self.assertEqual(FileHelper.replace_ext('../data/foo.xml', 'json'),
+                         '../data/foo.json')
+        self.assertEqual(FileHelper.replace_ext('../data/foo', 'json'),
+                         '../data/foo.json')
+        self.assertEqual(FileHelper.replace_ext('../data/foo.xml', ''),
+                         '../data/foo')
+        self.assertEqual(FileHelper.replace_ext('../data/foo.xml', None),
+                         '../data/foo')
+        self.assertRaises(Exception, lambda: FileHelper.replace_ext(None, None))
+        self.assertRaises(Exception, lambda: FileHelper.replace_ext('', None))
+        self.assertRaises(Exception, lambda: FileHelper.replace_ext((1, 2, 3, 4), None))
 
 
 ########################################################################

@@ -50,6 +50,7 @@ __credits__ = []
 
 import os
 import codecs
+import textwrap
 
 from chirptext import Counter, TextReport
 from chirptext.cli import CLIApp, setup_logging
@@ -67,6 +68,16 @@ setup_logging('logging.json', 'logs')
 
 def gen_vocab(cli, args):
     ''' Generate vocabulary list from a tokenized file '''
+    if args.topk and args.topk <= 0:
+        topk = None
+        cli.logger.warning("Invalid k will be ignored (k should be greater than or equal to 1)")
+    else:
+        topk = args.topk
+    if args.stopwords:
+        with open(args.stopwords, 'r') as swfile:
+            stopwords = swfile.read().splitlines()
+    else:
+        stopwords = []
     if os.path.isfile(args.input):
         cli.logger.info("Generating vocabulary list from file {}".format(args.input))
         with codecs.open(args.input, encoding='utf-8') as infile:
@@ -77,9 +88,13 @@ def gen_vocab(cli, args):
             c = Counter()
             for line in lines:
                 words = line.split()
-                for word in words:
-                    c.count(word)
-            for k, v in c.sorted_by_count():
+                c.update(w for w in words if w not in stopwords)
+            # report vocab
+            word_freq = c.most_common(topk)
+            words = [k for k, v in word_freq]
+            rp.header("Lexicon")
+            rp.writeline("\n".join(textwrap.wrap(" ".join(w for w in words), width=70)))
+            for k, v in word_freq:
                 rp.print("{}: {}".format(k, v))
     else:
         cli.logger.warning("File {} does not exist".format(args.input))
@@ -96,6 +111,8 @@ def main():
     vocab_task = app.add_task('vocab', func=gen_vocab)
     vocab_task.add_argument('input', help='Input file')
     vocab_task.add_argument('--output', help='Output file', default=None)
+    vocab_task.add_argument('--stopwords', help='Stop word to ignore', default=None)
+    vocab_task.add_argument('-k', '--topk', help='Only select the top k frequent elements', default=None, type=int)
     # run app
     app.run()
 

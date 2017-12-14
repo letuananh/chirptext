@@ -193,10 +193,10 @@ class Timer:
         return self.end_time - self.start_time
 
     def log(self, action, desc=None):
-        msg = '{action} - [{note}]'.format(action, desc) if desc else action
+        msg = '{action} - [{desc}]'.format(action=action, desc=desc) if desc else action
         self.logger.info(msg)
-        if self.report:
-            self.report.writeline(msg)
+        if self.__report:
+            self.__report.writeline(msg)
         return self
 
     def start(self, desc=''):
@@ -241,7 +241,7 @@ class Counter(PythonCounter):
         order_list = []
         for x in self.__priority:
             order_list.append([x, self[x]])
-        for x in sorted(list(self.count_map.keys())):
+        for x in sorted(list(self.keys())):
             if x not in self.__priority:
                 order_list.append([x, self[x]])
         return order_list
@@ -261,7 +261,7 @@ class Counter(PythonCounter):
     def sorted_by_count(self, top_k=None):
         ''' Return a list of 2-element arrays that are sorted by count in descending order
             E.g. (['label1', 23], ['label2', 5])
-            :deprecated: This function will be removed in the future
+            :deprecated: This function will be removed in the future, use `most_common' instead
         '''
         return self.most_common(top_k)
 
@@ -317,6 +317,7 @@ class FileHub:
     def __init__(self, *filenames, working_dir='.', default_mode='a', ext='txt'):
         self.files = {}
         self.ext = ext if ext else ''
+        self.working_dir = working_dir
         self.default_mode = default_mode
 
     def __getitem__(self, key):
@@ -443,6 +444,17 @@ class FileHelper:
             return os.path.basename(file_path)
         else:
             return ''
+
+    @staticmethod
+    def replace_ext(file_path, ext):
+        ''' Change extension of a file_path to something else (provide None to remove) '''
+        if not file_path:
+            raise Exception("File path cannot be empty")
+        dirname = os.path.dirname(file_path)
+        filename = FileHelper.getfilename(file_path)
+        if ext:
+            filename = filename + '.' + ext
+        return os.path.join(dirname, filename)
 
     @staticmethod
     def abspath(a_path):
