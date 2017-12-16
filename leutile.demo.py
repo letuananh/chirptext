@@ -37,62 +37,63 @@ __maintainer__ = "Le Tuan Anh"
 __email__ = "<tuananh.ke@gmail.com>"
 __status__ = "Prototype"
 
-#-----------------------------------------------------------------------
+# -----------------------------------------------------------------------
 
 import os
 import logging
 from itertools import cycle
 
 from chirptext import header, Counter, Timer, TextReport, Table, FileHelper
-from chirptext.leutile import ChirpConfig as Cfg
+from chirptext.leutile import LOREM_IPSUM
 
 DATA_DIR = FileHelper.abspath("data")
-REPORT_LOC  = os.path.join(DATA_DIR, "foo.txt")
-#-----------------------------------------------------------------------
+REPORT_LOC = os.path.join(DATA_DIR, "foo.txt")
+
+
+# -----------------------------------------------------------------------
 
 def generate_report(report):
     report.header("A beautiful dummy report", level='h0')
     report.print("An introduction to the art of creating text report.")
-    report.print(Cfg.LOREM_IPSUM)
+    report.print(LOREM_IPSUM)
     # a sample counter
     c = Counter()
     # demo sections & subsections
-    for section in range(1,3):
+    for section in range(1, 3):
         c.count('section')
         report.header("Section %s" % section, level='h1')
-        report.print(Cfg.LOREM_IPSUM[:70])
-        for subsect in range(1,3):
+        report.print(LOREM_IPSUM[:70])
+        for subsect in range(1, 3):
             c.count('subsection')
             report.header("Subsection %s" % subsect, level='h2')
-            for k in range(1,4):
+            for k in range(1, 4):
                 report.print("Line %s" % k, level=1)
     # Demo draw table
     report.header('Summary Table')
     report.print("Here is a demo table", level=1)
     # Create a table
     tbl = Table()
-    words = cycle(Cfg.LOREM_IPSUM.split())
+    words = cycle(LOREM_IPSUM.split())
     tbl.add_row(["Index", "Word #1", "Word #2", "Word #3", "Word #4"])
     for i in range(3):
         c.count('row')
         row = [i] + [next(words) for j in range(4)]
         tbl.add_row(row)
     # print the table to report file
-    print_tbl = lambda x: report.print(x, level=1)
-    tbl.print(print_func=print_tbl)
+    tbl.print(print_func=lambda x: report.print(x, level=1))
     # report statistics
     report.header("Data counter")
     c.summarise(report)
     # Done!
     report.close()
 
-#-----------------------------------------------------------------------    
-    
+
+# -----------------------------------------------------------------------
+
 def main():
     header("Main method")
     c = Counter()
     t = Timer()
-    
     t.start("Doing some time-consuming tasks ...")
 
     logging.info("Count even & odd numbers ...")
@@ -113,8 +114,8 @@ def main():
     # try to report to stdout
     logging.info("The same report to stdout ...")
     generate_report(TextReport())
-    
     t.end("Done")
+
 
 if __name__ == "__main__":
     main()
