@@ -21,6 +21,7 @@
 # THE SOFTWARE.
 
 import os
+import io
 import codecs
 import logging
 import sys
@@ -90,80 +91,52 @@ def grouper(iterable, n, fillvalue=None):
     args = [iter(iterable)] * n
     return zip_longest(fillvalue=fillvalue, *args)
 
+
 ###############################################################################
 
-
-class TextReport:
-
-    STDOUT = '*stdout*'
-
-    ''' Helper for creating text report with indentation, tables and flexible output (to stdout or a file)
+class Counter(PythonCounter):
+    ''' Powerful counter class
     '''
-    def __init__(self, report_path=None, mode='w', name=None, auto_flush=True, encoding='utf8'):
-        ''' Create a text report.
+    def __init__(self, priority=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.__priority = priority if priority else []
 
-        Arguments:
-            report_path -- Path to report file
-            mode        -- a for append, w (default) for create from scratch (overwrite existing file)
-        '''
-        if not report_path or report_path == TextReport.STDOUT:
-            self.report_path = TextReport.STDOUT
-            self.report_file = sys.stdout
-            self.name = 'stdout'
-            self.mode = None
-            self.auto_flush = False
-            pass
-        else:
-            self.report_path = os.path.expanduser(report_path)
-            self.report_file = open(self.report_path, mode, encoding=encoding)
-            self.name = name if name else FileHelper.getfilename(self.report_path)
-            self.auto_flush = auto_flush
-            self.mode = mode
-        self.print = self.writeline  # just an alias
+    def count(self, key):
+        self.update({key})
 
     @property
-    def closed(self):
-        return self.report_file is None or self.report_file.closed
+    def priority(self):
+        return list(self.__priority)
 
-    def write(self, *msg, separator=" ", level=0):
-        out_string = separator.join(str(x) for x in msg)
-        self.report_file.write("\t" * level)
-        self.report_file.write(out_string)
-        if self.auto_flush:
-            self.report_file.flush()
+    @priority.setter
+    def priority(self, priority):
+        self.priority = list(priority)
 
-    def writeline(self, *msg, level=0):
-        msg = msg + ('\n',)
-        self.write(*msg, level=level)
+    def get_report_order(self):
+        ''' Keys are sorted based on report order (i.e. some keys to be shown first)
+            Related: see sorted_by_count
+        '''
+        order_list = []
+        for x in self.__priority:
+            order_list.append([x, self[x]])
+        for x in sorted(list(self.keys())):
+            if x not in self.__priority:
+                order_list.append([x, self[x]])
+        return order_list
 
-    def header(self, *msg, **kwargs):
-        header(*msg, print_out=self.writeline, **kwargs)
+    def summarise(self, report=None, byfreq=True):
+        if not report:
+            report = TextReport()
+        for k, v in self.get_report_order():
+            report.writeline("%s: %d" % (k, v))
 
-    def close(self):
-        if self.mode and self.report_file != sys.stdout:
-            try:
-                self.report_file.flush()
-                self.report_file.close()
-                self.report_file = None
-            except Exception as e:
-                getLogger().exception("Error raised while saving report")
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close()
-
-    def get_path(self):
-        return self.report_path
-
-    @staticmethod
-    def null():
-        ''' Get a dev null report (print to nowhere)'''
-        return TextReport('/dev/null')
-
-
-###############################################################################
+    def group_by_count(self):
+        d = OrderedDict()
+        for item, count in self.most_common():
+            if count not in d:
+                d[count] = []
+            d[count].append(item)
+        return d.items()
 
 
 class Timer:
@@ -208,64 +181,6 @@ class Timer:
 
 ###############################################################################
 
-class Counter(PythonCounter):
-    ''' Powerful counter class
-    '''
-    def __init__(self, priority=None, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.__priority = priority if priority else []
-
-    def count(self, key):
-        self.update({key: 1})
-
-    @property
-    def priority(self):
-        return list(self.__priority)
-
-    @priority.setter
-    def priority(self, priority):
-        self.priority = list(priority)
-
-    def get_report_order(self):
-        ''' Keys are sorted based on report order (i.e. some keys to be shown first)
-            Related: see sorted_by_count
-        '''
-        order_list = []
-        for x in self.__priority:
-            order_list.append([x, self[x]])
-        for x in sorted(list(self.keys())):
-            if x not in self.__priority:
-                order_list.append([x, self[x]])
-        return order_list
-
-    def summarise(self, report=None, byfreq=True):
-        if not report:
-            report = TextReport()
-        for k, v in self.get_report_order():
-            report.writeline("%s: %d" % (k, v))
-
-    def save(self, file_loc):
-        '''Save counter information to files'''
-        with open(file_loc, 'w') as outfile:
-            for k, v in self.get_report_order():
-                outfile.write("%s: %d\n" % (k, v))
-
-    def sorted_by_count(self, top_k=None):
-        ''' Return a list of 2-element arrays that are sorted by count in descending order
-            E.g. (['label1', 23], ['label2', 5])
-            :deprecated: This function will be removed in the future, use `most_common' instead
-        '''
-        return self.most_common(top_k)
-
-    def group_by_count(self):
-        d = OrderedDict()
-        for item, count in self.most_common():
-            if count not in d:
-                d[count] = []
-            d[count].append(item)
-        return d.items()
-
-
 class StringTool:
     ''' Common string function
     '''
@@ -299,6 +214,97 @@ class StringTool:
             sentence_text = sentence_text[:-2] + sentence_text[-1]
         sentence_text = sentence_text.strip()
         return sentence_text
+
+
+###############################################################################
+
+class TextReport:
+
+    STDOUT = '*stdout*'
+    STRINGIO = '*string*'
+
+    ''' Helper for creating text report with indentation, tables and flexible output (to stdout or a file)
+    '''
+    def __init__(self, path=None, mode='w', name=None, auto_flush=True, encoding='utf8'):
+        ''' Create a text report.
+
+        Arguments:
+            report_path -- Path to report file
+            mode        -- a for append, w (default) for create from scratch (overwrite existing file)
+        '''
+        if not path or path == TextReport.STDOUT:
+            self.__path = TextReport.STDOUT
+            self.__report_file = sys.stdout
+            self.name = 'stdout'
+            self.mode = None
+            self.auto_flush = False
+        elif path == TextReport.STRINGIO:
+            self.__path = TextReport.STRINGIO
+            self.__report_file = io.StringIO()
+            self.name = 'StringIO'
+            self.mode = None
+            self.auto_flush = False
+        else:
+            self.__path = os.path.expanduser(path)
+            self.__report_file = open(self.__path, mode, encoding=encoding)
+            self.name = name if name else FileHelper.getfilename(self.__path)
+            self.auto_flush = auto_flush
+            self.mode = mode
+        self.print = self.writeline  # just an alias
+
+    @property
+    def closed(self):
+        return self.__report_file is None or self.__report_file.closed
+
+    def content(self):
+        ''' Return report content as a string if mode == STRINGIO else an empty string '''
+        if isinstance(self.__report_file, io.StringIO):
+            return self.__report_file.getvalue()
+        else:
+            return ''
+
+    def write(self, *msg, separator=" ", level=0):
+        out_string = separator.join(str(x) for x in msg)
+        self.__report_file.write("\t" * level)
+        self.__report_file.write(out_string)
+        if self.auto_flush:
+            self.__report_file.flush()
+
+    def writeline(self, *msg, level=0):
+        msg = msg + ('\n',)
+        self.write(*msg, level=level)
+
+    def header(self, *msg, **kwargs):
+        header(*msg, print_out=self.writeline, **kwargs)
+
+    def close(self):
+        if self.mode and self.__report_file != sys.stdout:
+            try:
+                self.__report_file.flush()
+                self.__report_file.close()
+                self.__report_file = None
+            except Exception as e:
+                getLogger().exception("Error raised while saving report")
+                raise
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+    @property
+    def path(self):
+        return self.__path
+
+    @staticmethod
+    def null():
+        ''' Get a dev null report (print to nowhere)'''
+        return TextReport('/dev/null')
+
+    @staticmethod
+    def string(**kwargs):
+        return TextReport(TextReport.STRINGIO, **kwargs)
 
 
 ###############################################################################
@@ -507,12 +513,13 @@ class FileHelper:
         return False
 
     @staticmethod
-    def read(a_file, mode='r'):
-        with open(a_file, mode=mode) as fileobj:
+    def read(a_file, mode='r', encoding='utf-8'):
+        with open(a_file, mode=mode, encoding=encoding) as fileobj:
             return fileobj.read()
 
 
 # TODO: Should we switch to JSON?
+# or use .ini file: https://docs.python.org/3.5/library/configparser.html
 class ConfigFile:
 
     def __init__(self, filename, splitter='='):

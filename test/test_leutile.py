@@ -81,19 +81,27 @@ class TestLeUtile(unittest.TestCase):
         c.count(None)
         self.assertEqual(c['A'], 1)
         self.assertEqual(c[None], 2)
-        self.assertEqual(c.sorted_by_count(), [(None, 2), ('A', 1)])
+        self.assertEqual(c.most_common(), [(None, 2), ('A', 1)])
 
     def test_textreport(self):
         with TextReport.null() as rp:
             rp.writeline("null")
             rp.writeline(123)
+            self.assertEqual(rp.content(), '')
         with TextReport() as rp:
             rp.writeline("stdout")
             rp.writeline(123)
-        with TextReport("~/tmp/del.me") as rp:
+            self.assertEqual(rp.content(), '')
+        with TextReport("/tmp/del.me") as rp:
             rp.writeline("ABC")
             rp.writeline(123)
+            self.assertEqual(rp.content(), '')
         self.assertTrue(rp.closed)
+        # test string report
+        with TextReport.string() as rp:
+            rp.writeline("ABC")
+            rp.writeline(123, 456, 789)
+            self.assertEqual(rp.content(), 'ABC \n123 456 789 \n')
 
 
 class TestFileHelper(unittest.TestCase):
