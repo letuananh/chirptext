@@ -1,0 +1,7 @@
+[DEFAULT]
+# Default values appear in all sections
+package = chirptext.test
+tester = unittest
+
+[AUTHOR]
+name = Le Tuan Anh

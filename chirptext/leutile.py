@@ -27,6 +27,8 @@ import logging
 import sys
 import time
 import errno
+import json
+import configparser
 from collections import Counter as PythonCounter
 from collections import OrderedDict
 
@@ -255,6 +257,10 @@ class TextReport:
     @property
     def closed(self):
         return self.__report_file is None or self.__report_file.closed
+
+    @property
+    def file(self):
+        return self.__report_file
 
     def content(self):
         ''' Return report content as a string if mode == STRINGIO else an empty string '''
@@ -541,3 +547,57 @@ class ConfigFile:
                     k, v = line.split(self.splitter, 1)
                     kvdict[k] = v
             return kvdict
+
+
+class AppConfig(object):
+
+    ''' Application Configuration Helper
+This class supports guessing configuration file location, and reads either INI (default) or JSON format.
+    '''
+    JSON = 'json'
+    INI = 'ini'  # Python INI config file
+    LOC_TEMPLATE = ['{wd}/.{n}', '{wd}/{n}', '{wd}/data/{n}', '{wd}/data/.{n}', '~/.{n}',
+                    '~/.{n}/config', '~/.config/{n}',
+                    '~/.config/.{n}', '~/.config/{n}/config', '~/.config/{n}/{n}']
+
+    def __init__(self, name, mode=INI, working_dir='.'):
+        self.__name = name
+        self.__mode = mode
+        self.working_dir = working_dir
+        self.__potential = [x.format(wd=self.working_dir, n=self.__name) for x in AppConfig.LOC_TEMPLATE]
+        if os.path.isdir(self.working_dir):
+            self.__potential
+        self.__config = None
+
+    def potentials(self):
+        return list(self.__potential)
+
+    @property
+    def config(self):
+        ''' Read config automatically if required '''
+        if self.__config is None:
+            for f in self.__potential:
+                f = FileHelper.abspath(f)
+                if os.path.isfile(f):
+                    self.__config = self.read_file(f)
+                    break
+        return self.__config
+
+    def read_file(self, file_path):
+        ''' Read a configuration file and return configuration data '''
+        getLogger().info("Loading config from {} file: {}".format(self.__mode, file_path))
+        if self.__mode == AppConfig.JSON:
+            return json.loads(FileHelper.read(file_path), object_pairs_hook=OrderedDict)
+        elif self.__mode == AppConfig.INI:
+            config = configparser.ConfigParser(allow_no_value=True)
+            config.read(file_path)
+            return config
+
+    def load(self, file_path):
+        ''' Load configuration from a specific file '''
+        self.clear()
+        self.__config = self.read_file(file_path)
+
+    def clear(self):
+        self.__config = None
+        return self

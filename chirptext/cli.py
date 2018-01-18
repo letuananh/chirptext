@@ -58,6 +58,11 @@ import json
 # Configuration
 # -------------------------------------------------------------------------------
 
+class ChirpCLI(object):
+
+    SETUP_COMPLETED = False
+
+
 def getLogger():
     return logging.getLogger(__name__)
 
@@ -66,9 +71,12 @@ def getLogger():
 # Application logic
 # -------------------------------------------------------------------------------
 
-def setup_logging(filename, log_dir=None):
+def setup_logging(filename, log_dir=None, force_setup=False):
     ''' Try to load logging configuration from a file. Set level to INFO if failed.
     '''
+    if not force_setup and ChirpCLI.SETUP_COMPLETED:
+        logging.debug("Master logging has been setup. This call will be ignored.")
+        return
     if log_dir and not os.path.exists(log_dir):
         os.makedirs(log_dir)
     if os.path.isfile(filename):
@@ -77,6 +85,7 @@ def setup_logging(filename, log_dir=None):
                 config = json.load(config_file)
                 logging.config.dictConfig(config)
                 logging.info("logging was setup using {}".format(filename))
+                ChirpCLI.SETUP_COMPLETED = True
             except Exception as e:
                 logging.exception("Could not load logging config")
                 # default logging config
@@ -103,6 +112,9 @@ class CLIApp(object):
         self.__parser = argparse.ArgumentParser(description=desc, add_help=False)
         self.__parser.set_defaults(func=None)
         self.__add_vq = add_vq
+        self.__config_logging = config_logging
+        if 'config_logging' in kwargs:
+            self.__config_logging = kwargs['config_logging']
         if add_vq:
             self.add_vq(self.__parser)
         if add_tasks:
@@ -143,8 +155,8 @@ class CLIApp(object):
     def run(self, func=None):
         ''' Run the app '''
         args = self.parser.parse_args()
-        if self.__add_vq is not None:
-            config_logging(args)
+        if self.__add_vq is not None and self.__config_logging:
+            self.__config_logging(args)
         if args.func is not None:
             args.func(self, args)
         elif func is not None:

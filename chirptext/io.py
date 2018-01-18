@@ -69,18 +69,22 @@ class CSV(object):
     QUOTE_ALL = csv.QUOTE_ALL
 
     @staticmethod
-    def read(file_name, dialect=None, header=False):
+    def read(file_name, dialect=None, header=False, *args, **kwargs):
         with open(file_name, newline='') as csvfile:
             if not dialect:
                 # auto detect
                 dialect = csv.Sniffer().sniff(csvfile.read(1024))
                 csvfile.seek(0)
             if not header:
-                reader = csv.reader(csvfile, dialect=dialect)
+                reader = csv.reader(csvfile, dialect=dialect, *args, **kwargs)
                 return list(reader)
             else:
-                reader = csv.DictReader(csvfile, dialect=dialect)
+                reader = csv.DictReader(csvfile, dialect=dialect, *args, **kwargs)
                 return list(reader)
+
+    @staticmethod
+    def read_tsv(file_name, *args, **kwargs):
+        return CSV.read(file_name, dialect='excel-tab', *args, **kwargs)
 
     @staticmethod
     def write(file_name, rows, dialect='excel', header=None, quoting=csv.QUOTE_ALL, extrasaction='ignore'):

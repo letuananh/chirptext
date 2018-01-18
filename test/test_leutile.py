@@ -50,9 +50,12 @@ __status__ = "Prototype"
 
 ########################################################################
 
+import os
 import unittest
+
 from chirptext.leutile import Counter, TextReport, StringTool
 from chirptext.leutile import FileHelper
+from chirptext.leutile import AppConfig
 
 
 ########################################################################
@@ -132,6 +135,30 @@ class TestFileHelper(unittest.TestCase):
         self.assertRaises(Exception, lambda: FileHelper.replace_name("/usr/foo", None))
         self.assertRaises(Exception, lambda: FileHelper.replace_name("/usr/foo", ''))
         self.assertRaises(Exception, lambda: FileHelper.replace_name("/usr/foo", (1, 2, 3)))
+
+
+class TestConfigFile(unittest.TestCase):
+
+    def test_locate_config_file(self):
+        cfg = AppConfig(name='foo', mode=AppConfig.JSON)
+        actual = cfg.potentials()
+        expected = ['./.foo', './foo', './data/foo', './data/.foo', '~/.foo', '~/.foo/config',
+                    '~/.config/foo', '~/.config/.foo', '~/.config/foo/config', '~/.config/foo/foo']
+        self.assertEqual(actual, expected)
+        # default mode is INI
+        cfg_ini = AppConfig('chirptest', working_dir=os.path.dirname(__file__))
+        self.assertEqual(cfg_ini.config.sections(), ['AUTHOR'])
+        self.assertEqual(cfg_ini.config['DEFAULT']['package'], 'chirptext.test')
+        self.assertEqual(cfg_ini.config['DEFAULT']['tester'], 'unittest')
+        self.assertEqual(cfg_ini.config['AUTHOR']['name'], 'Le Tuan Anh')
+        self.assertEqual(cfg_ini.config['AUTHOR']['tester'], 'unittest')
+        self.assertEqual(cfg_ini.config.get('AUTHOR', 'desc', fallback='nothing'), 'nothing')
+        # test writing config
+        with TextReport.string() as strfile:
+            cfg_ini.config['AUTHOR']['desc'] = 'An author'
+            cfg_ini.config.write(strfile.file)
+            self.assertIn('desc = An author', strfile.content())
+        # use JSON
 
 
 ########################################################################
