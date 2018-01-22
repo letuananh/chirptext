@@ -138,8 +138,8 @@ EOS
             getLogger().debug(tk.pos3())
 
     def test_not_split(self):
-        doc = DekoText.parse(txt3, False)
-        docx = DekoText.parse(txt3, True)
+        doc = DekoText.parse(txt3, splitlines=False)
+        docx = DekoText.parse(txt3, splitlines=True)
         self.assertEqual([x.surface for x in doc], [x.surface for x in docx])
         getLogger().debug(doc)
 

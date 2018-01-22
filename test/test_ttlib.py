@@ -51,8 +51,10 @@ __status__ = "Prototype"
 ########################################################################
 
 import os
+import io
 import unittest
-from chirptext.anhxa import dumps
+import logging
+from chirptext import TextReport
 from chirptext.texttaglib import TagInfo, TaggedSentence, TaggedDoc, Token
 from chirptext.deko import txt2mecab
 
@@ -63,6 +65,10 @@ TEST_DATA = os.path.join(TEST_DIR, 'data')
 
 BARK_SID = '01047745-v'
 GDOG_SID = '02103841-n'
+
+
+def getLogger():
+    return logging.getLogger(__name__)
 
 
 class TestBuildTags(unittest.TestCase):
@@ -126,6 +132,11 @@ class TestTagging(unittest.TestCase):
         sent.concepts[0].comment = 'a member of the genus Canis (probably descended from the common wolf) that has been domesticated by man since prehistoric times'
         expected = {'text': 'Dogs bark.', 'tokens': [{'cto': 4, 'cfrom': 0, 'comment': 'canine', 'label': 'Dogs'}, {'cto': 9, 'cfrom': 5, 'label': 'bark'}, {'cto': 10, 'cfrom': 9, 'label': '.'}], 'concepts': [{'tag': 'dog', 'clemma': '02084071-n', 'comment': 'a member of the genus Canis (probably descended from the common wolf) that has been domesticated by man since prehistoric times', 'words': [0]}]}
         self.assertEqual(expected, sent.to_json())
+        self.assertFalse(sent.tags)
+        sent.add_tag(GDOG_SID, 0, 4, tagtype='wn30')
+        sent.add_tag(BARK_SID, 5, 9, tagtype='wn30')
+        for t in sent.tags:
+            getLogger().debug("{}: label={} | type = {}".format(t, t.label, t.tagtype))
 
     def test_tagged_sentences(self):
         sent = TaggedSentence('猫が好きです 。')
@@ -202,6 +213,7 @@ class TestTagging(unittest.TestCase):
         self.assertEqual(c.words[0].tag_map['pos'][0].label, 'WP')
         tag.label = 'x'
         self.assertEqual(c.words[0].tag_map['pos'][0].label, 'x')
+        # test sentence level tagging
 
     def test_multiple_tags(self):
         doc = TaggedDoc(TEST_DATA, 'test').read()
@@ -216,12 +228,48 @@ class TestTagging(unittest.TestCase):
         cto = max(x.cto for x in s.tokens)
         self.assertEqual(s.text, s.text[cfrom:cto])
 
+    def test_export_to_streams(self):
+        concepts = TextReport.string()
+        links = TextReport.string()
+        sents = TextReport.string()
+        tags = TextReport.string()
+        words = TextReport.string()
+        doc = TaggedDoc(TEST_DATA, 'manual')
+        # create sents in doc
+        raws = ("三毛猫がすきです。", "雨が降る。", "女の子はケーキを食べる。")
+        for sid, r in enumerate(raws):
+            msent = txt2mecab(r)
+            tsent = doc.add_sent(msent.surface, sid)
+            tsent.import_tokens(msent.words)
+            # pos tagging
+            for mtk, tk in zip(msent, tsent):
+                tk.tag(mtk.pos3(), tagtype=Token.POS, source=TagInfo.MECAB)
+                tk.tag(mtk.reading_hira(), tagtype=Token.LEMMA, source=TagInfo.MECAB)
+        # sense tagging
+        doc[0].tag("三毛猫", "wiki.ja:三毛猫", 0, 1, 2)
+        doc[1].tag("降る", "02756821-v", 2)
+        doc[2].tag("女の子", "10084295-n", 0)
+        doc[2].tag("食べる", "01166351-v", 4)
+        # tags
+        doc[0].add_tag("WIKI", 0, 3, tagtype="SRC")
+        doc[0].add_tag("https://ja.wikipedia.org/wiki/三毛猫", 0, 3, tagtype="URL")
+        doc[2].add_tag("WIKI", 0, 3, tagtype="SRC")
+        doc[2].add_tag("https://ja.wikipedia.org/wiki/少女", 0, 3, tagtype="URL")
+        # export doc
+        doc.export(sents.file, words.file, concepts.file, links.file, tags.file)
+        getLogger().debug("sents\n{}".format(sents.content()))
+        getLogger().debug("words\n{}".format(words.content()))
+        getLogger().debug("concepts\n{}".format(concepts.content()))
+        getLogger().debug("links\n{}".format(links.content()))
+        getLogger().debug("tags\n{}".format(tags.content()))
+        self.assertTrue(sents.content())
+        self.assertTrue(words.content())
+        self.assertTrue(concepts.content())
+        self.assertTrue(links.content())
+        self.assertTrue(tags.content())
+
 
 ########################################################################
 
-def main():
-    unittest.main()
-
-
 if __name__ == "__main__":
-    main()
+    unittest.main()

@@ -23,18 +23,21 @@
 import os
 import logging
 import json
+import csv
 from collections import namedtuple
 from collections import defaultdict as dd
 from collections import OrderedDict
 
 from chirptext import FileHelper
+from chirptext.io import CSV
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 
 OPEN_TAG = "<wnsk>"
 CLOSE_TAG = "</wnsk>"
-
+STD_DIALECT = 'excel-tab'
+STD_QUOTING = csv.QUOTE_MINIMAL
 TokenInfo = namedtuple("TokenInfo", ['text', 'sk'])
 
 
@@ -71,7 +74,7 @@ class TaggedSentence(object):
 
     def __init__(self, text, tags=None, tokens=None, ID=None):
         self.text = text
-        self.tags = tags if tags else []
+        self.__tags = list(tags) if tags else []
         self._tokens = tokens if tokens else []
         self.concept_map = OrderedDict()  # concept.cid to concept object
         self.ID = ID
@@ -88,6 +91,11 @@ class TaggedSentence(object):
 
     def __len__(self):
         return len(self._tokens)
+
+    @property
+    def tags(self):
+        ''' Sentence level tags '''
+        return self.__tags
 
     @property
     def tokens(self):
@@ -119,6 +127,16 @@ class TaggedSentence(object):
     def msw(self):
         ''' Get words that were tagged with multiple senses '''
         return [w for w, c in self.wclinks.items() if len(c) > 1]
+
+    def surface(self, tag):
+        if tag.cfrom >= 0 and tag.cto >= 0:
+            return self.text[tag.cfrom:tag.cto]
+        else:
+            return ''
+
+    def add_tag(self, label, cfrom=-1, cto=-1, source=TagInfo.DEFAULT, tagtype=''):
+        ''' Add a sentence-level tag '''
+        self.tags.append(TagInfo(cfrom, cto, label=label, source=source, tagtype=tagtype))
 
     def add_token(self, label, cfrom=-1, cto=-1, source=TagInfo.DEFAULT):
         tk = Token(cfrom, cto, label, self)
@@ -171,6 +189,7 @@ class TaggedSentence(object):
         return cid
 
     def tag(self, clemma, tag, *word_ids):
+        ''' Tag word(s) with new concept '''
         cid = self.new_concept_id()
         return self.add_concept(cid, clemma, tag, [self[x] for x in word_ids])
 
@@ -360,42 +379,74 @@ class TaggedDoc(object):
     def link_path(self):
         return os.path.join(self.path, '{}_links.txt'.format(self.name))
 
+    @property
+    def tag_path(self):
+        return os.path.join(self.path, '{}_tags.txt'.format(self.name))
+
     def read(self):
-        ''' Read tagged doc from files (sents, words, concepts, links) '''
-        with open(self.sent_path) as sentfile:
-            for line in sentfile:
-                if not line.strip():
-                    continue
-                sid, text = line.split('\t', maxsplit=1)
-                self.add_sent(text.strip(), ID=sid)
-        # read words
-        sent_words_map = dd(list)
-        with open(self.word_path) as wordfile:
-            for line in wordfile:
-                sid, wid, word, lemma, pos = line.split('\t')
+        ''' Read tagged doc from files (sents, words, concepts, links, tags) '''
+        if not os.path.isfile(self.sent_path):
+            raise Exception("Document file could not be found {}".format(self.sent_path))
+        sent_rows = CSV.read_tsv(self.sent_path)
+        for sid, text in sent_rows:
+            self.add_sent(text.strip(), ID=sid)
+        # Read words if available
+        if os.path.isfile(self.word_path):
+            sent_words_map = dd(list)
+            word_rows = CSV.read_tsv(self.word_path)
+            for sid, wid, word, lemma, pos in word_rows:
                 sent_words_map[sid].append((word, lemma, pos.strip(), wid))
                 # TODO: verify wid?
-        # import words
-        for sent in self.sents:
-            sent_words = sent_words_map[sent.ID]
-            sent.import_tokens([x[0] for x in sent_words])
-            for ((word, lemma, pos, wid), token) in zip(sent_words, sent.tokens):
-                token.tag(tagtype='pos', label=pos)
-                token.tag(tagtype='lemma', label=lemma)
-                token.tag(tagtype='wid', label=wid)
-        # read concepts
-        with open(self.concept_path) as concept_file:
-            for line in concept_file:
-                sid, cid, clemma, tag = line.split('\t')
-                self.sent_map[sid].add_concept(cid, clemma, tag.strip())
-        # read concept links
-        with open(self.link_path) as link_file:
-            for line in link_file:
-                sid, cid, wid = line.split('\t')
-                sent = self.sent_map[sid]
-                wid = int(wid.strip())
-                sent.concept_map[cid].words.append(sent[wid])
+            # import words
+            for sent in self.sents:
+                sent_words = sent_words_map[sent.ID]
+                sent.import_tokens([x[0] for x in sent_words])
+                for ((word, lemma, pos, wid), token) in zip(sent_words, sent.tokens):
+                    token.tag(tagtype='pos', label=pos)
+                    token.tag(tagtype='lemma', label=lemma)
+                    token.tag(tagtype='wid', label=wid)
+            # only read concepts if words are available
+            if os.path.isfile(self.concept_path):
+                # read concepts
+                concept_rows = CSV.read_tsv(self.concept_path)
+                for sid, cid, clemma, tag in concept_rows:
+                    self.sent_map[sid].add_concept(cid, clemma, tag.strip())
+                # only read concept-word links if words and concepts are available
+                link_rows = CSV.read_tsv(self.link_path)
+                for sid, cid, wid in link_rows:
+                    sent = self.sent_map[sid]
+                    wid = int(wid.strip())
+                    sent.concept_map[cid].words.append(sent[wid])
+        # read sentence level tags
+        if os.path.isfile(self.tag_path):
+            rows = CSV.read_tsv(self.tag_path)
+            for sid, cfrom, cto, label, tagtype in rows:
+                self.sent_map[sid].add_tag(label, cfrom, cto, tagtype=tagtype)
         return self
+
+    def export(self, sent_stream, word_stream, concept_stream, link_stream, tag_stream):
+        # export to TTL format (multiple text files)
+        sent_writer = csv.writer(sent_stream, dialect=STD_DIALECT, quoting=STD_QUOTING)
+        word_writer = csv.writer(word_stream, dialect=STD_DIALECT, quoting=STD_QUOTING)
+        concept_writer = csv.writer(concept_stream, dialect=STD_DIALECT, quoting=STD_QUOTING)
+        link_writer = csv.writer(link_stream, dialect=STD_DIALECT, quoting=STD_QUOTING)
+        tag_writer = csv.writer(tag_stream, dialect=STD_DIALECT, quoting=STD_QUOTING)
+        for sent in self.sents:
+            sent_writer.writerow((sent.ID, sent.text))
+            # write words
+            for wid, word in enumerate(sent.tokens):
+                word_writer.writerow((word.sent.ID, wid, word.surface, word.lemma, word.pos))
+            # write concepts & wclinks
+            for cid, concept in enumerate(sent.concepts):
+                # write concept
+                concept_writer.writerow((sent.ID, cid, concept.clemma, concept.tag))
+                # write cwlinks
+                for word in concept.words:
+                    wid = sent.tokens.index(word)
+                    link_writer.writerow((sent.ID, cid, wid))
+            # write tags
+            for tag in sent.tags:
+                tag_writer.writerow((sent.ID, tag.cfrom, tag.cto, tag.label, tag.tagtype))
 
 
 class Concept(object):
