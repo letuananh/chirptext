@@ -1,5 +1,13 @@
 # -*- coding: utf-8 -*-
 
+''' Text Annotation library
+
+Latest version can be found at https://github.com/letuananh/chirptext
+
+@author: Le Tuan Anh <tuananh.ke@gmail.com>
+@license: MIT
+'''
+
 # Copyright (c) 2014, Le Tuan Anh <tuananh.ke@gmail.com>
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,6 +28,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+########################################################################
+
 import os
 import logging
 import json
@@ -31,8 +41,10 @@ from collections import OrderedDict
 from chirptext import FileHelper, FileHub
 from chirptext.io import CSV
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.WARNING)
+
+# -------------------------------------------------------------------------------
+# Configuration
+# -------------------------------------------------------------------------------
 
 OPEN_TAG = "<wnsk>"
 CLOSE_TAG = "</wnsk>"
@@ -40,6 +52,14 @@ STD_DIALECT = 'excel-tab'
 STD_QUOTING = csv.QUOTE_MINIMAL
 TokenInfo = namedtuple("TokenInfo", ['text', 'sk'])
 
+
+def getLogger():
+    return logging.getLogger(__name__)
+
+
+# ------------------------------------------------------------------------------
+# Classes
+# ------------------------------------------------------------------------------
 
 class TagInfo(object):
 

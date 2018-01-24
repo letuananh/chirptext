@@ -8,14 +8,9 @@ Latest version can be found at https://github.com/letuananh/chirptext
 References:
     Python unittest documentation:
         https://docs.python.org/3/library/unittest.html
-    Python documentation:
-        https://docs.python.org/
-    PEP 0008 - Style Guide for Python Code
-        https://www.python.org/dev/peps/pep-0008/
-    PEP 0257 - Python Docstring Conventions:
-        https://www.python.org/dev/peps/pep-0257/
 
 @author: Le Tuan Anh <tuananh.ke@gmail.com>
+@license: MIT
 '''
 
 # Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
@@ -38,15 +33,6 @@ References:
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-__author__ = "Le Tuan Anh"
-__email__ = "<tuananh.ke@gmail.com>"
-__copyright__ = "Copyright 2017, chirptext"
-__license__ = "MIT"
-__maintainer__ = "Le Tuan Anh"
-__version__ = "0.1"
-__status__ = "Prototype"
-__credits__ = []
-
 ########################################################################
 
 import os
@@ -57,14 +43,14 @@ from chirptext.anhxa import TypedJSONDecoder, TypelessSONEncoder, TypedJSONEncod
 
 
 # -------------------------------------------------------------------------------
-# CONFIGURATION
+# Configuration
 # -------------------------------------------------------------------------------
 
 TEST_DIR = os.path.dirname(os.path.realpath(__file__))
 
 
 # -------------------------------------------------------------------------------
-# DATA STRUCTURES
+# Data Structures
 # -------------------------------------------------------------------------------
 
 class PersonifyJSONEncoder(TypedJSONEncoder):
@@ -120,7 +106,7 @@ class Person(object):
 
 
 # -------------------------------------------------------------------------------
-# TESTS
+# Tests
 # -------------------------------------------------------------------------------
 
 class TestAnhxa(unittest.TestCase):

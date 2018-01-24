@@ -3,20 +3,11 @@
 
 '''
 Script for testing leutile
-Latest version can be found at https://github.com/letuananh/pydemo
 
-References:
-    Python documentation:
-        https://docs.python.org/
-    Python unittest
-        https://docs.python.org/3/library/unittest.html
-    --
-    argparse module:
-        https://docs.python.org/3/howto/argparse.html
-    PEP 257 - Python Docstring Conventions:
-        https://www.python.org/dev/peps/pep-0257/
+Latest version can be found at https://github.com/letuananh/chirptext
 
 @author: Le Tuan Anh <tuananh.ke@gmail.com>
+@license: MIT
 '''
 
 # Copyright (c) 2015, Le Tuan Anh <tuananh.ke@gmail.com>
@@ -39,26 +30,18 @@ References:
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-__author__ = "Le Tuan Anh <tuananh.ke@gmail.com>"
-__copyright__ = "Copyright 2015, pydemo"
-__credits__ = []
-__license__ = "MIT"
-__version__ = "0.1"
-__maintainer__ = "Le Tuan Anh"
-__email__ = "<tuananh.ke@gmail.com>"
-__status__ = "Prototype"
-
 ########################################################################
 
 import os
-import io
 import unittest
 import logging
 from chirptext import TextReport
 from chirptext.texttaglib import TagInfo, TaggedSentence, TaggedDoc, Token
 from chirptext.deko import txt2mecab
 
-########################################################################
+# ------------------------------------------------------------------------------
+# Configuration
+# ------------------------------------------------------------------------------
 
 TEST_DIR = os.path.dirname(__file__)
 TEST_DATA = os.path.join(TEST_DIR, 'data')
@@ -70,6 +53,10 @@ GDOG_SID = '02103841-n'
 def getLogger():
     return logging.getLogger(__name__)
 
+
+# ------------------------------------------------------------------------------
+# Tests
+# ------------------------------------------------------------------------------
 
 class TestBuildTags(unittest.TestCase):
 
@@ -270,7 +257,9 @@ class TestTagging(unittest.TestCase):
         self.assertTrue(tags.content())
 
 
-########################################################################
+# ------------------------------------------------------------------------------
+# Main
+# ------------------------------------------------------------------------------
 
 if __name__ == "__main__":
     unittest.main()

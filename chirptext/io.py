@@ -2,17 +2,11 @@
 
 '''
 Readers for popular formats
+
 Latest version can be found at https://github.com/letuananh/chirptext
 
-References:
-    Python documentation:
-        https://docs.python.org/
-    PEP 0008 - Style Guide for Python Code
-        https://www.python.org/dev/peps/pep-0008/
-    PEP 257 - Python Docstring Conventions:
-        https://www.python.org/dev/peps/pep-0257/
-
 @author: Le Tuan Anh <tuananh.ke@gmail.com>
+@license: MIT
 '''
 
 # Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
@@ -35,15 +29,6 @@ References:
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-__author__ = "Le Tuan Anh"
-__email__ = "<tuananh.ke@gmail.com>"
-__copyright__ = "Copyright 2017, chirptext"
-__license__ = "MIT"
-__maintainer__ = "Le Tuan Anh"
-__version__ = "0.1"
-__status__ = "Prototype"
-__credits__ = []
-
 ########################################################################
 
 import csv
@@ -51,7 +36,7 @@ import logging
 
 
 # -------------------------------------------------------------------------------
-# CONFIGURATION
+# Configuration
 # -------------------------------------------------------------------------------
 
 def getLogger():
@@ -59,7 +44,7 @@ def getLogger():
 
 
 # -------------------------------------------------------------------------------
-# FUNCTIONS
+# Functions
 # -------------------------------------------------------------------------------
 
 class CSV(object):

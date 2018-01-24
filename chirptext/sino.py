@@ -2,17 +2,11 @@
 
 '''
 Tools for processing Chinese
+
 Latest version can be found at https://github.com/letuananh/chirptext
 
-References:
-    Python documentation:
-        https://docs.python.org/
-    PEP 0008 - Style Guide for Python Code
-        https://www.python.org/dev/peps/pep-0008/
-    PEP 257 - Python Docstring Conventions:
-        https://www.python.org/dev/peps/pep-0257/
-
 @author: Le Tuan Anh <tuananh.ke@gmail.com>
+@license: MIT
 '''
 
 # Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
@@ -35,15 +29,6 @@ References:
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-__author__ = "Le Tuan Anh"
-__email__ = "<tuananh.ke@gmail.com>"
-__copyright__ = "Copyright 2017, chirptext"
-__license__ = "MIT"
-__maintainer__ = "Le Tuan Anh"
-__version__ = "0.1"
-__status__ = "Prototype"
-__credits__ = []
-
 ########################################################################
 
 import os
@@ -54,7 +39,7 @@ from .anhxa import to_obj, to_json
 
 
 # -------------------------------------------------------------------------------
-# CONFIGURATION
+# Configuration
 # -------------------------------------------------------------------------------
 
 def getLogger():
@@ -62,17 +47,17 @@ def getLogger():
 
 
 MY_DIR = os.path.dirname(os.path.realpath(__file__))
-KANGXI_FILE = os.path.join(MY_DIR, 'sino_data', 'kangxi.csv')
+KANGXI_FILE = os.path.join(MY_DIR, 'data', 'sino', 'kangxi.csv')
 
 # -------------------------------------------------------------------------------
-# DATA STRUCTURES
+# Data Structures
 # -------------------------------------------------------------------------------
 
 KANGXI_FIELDS = ["idseq", "radical", "variants", "strokes", "meaning", "pinyin", "hanviet", "hiragana", "romaji", "hangeul", "romaja", "frequency", "simplified", "examples"]
 
 
 # -------------------------------------------------------------------------------
-# FUNCTIONS
+# Functions
 # -------------------------------------------------------------------------------
 
 class Radical(object):

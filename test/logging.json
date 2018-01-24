@@ -44,7 +44,7 @@
             "propagate": "no"
         }
         ,"test": {
-            "level": "INFO",
+            "level": "DEBUG",
             "propagate": "no"
          }
     },

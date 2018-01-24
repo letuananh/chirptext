@@ -3,20 +3,11 @@
 
 '''
 Script for testing arsenal lib
+
 Latest version can be found at https://github.com/letuananh/chirptext
 
-References:
-    Python documentation:
-        https://docs.python.org/
-    Python unittest
-        https://docs.python.org/3/library/unittest.html
-    --
-    argparse module:
-        https://docs.python.org/3/howto/argparse.html
-    PEP 257 - Python Docstring Conventions:
-        https://www.python.org/dev/peps/pep-0257/
-
 @author: Le Tuan Anh <tuananh.ke@gmail.com>
+@license: MIT
 '''
 
 # Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
@@ -38,15 +29,6 @@ References:
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-
-__author__ = "Le Tuan Anh <tuananh.ke@gmail.com>"
-__copyright__ = "Copyright 2017, chirptext"
-__credits__ = []
-__license__ = "MIT"
-__version__ = "0.1"
-__maintainer__ = "Le Tuan Anh"
-__email__ = "<tuananh.ke@gmail.com>"
-__status__ = "Prototype"
 
 ########################################################################
 

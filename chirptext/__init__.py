@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 
 '''
-Chirp Text - Text Processing Library
+Chirp Text - Minimalist Text Processing Library
 
 Latest version can be found at https://github.com/letuananh/chirptext
+
 References:
     Python documentation:
         https://docs.python.org/
@@ -11,6 +12,9 @@ References:
         https://www.python.org/dev/peps/pep-0008/
     PEP 0257 - Python Docstring Conventions:
         https://www.python.org/dev/peps/pep-0257/
+
+@author: Le Tuan Anh <tuananh.ke@gmail.com>
+@license: MIT
 '''
 
 # Copyright (c) 2012-2017, Le Tuan Anh <tuananh.ke@gmail.com>
@@ -32,6 +36,21 @@ References:
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+
+__author__ = "Le Tuan Anh"
+__email__ = "<tuananh.ke@gmail.com>"
+__copyright__ = "Copyright 2017, chirptext"
+__credits__ = []
+__license__ = "MIT License"
+__description__ = "ChirpText is a collection of text processing tools for Python."
+__url__ = "https://github.com/letuananh/chirptext"
+__maintainer__ = "Le Tuan Anh"
+__version_major__ = "0.1"
+__version__ = "{}-a".format(__version_major__)
+__version_long__ = "{} - Alpha".format(__version__)
+__status__ = "Prototype"
+
+########################################################################
 
 from .leutile import Timer, Counter, uniquify, header, confirm
 from .leutile import FileHub, TextReport, Table, FileHelper, ConfigFile

@@ -1,0 +1,2 @@
+recursive-include chirptext/data/luke/swadesh *.txt
+recursive-include chirptext/data/sino *.csv

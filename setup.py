@@ -3,63 +3,46 @@
 
 '''
 Setup script for ChirpText.
+
 Latest version can be found at https://github.com/letuananh/chirptext
 
-References:
-    Python documentation:
-        https://docs.python.org/
-    argparse module:
-        https://docs.python.org/3/howto/argparse.html
-    PEP 257 - Python Docstring Conventions:
-        https://www.python.org/dev/peps/pep-0257/
-
 @author: Le Tuan Anh <tuananh.ke@gmail.com>
+@license: MIT
 '''
 
 # Copyright (c) 2015, Le Tuan Anh <tuananh.ke@gmail.com>
 #
-#Permission is hereby granted, free of charge, to any person obtaining a copy
-#of this software and associated documentation files (the "Software"), to deal
-#in the Software without restriction, including without limitation the rights
-#to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-#copies of the Software, and to permit persons to whom the Software is
-#furnished to do so, subject to the following conditions:
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
 #
-#The above copyright notice and this permission notice shall be included in
-#all copies or substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 #
-#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-#IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-#FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-#AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-#LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-#OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-#THE SOFTWARE.
-
-__author__ = "Le Tuan Anh <tuananh.ke@gmail.com>"
-__copyright__ = "Copyright 2015, chirptext"
-__credits__ = [ "Le Tuan Anh" ]
-__license__ = "MIT"
-__version__ = "0.1"
-__maintainer__ = "Le Tuan Anh"
-__email__ = "<tuananh.ke@gmail.com>"
-__status__ = "Prototype"
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
 
 ########################################################################
 
-from setuptools import setup, find_packages
-from setuptools.command.test import test as TestCommand
 import io
-import codecs
 import os
-import sys
+from setuptools import setup
 
-from chirptext import chirptext
+import chirptext
 
 ########################################################################
 
 
 here = os.path.abspath(os.path.dirname(__file__))
+
 
 def read(*filenames, **kwargs):
     encoding = kwargs.get('encoding', 'utf-8')
@@ -70,34 +53,37 @@ def read(*filenames, **kwargs):
             buf.append(f.read())
     return sep.join(buf)
 
+
 long_description = read('README.md', 'CHANGES.md')
 
 setup(
     name='chirptext',
     version=chirptext.__version__,
-    url='https://github.com/letuananh/chirptext',
-    license='MIT License',
-    author='Le Tuan Anh',
+    url=chirptext.__url__,
+    project_urls={
+        "Bug Tracker": "https://github.com/letuananh/chirptext/issues",
+        "Source Code": "https://github.com/letuananh/chirptext/"
+    },
+    keywords="nlp",
+    license=chirptext.__license__,
+    author=chirptext.__author__,
     tests_require=[],
     install_requires=[],
-    author_email='tuananh.ke@gmail.com',
-    description='ChirpText is a collection of text processing tools for Python.',
+    author_email=chirptext.__email__,
+    description=chirptext.__description__,
     long_description=long_description,
     packages=['chirptext'],
+    package_data={'chirptext': ['data/luke/swadesh/*.txt',
+                                'data/sino/*.csv']},
     include_package_data=True,
     platforms='any',
     test_suite='test',
-    classifiers = [
-        'Programming Language :: Python',
-        'Development Status :: 0.1 - Alpha',
-        'Natural Language :: English',
-        'Environment :: Console Application',
-        'Intended Audience :: Developers',
-        'License :: OSI Approved :: MIT License',
-        'Operating System :: OS Independent',
-        'Topic :: Software Development :: Libraries :: Python Modules',
-        ]#,
-    #extras_require={
-        # 'testing': ['pytest'],
-    #}
+    classifiers=['Programming Language :: Python',
+                 'Development Status :: {}'.format(chirptext.__version_long__),
+                 'Natural Language :: English',
+                 'Environment :: Console Application',
+                 'Intended Audience :: Developers',
+                 'License :: OSI Approved :: {}'.format(chirptext.__license__),
+                 'Operating System :: OS Independent',
+                 'Topic :: Software Development :: Libraries :: Python Modules']
 )
