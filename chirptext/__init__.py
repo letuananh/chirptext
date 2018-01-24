@@ -38,7 +38,7 @@ References:
 # THE SOFTWARE.
 
 __author__ = "Le Tuan Anh"
-__email__ = "<tuananh.ke@gmail.com>"
+__email__ = "tuananh.ke@gmail.com"
 __copyright__ = "Copyright 2017, chirptext"
 __credits__ = []
 __license__ = "MIT License"
@@ -47,7 +47,7 @@ __url__ = "https://github.com/letuananh/chirptext"
 __maintainer__ = "Le Tuan Anh"
 __version_major__ = "0.1"
 __version__ = "{}-a".format(__version_major__)
-__version_long__ = "{} - Alpha".format(__version__)
+__version_long__ = "{} - Alpha".format(__version_major__)
 __status__ = "Prototype"
 
 ########################################################################

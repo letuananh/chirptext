@@ -78,12 +78,14 @@ setup(
     include_package_data=True,
     platforms='any',
     test_suite='test',
+    # Reference: https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=['Programming Language :: Python',
-                 'Development Status :: {}'.format(chirptext.__version_long__),
+                 'Development Status :: 2 - Pre-Alpha',
                  'Natural Language :: English',
-                 'Environment :: Console Application',
+                 'Environment :: Plugins',
                  'Intended Audience :: Developers',
                  'License :: OSI Approved :: {}'.format(chirptext.__license__),
                  'Operating System :: OS Independent',
+                 'Topic :: Text Processing',
                  'Topic :: Software Development :: Libraries :: Python Modules']
 )
