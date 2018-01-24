@@ -214,6 +214,7 @@ class TestTagging(unittest.TestCase):
         tag.label = 'x'
         self.assertEqual(c.words[0].tag_map['pos'][0].label, 'x')
         # test sentence level tagging
+        getLogger().debug([str(t) for t in sent.tags])
 
     def test_multiple_tags(self):
         doc = TaggedDoc(TEST_DATA, 'test').read()

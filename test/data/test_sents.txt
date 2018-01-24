@@ -1,3 +1,3 @@
-10315	"We have had the pleasure of making the doctor's acquaintance," said Holmes, and in a few words he sketched out what had occurred.
+10315	"""We have had the pleasure of making the doctor's acquaintance,"" said Holmes, and in a few words he sketched out what had occurred."
 10591	The sight of the safe, the saucer of milk, and the loop of whipcord were enough to finally dispel any doubts which may have remained.
-10598	In this way I am no doubt indirectly responsible for Dr.  Grimesby Roylott's death, and I cannot say that it is likely to weigh very heavily upon my conscience."
+10598	"In this way I am no doubt indirectly responsible for Dr.  Grimesby Roylott's death, and I cannot say that it is likely to weigh very heavily upon my conscience."""

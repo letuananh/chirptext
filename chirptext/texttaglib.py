@@ -28,7 +28,7 @@ from collections import namedtuple
 from collections import defaultdict as dd
 from collections import OrderedDict
 
-from chirptext import FileHelper
+from chirptext import FileHelper, FileHub
 from chirptext.io import CSV
 
 logger = logging.getLogger(__name__)
@@ -402,8 +402,8 @@ class TaggedDoc(object):
                 sent_words = sent_words_map[sent.ID]
                 sent.import_tokens([x[0] for x in sent_words])
                 for ((word, lemma, pos, wid), token) in zip(sent_words, sent.tokens):
-                    token.tag(tagtype='pos', label=pos)
-                    token.tag(tagtype='lemma', label=lemma)
+                    token.tag(tagtype=Token.POS, label=pos)
+                    token.tag(tagtype=Token.LEMMA, label=lemma)
                     token.tag(tagtype='wid', label=wid)
             # only read concepts if words are available
             if os.path.isfile(self.concept_path):
@@ -447,6 +447,14 @@ class TaggedDoc(object):
             # write tags
             for tag in sent.tags:
                 tag_writer.writerow((sent.ID, tag.cfrom, tag.cto, tag.label, tag.tagtype))
+
+    def write_ttl(self):
+        with FileHub(working_dir=self.path, default_mode='w') as output:
+            self.export(output[self.sent_path],
+                        output[self.word_path],
+                        output[self.concept_path],
+                        output[self.link_path],
+                        output[self.tag_path])
 
 
 class Concept(object):

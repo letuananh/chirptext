@@ -1,4 +1,4 @@
-10315	0	"	"	Fe
+10315	0	""""	""""	Fe
 10315	1	We	we	PRP
 10315	2	have	have	VBP
 10315	3	had	have	VBN
@@ -11,7 +11,7 @@
 10315	10	's	's	POS
 10315	11	acquaintance	acquaintance	NN
 10315	12	,	,	Fc
-10315	13	"	"	Fe
+10315	13	""""	""""	Fe
 10315	14	said	say	VBD
 10315	15	Holmes	Holmes	NNP
 10315	16	,	,	Fc
@@ -88,4 +88,4 @@
 10598	30	my	my	PRP$
 10598	31	conscience	conscience	NN
 10598	32	.	.	Fp
-10598	33	"	"	Fe
+10598	33	""""	""""	Fe
