@@ -1,2 +1,4 @@
+include README.md
+include CHANGES.md
 recursive-include chirptext/data/luke/swadesh *.txt
 recursive-include chirptext/data/sino *.csv
