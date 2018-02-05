@@ -468,6 +468,13 @@ class TaggedDoc(object):
             for tag in sent.tags:
                 tag_writer.writerow((sent.ID, tag.cfrom, tag.cto, tag.label, tag.tagtype))
 
+    @staticmethod
+    def read_ttl(path):
+        ''' Path to TTL files '''
+        doc_path = os.path.dirname(path)
+        doc_name = os.path.basename(path)
+        return TaggedDoc(doc_path, doc_name).read()
+
     def write_ttl(self):
         with FileHub(working_dir=self.path, default_mode='w') as output:
             self.export(output[self.sent_path],
