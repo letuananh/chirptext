@@ -36,9 +36,12 @@ import os
 from io import BytesIO
 import gzip
 import logging
+import json
 from urllib.request import Request, urlopen
 from urllib.error import URLError
 from urllib.parse import urlparse, urlunparse, parse_qs, urlencode, quote
+
+from chirptext.arsenal import JiCache
 
 
 # ----------------------------------------------------------------------
@@ -98,13 +101,16 @@ class WebHelper(object):
     ''' a wget like utility for Python '''
 
     def __init__(self, cache=None):
-        self.cache = cache
+        if cache is None or isinstance(cache, JiCache):
+            self.cache = cache
+        else:
+            self.cache = JiCache(location=str(cache))
 
     @staticmethod
     def encode_url(url):
         return str(SmartURL(url, quoted=True))
 
-    def fetch(self, url, encoding=None, force_refetch=False, nocache=False):
+    def fetch(self, url, encoding=None, force_refetch=False, nocache=False, quiet=True):
         ''' Fetch a HTML file as binary'''
         try:
             if not force_refetch and self.cache is not None and url in self.cache:
@@ -137,7 +143,16 @@ class WebHelper(object):
             else:
                 # Other exception ...
                 getLogger().exception("Fetching error")
+            if not quiet:
+                raise
         return None
+
+    def fetch_json(self, *args, **kwargs):
+        output = self.fetch(*args, **kwargs)
+        if output is not None:
+            return json.loads(output)
+        else:
+            return None
 
     def download(self, url, path, force_refetch=False, nocache=False):
         ''' Download a file at $url and save it to $path
