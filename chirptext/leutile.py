@@ -135,10 +135,13 @@ class Counter(PythonCounter):
                 order_list.append([x, self[x]])
         return order_list
 
-    def summarise(self, report=None, byfreq=True):
+    def summarise(self, report=None, byfreq=True, limit=None):
         if not report:
             report = TextReport()
-        for k, v in self.get_report_order():
+        items = self.most_common() if byfreq else self.get_report_order()
+        if limit:
+            items = items[:limit]
+        for k, v in items:
             report.writeline("%s: %d" % (k, v))
 
     def group_by_count(self):
