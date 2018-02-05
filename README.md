@@ -11,6 +11,15 @@ It is not meant to be a powerful tank like the popular NTLK but a small package 
 * Console application template
 * Application configuration files management which can make educated guess about config files' whereabouts
 
+# Installation
+
+```bash
+pip install chirptext
+# pip script sometimes doesn't work properly, so you may want to try this instead
+python3 -m pip install chirptext
+```
+**Note**: chirptext library does not support Python 2 anymore. Please update to Python 3 to use this package.
+
 # Sample codes
 
 ## Web fetcher
