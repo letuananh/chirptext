@@ -252,7 +252,8 @@ class TestTagging(unittest.TestCase):
                 tk.new_tag(mtk.pos3(), tagtype='pos', source=ttl.Tag.MECAB)
                 tk.new_tag(mtk.reading_hira(), tagtype="Reading", source=ttl.Tag.MECAB)
         # sense tagging
-        doc[0].new_concept("三毛猫", "wiki.ja:三毛猫", tokens=[0, 1, 2])
+        doc[2][4].comment = 'to eat'
+        doc[0].new_concept("三毛猫", "wiki.ja:三毛猫", tokens=[0, 1, 2]).comment = 'Calico cat, you know?'
         doc[1].new_concept("降る", "02756821-v", tokens=(2,))
         doc[2].new_concept("女の子", "10084295-n", tokens=(0,))
         doc[2].new_concept("食べる", "01166351-v", (4,))

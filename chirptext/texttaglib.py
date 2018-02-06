@@ -504,16 +504,27 @@ class Document(object):
             for sent in self.__sents:
                 sent_tokens = sent_tokens_map[sent.ID]
                 sent.import_tokens([x[0] for x in sent_tokens])
-                for ((token, lemma, pos, wid), token) in zip(sent_tokens, sent.tokens):
+                for (token_info, token) in zip(sent_tokens, sent.tokens):
+                    if len(token_info) == 5:
+                        token, lemma, pos, wid, comment = token_info
+                    else:
+                        token, lemma, pos, wid = token_info
+                        comment = ''
                     token.pos = pos
                     token.lemma = lemma
+                    token.comment = comment
                     token.new_tag(label=wid, tagtype='wid')
             # only read concepts if tokens are available
             if os.path.isfile(self.concept_path):
                 # read concepts
                 concept_rows = CSV.read_tsv(self.concept_path)
-                for sid, cid, clemma, tag in concept_rows:
-                    self.__sent_map[sid].new_concept(tag.strip(), clemma=clemma, ID=cid)
+                for concept_row in concept_rows:
+                    if len(concept_row) == 5:
+                        sid, cid, clemma, tag, comment = concept_row
+                    else:
+                        sid, cid, clemma, tag = concept_row
+                        comment = ''
+                    self.__sent_map[sid].new_concept(tag.strip(), clemma=clemma, ID=cid, comment=comment)
                 # only read concept-token links if tokens and concepts are available
                 link_rows = CSV.read_tsv(self.link_path)
                 for sid, cid, wid in link_rows:
@@ -538,11 +549,11 @@ class Document(object):
             sent_writer.writerow((sent.ID, sent.text))
             # write tokens
             for wid, token in enumerate(sent.tokens):
-                token_writer.writerow((token.sent.ID, wid, token.text or token.surface(), token.lemma, token.pos))
+                token_writer.writerow((token.sent.ID, wid, token.text or token.surface(), token.lemma, token.pos, token.comment))
             # write concepts & wclinks
             for cid, concept in enumerate(sent.concepts):
                 # write concept
-                concept_writer.writerow((sent.ID, cid, concept.clemma, concept.tag))
+                concept_writer.writerow((sent.ID, cid, concept.clemma, concept.tag, concept.comment))
                 # write cwlinks
                 for token in concept.tokens:
                     wid = sent.tokens.index(token)
