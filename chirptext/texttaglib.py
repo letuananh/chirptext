@@ -46,8 +46,6 @@ from chirptext.io import CSV
 # Configuration
 # -------------------------------------------------------------------------------
 
-OPEN_TAG = "<wnsk>"
-CLOSE_TAG = "</wnsk>"
 STD_DIALECT = 'excel-tab'
 STD_QUOTING = csv.QUOTE_MINIMAL
 TokenInfo = namedtuple("TokenInfo", ['text', 'sk'])
@@ -61,19 +59,21 @@ def getLogger():
 # Classes
 # ------------------------------------------------------------------------------
 
-class TagInfo(object):
+class Tag(object):
 
+    DEFAULT = 'n/a'
     GOLD = 'gold'
     ISF = 'isf'
-    MFS = 'mfs'
     LELESK = 'lelesk'
-    OTHER = 'other'
     NTUMC = 'ntumc'
+    MFS = 'mfs'
     MECAB = 'mecab'
     NLTK = 'nltk'
-    DEFAULT = 'n/a'
+    WORDNET = 'wn'
+    BABELNET = 'bn'
+    OTHER = 'other'
 
-    def __init__(self, cfrom=-1, cto=-1, label='', source=DEFAULT, tagtype=''):
+    def __init__(self, label, cfrom=-1, cto=-1, tagtype='', source=DEFAULT):
         self.cfrom = cfrom
         self.cto = cto
         self.label = label
@@ -89,15 +89,31 @@ class TagInfo(object):
     def __str__(self):
         return "`{l}`<{f}:{t}>{v}".format(l=self.label, f=self.cfrom, t=self.cto, v=self.tagtype)
 
+    def to_json(self):
+        a_dict = {'label': self.label}
+        if self.tagtype:
+            a_dict['type'] = self.tagtype
+        if self.source:
+            a_dict['source'] = self.source
+        if self.cfrom >= 0 and self.cto >= 0:
+            a_dict['cfrom'] = self.cfrom
+            a_dict['cto'] = self.cto
+        return a_dict
 
-class TaggedSentence(object):
 
-    def __init__(self, text, tags=None, tokens=None, ID=None):
+class Sentence(object):
+
+    def __init__(self, text, ID=None, tags=None, tokens=None):
         self.text = text
-        self.__tags = list(tags) if tags else []
-        self._tokens = tokens if tokens else []
-        self.concept_map = OrderedDict()  # concept.cid to concept object
         self.ID = ID
+        self.__tags = []
+        if tags:
+            self.__tags.extend(tags)
+        self.__tokens = []
+        if tokens:
+            self.__tokens.extend(tokens)
+        self.__concepts = []
+        self.__concept_map = OrderedDict()  # concept.ID to concept object
 
     def __str__(self):
         # return format_tag(self)
@@ -107,10 +123,10 @@ class TaggedSentence(object):
             return self.text
 
     def __getitem__(self, idx):
-        return self._tokens[idx]
+        return self.__tokens[idx]
 
     def __len__(self):
-        return len(self._tokens)
+        return len(self.__tokens)
 
     @property
     def tags(self):
@@ -119,51 +135,89 @@ class TaggedSentence(object):
 
     @property
     def tokens(self):
-        return self._tokens
+        return self.__tokens
 
     @property
     def concepts(self):
-        return tuple(self.concept_map.values())
+        return self.__concepts
 
-    @property
-    def wclinks(self):
-        ''' Return word-concepts map '''
-        wcm = dd(list)
-        for concept in self.concept_map.values():
-            for w in concept.words:
-                wcm[w].append(concept)
-        return wcm
+    def tcmap(self):
+        ''' Create a tokens-concepts map '''
+        tcmap = dd(list)
+        for concept in self.__concept_map.values():
+            for w in concept.tokens:
+                tcmap[w].append(concept)
+        return tcmap
 
-    @property
     def mwe(self):
-        ''' Get all multi-word expressions '''
-        mwe = []
-        for c in self.concept_map.values():
-            if len(c.words) > 1:
-                mwe.append(c)
-        return mwe
+        ''' Return a generator of concepts that are linked to more than 1 token. '''
+        return (c for c in self.__concepts if len(c.tokens) > 1)
 
-    @property
     def msw(self):
-        ''' Get words that were tagged with multiple senses '''
-        return [w for w, c in self.wclinks.items() if len(c) > 1]
+        ''' Return a generator of tokens with more than one sense. '''
+        return (t for t, c in self.tcmap().items() if len(c) > 1)
 
     def surface(self, tag):
+        ''' Get surface string that is associated with a tag object '''
         if tag.cfrom >= 0 and tag.cto >= 0:
             return self.text[tag.cfrom:tag.cto]
         else:
             return ''
 
-    def add_tag(self, label, cfrom=-1, cto=-1, source=TagInfo.DEFAULT, tagtype=''):
-        ''' Add a sentence-level tag '''
-        self.tags.append(TagInfo(cfrom, cto, label=label, source=source, tagtype=tagtype))
+    def new_tag(self, label, cfrom=-1, cto=-1, tagtype='', **kwargs):
+        ''' Create a sentence-level tag '''
+        tag_obj = Tag(label, cfrom, cto, tagtype=tagtype, **kwargs)
+        self.tags.append(tag_obj)
+        return tag_obj
 
-    def add_token(self, label, cfrom=-1, cto=-1, source=TagInfo.DEFAULT):
-        tk = Token(cfrom, cto, label, self)
-        self._tokens.append(tk)
+    def new_token(self, text, cfrom=-1, cto=-1, *args, **kwargs):
+        tk = Token(text, cfrom, cto, sent=self, *args, **kwargs)
+        self.__tokens.append(tk)
         return tk
 
+    def new_concept_id(self):
+        ID = 0
+        while ID in self.__concept_map:
+            ID += 1
+        return ID
+
+    def new_concept(self, tag, clemma="", tokens=None, cid=None, **kwargs):
+        ''' Create a new concept object and add it to concept list
+        tokens can be a list of Token objects or token indices
+        '''
+        if cid is None:
+            cid = self.new_concept_id()
+        if tokens:
+            tokens = (t if isinstance(t, Token) else self[t] for t in tokens)
+        c = Concept(cid, tag, clemma=clemma, sent=self, tokens=tokens, **kwargs)
+        return self.add_concept(c)
+
+    def add_concept(self, concept_obj):
+        ''' Add a concept to current concept list '''
+        if concept_obj is None:
+            raise Exception("Concept object cannot be None")
+        elif concept_obj in self.__concepts:
+            raise Exception("Concept object is already inside")
+        elif concept_obj.ID in self.__concept_map:
+            raise Exception("Duplicated concept ID ({})".format(concept_obj.ID))
+        self.__concepts.append(concept_obj)
+        self.__concept_map[concept_obj.ID] = concept_obj
+        return concept_obj
+
+    def concept(self, cid):
+        ''' Get concept by concept ID '''
+        return self.__concept_map[cid]
+
+    def to_json(self):
+        sent_dict = {'text': self.text,
+                     'tokens': [t.to_json() for t in self.tokens],
+                     'concepts': [c.to_json() for c in self.concepts]}
+        if self.ID is not None:
+            sent_dict['ID'] = self.ID
+        return sent_dict
+
     def import_tokens(self, tokens, import_hook=None, ignorecase=True):
+        ''' Import a list of string as tokens '''
         text = self.text.lower() if ignorecase else self.text
         has_hooker = import_hook and callable(import_hook)
         cfrom = 0
@@ -175,7 +229,7 @@ class TaggedSentence(object):
                 raise LookupError('Cannot find token `{t}` in sent `{s}`({l}) from {i} ({p})'.format(t=token, s=self.text, l=len(self.text), i=cfrom, p=self.text[cfrom:cfrom + 20]))
             cfrom = start
             cto = cfrom + len(token)
-            self.add_token(token, cfrom, cto)
+            self.new_token(token, cfrom, cto)
             cfrom = cto - 1
 
     def fix_cfrom_cto(self, import_hook=None, ignorecase=True):
@@ -184,66 +238,36 @@ class TaggedSentence(object):
         cfrom = 0
         for token in self.tokens:
             if has_hooker:
-                import_hook(token.label)
-            start = text.find(token.label.lower() if ignorecase else token.label, cfrom)
+                import_hook(token.text)
+            start = text.find(token.text.lower() if ignorecase else token.text, cfrom)
             if start == -1:
                 raise LookupError('Cannot find token `{t}` in sent `{s}`({l}) from {i} ({p})'.format(t=token, s=self.text, l=len(self.text), i=cfrom, p=self.text[cfrom:cfrom + 20]))
             cfrom = start
-            cto = cfrom + len(token.label)
+            cto = cfrom + len(token.text)
             token.cfrom = cfrom
             token.cto = cto
             cfrom = cto - 1
 
-    def add_concept(self, cid=None, clemma="", tag="", words=None):
-        ''' Add a new concept object '''
-        if cid is None:
-            cid = self.new_concept_id()
-        c = Concept(cid, clemma, tag, self, list(words) if words is not None else None)
-        self.concept_map[cid] = c
-        return c
-
-    def new_concept_id(self):
-        cid = 0
-        while cid in self.concept_map:
-            cid += 1
-        return cid
-
-    def tag(self, clemma, tag, *word_ids):
-        ''' Tag word(s) with new concept '''
-        cid = self.new_concept_id()
-        return self.add_concept(cid, clemma, tag, [self[x] for x in word_ids])
-
-    def concept(self, cid):
-        ''' Get a concept by concept ID '''
-        return self.concept_map[cid]
-
-    def to_json(self):
-        sent_dict = {'text': self.text,
-                     'tokens': [t.to_json() for t in self.tokens],
-                     'concepts': [c.to_json() for c in self.concepts]}
-        if self.ID is not None:
-            sent_dict['ID'] = self.ID
-        return sent_dict
-
     @staticmethod
     def from_json(json_sent):
-        sent = TaggedSentence(json_sent['text'])
+        sent = Sentence(json_sent['text'])
         if 'ID' in json_sent:
             sent.ID = json_sent['ID']
         for json_token in json_sent['tokens']:
-            token = sent.add_token(json_token['label'], json_token['cfrom'], json_token['cto'])
-            if Token.POS in json_token:
-                token.tag(json_token[Token.POS], tagtype=Token.POS)
-            if Token.LEMMA in json_token:
-                token.tag(json_token[Token.LEMMA], tagtype=Token.LEMMA)
-            if Token.COMMENT in json_token:
-                token.tag(json_token[Token.COMMENT], tagtype=Token.COMMENT)
+            token = sent.new_token(json_token['text'], json_token['cfrom'], json_token['cto'])
+            if 'pos' in json_token:
+                token.pos = json_token['pos']
+            if 'lemma' in json_token:
+                token.lemma = json_token['lemma']
+            if 'comment' in json_token:
+                token.comment = json_token['comment']
         # import concepts
         for json_concept in json_sent['concepts']:
             clemma = json_concept['clemma']
             tag = json_concept['tag']
-            wordids = json_concept['words']
-            concept = sent.tag(clemma, tag, *wordids)
+            tokenids = json_concept['tokens']
+            tokens = [sent[tid] for tid in tokenids]
+            concept = sent.new_concept(tag, clemma=clemma, tokens=tokens)
             if Concept.COMMENT in json_concept:
                 concept.comment = json_concept[Concept.COMMENT]
             if Concept.FLAG in json_concept:
@@ -254,142 +278,156 @@ class TaggedSentence(object):
 
 class Token(object):
 
-    LEMMA = 'lemma'
-    POS = 'pos'
-    COMMENT = 'comment'
-
-    def __init__(self, cfrom, cto, label, sent=None, tags=None, source=TagInfo.DEFAULT):
+    def __init__(self, text, cfrom, cto, sent=None, pos=None, lemma=None, comment=None, source=Tag.DEFAULT):
         ''' A token (e.g. a word in a sentence) '''
         self.cfrom = cfrom
         self.cto = cto
-        self._tags = tags if tags else []
+        self.__tags = []
         self.sent = sent
-        self.label = label
+        self.text = text
+        self.lemma = lemma
+        self.pos = pos
+        self.comment = comment
 
     def __getitem__(self, idx):
-        return self._tags[idx]
+        return self.__tags[idx]
 
     def __len__(self):
-        return len(self._tags)
+        return len(self.__tags)
 
-    @property
+    def __iter__(self):
+        return iter(self.__tags)
+
     def surface(self):
         if self.sent and self.sent.text:
             return self.sent.text[self.cfrom:self.cto]
-        else:
-            return ''
-
-    @property
-    def pos(self):
-        tm = self.tag_map
-        if self.POS in tm:
-            return tm[self.POS][0].label
-        else:
-            return ''
-
-    @property
-    def lemma(self):
-        tm = self.tag_map
-        if self.LEMMA in tm:
-            return tm[self.LEMMA][0].label
-        else:
-            return ''
-
-    @property
-    def comment(self):
-        tm = self.tag_map
-        if Token.COMMENT in tm:
-            return tm[self.COMMENT][0].label
+        elif self.text:
+            return self.text
         else:
             return ''
 
     def __repr__(self):
-        return "`{l}`<{f}:{t}>".format(l=self.label, f=self.cfrom, t=self.cto)
+        return "`{l}`<{f}:{t}>".format(l=self.text, f=self.cfrom, t=self.cto)
 
-    @property
     def tag_map(self):
+        ''' Build a map from tagtype to list of tags '''
         tm = dd(list)
-        for tag in self._tags:
+        for tag in self.__tags:
             tm[tag.tagtype].append(tag)
         return tm
 
-    @property
-    def tags(self):
-        return self._tags
-
     def __str__(self):
-        return "`{l}`<{f}:{t}>{tgs}".format(l=self.label, f=self.cfrom, t=self.cto, tgs=self._tags if self._tags else '')
+        return "`{l}`<{f}:{t}>{tgs}".format(l=self.text, f=self.cfrom, t=self.cto, tgs=self.__tags if self.__tags else '')
 
-    def tag(self, label, cfrom=None, cto=None, tagtype=None, source=TagInfo.DEFAULT):
+    def new_tag(self, label, cfrom=None, cto=None, tagtype=None, source=Tag.DEFAULT):
+        ''' Create a new tag on this token '''
         if not cfrom:
             cfrom = self.cfrom
         if not cto:
             cto = self.cto
-        tag = TagInfo(label=label, cfrom=cfrom, cto=cto, tagtype=tagtype)
-        self._tags.append(tag)
+        tag = Tag(label=label, cfrom=cfrom, cto=cto, tagtype=tagtype)
+        self.__tags.append(tag)
+        return tag
 
     def to_json(self):
-        tagdict = dd(list)
         token_json = {'cfrom': self.cfrom,
                       'cto': self.cto,
-                      'label': self.label}
-        for k, tags in self.tag_map.items():
-            if k == Token.LEMMA:
-                token_json[Token.LEMMA] = ', '.join([t.label for t in tags])
-                pass
-            elif k == Token.POS:
-                token_json[Token.POS] = ', '.join([t.label for t in tags])
-            elif k == Token.COMMENT:
-                token_json[Token.COMMENT] = '\n'.join([t.label for t in tags])
-            else:
-                tagdict[k if k else 'unsorted'].extend([t.label for t in tags])
+                      'text': self.text}
+        if self.lemma:
+            token_json['lemma'] = self.lemma
+        if self.pos:
+            token_json['pos'] = self.pos
+        if self.comment:
+            token_json['comment'] = self.comment
+        tagdict = {k if k else 'unsorted': [t.label for t in tags] for k, tags in self.tag_map().items()}
         if tagdict:
-            token_json['tags'] = dict(tagdict)
+            token_json['tags'] = tagdict
         return token_json
 
 
-class TaggedDoc(object):
+class Concept(object):
 
-    def __init__(self, doc_path, doc_name):
-        self.path = FileHelper.abspath(doc_path)
-        self.name = doc_name
-        self.sents = []
-        self.sent_map = {}
+    FLAG = 'flag'
+    COMMENT = 'comment'
+    NOT_MATCHED = 'E'
+
+    def __init__(self, ID, tag, clemma, sent=None, tokens=None, comment=None):
+        self.ID = ID
+        self.clemma = clemma
+        self.tag = tag
+        self.sent = sent
+        self.comment = ''
+        self.__tokens = []
+        if tokens:
+            self.__tokens.extend(tokens)
+        self.flag = None
+
+    @property
+    def tokens(self):
+        return self.__tokens
+
+    def add_token(self, *tokens):
+        for token in tokens:
+            self.__tokens.append(token)
+
+    def __repr__(self):
+        return '<{t}:"{l}">'.format(l=self.clemma, t=self.tag)
+
+    def __str__(self):
+        return '<{t}:"{l}">({ws})'.format(l=self.clemma, t=self.tag, ws=self.__tokens)
+
+    def to_json(self):
+        if self.sent:
+            # get token idx from sent
+            tokens = [self.sent.tokens.index(t) for t in self.__tokens]
+        else:
+            tokens = [t.text for t in self.__tokens]
+        cdict = {
+            'clemma': self.clemma,
+            'tag': self.tag,
+            'tokens': tokens
+        }
+        if self.comment:
+            cdict[Concept.COMMENT] = self.comment
+        if self.flag:
+            cdict[Concept.FLAG] = self.flag
+        return cdict
+
+
+class Document(object):
+
+    def __init__(self, name, path='.'):
+        self.__path = FileHelper.abspath(path)
+        self.__name = name
+        self.__sents = []
+        self.__sent_map = {}
+
+    @property
+    def name(self):
+        return self.__name
+
+    @property
+    def path(self):
+        return self.__path
 
     def __len__(self):
-        return len(self.sents)
+        return len(self.__sents)
 
     def __getitem__(self, idx):
-        return self.sents[idx]
+        return self.__sents[idx]
 
-    def add_sent(self, text, ID):
-        sent = TaggedSentence(text, ID=ID)
-        self.sents.append(sent)
-        self.sent_map[ID] = sent
-        return sent
-
-    @staticmethod
-    def from_json_file(doc_path, doc_name=None):
-        if not os.path.isfile(doc_path):
-            raise Exception("Document file could not be found: {}".format(doc_path))
-        if not doc_name:
-            doc_name = FileHelper.getfilename(doc_path)
-        doc = TaggedDoc(doc_path, doc_name)
-        with open(doc_path, 'rt') as infile:
-            for line in infile:
-                j = json.loads(line)
-                sent = TaggedSentence.from_json(j)
-                doc.sents.append(sent)
-                doc.sent_map[sent.ID] = sent
-        return doc
+    def get(self, sent_id):
+        if sent_id is None or not self.has_id(sent_id):
+            raise Exception("Invalid sentence ID")
+        return self.__sent_map[sent_id]
 
     @property
     def sent_path(self):
         return os.path.join(self.path, '{}_sents.txt'.format(self.name))
 
     @property
-    def word_path(self):
-        return os.path.join(self.path, '{}_words.txt'.format(self.name))
+    def token_path(self):
+        return os.path.join(self.path, '{}_tokens.txt'.format(self.name))
 
     @property
     def concept_path(self):
@@ -403,162 +441,133 @@ class TaggedDoc(object):
     def tag_path(self):
         return os.path.join(self.path, '{}_tags.txt'.format(self.name))
 
+    def has_id(self, sent_id):
+        return sent_id in self.__sent_map
+
+    def add_sent(self, sent_obj):
+        ''' Add a ttl.Sentence object to this document '''
+        if sent_obj is None:
+            raise Exception("Sentence object cannot be None")
+        elif sent_obj.ID is None:
+            raise Exception("Sentence ID cannot be None")
+        elif self.has_id(sent_obj.ID):
+            raise Exception("Sentence ID {} exists".format(sent_obj.ID))
+        self.__sent_map[sent_obj.ID] = sent_obj
+        self.__sents.append(sent_obj)
+        return sent_obj
+
+    def new_sent(self, text, ID):
+        ''' Create a new sentence and add it to this Document '''
+        return self.add_sent(Sentence(text, ID=ID))
+
+    def pop(self, sent_id, **kwargs):
+        ''' If sent_id exists, remove and return the associated sentence object else return default.
+        If no default is provided, KeyError will be raised.'''
+        if not self.has_id(sent_id):
+            if 'default' in kwargs:
+                return kwargs['default']
+            else:
+                raise KeyError("Sentence ID {} does not exist".format(sent_id))
+        else:
+            # sentence exists ...
+            sent_obj = self.get(sent_id)
+            self.__sent_map.pop(sent_id)
+            self.__sents.remove(sent_obj)
+            return sent_obj
+
     def read(self):
-        ''' Read tagged doc from files (sents, words, concepts, links, tags) '''
+        ''' Read tagged doc from mutliple files (sents, tokens, concepts, links, tags) '''
         if not os.path.isfile(self.sent_path):
-            raise Exception("Document file could not be found {}".format(self.sent_path))
+            raise Exception("Sentence file could not be found {}".format(self.sent_path))
         sent_rows = CSV.read_tsv(self.sent_path)
         for sid, text in sent_rows:
-            self.add_sent(text.strip(), ID=sid)
-        # Read words if available
-        if os.path.isfile(self.word_path):
-            sent_words_map = dd(list)
-            word_rows = CSV.read_tsv(self.word_path)
-            for sid, wid, word, lemma, pos in word_rows:
-                sent_words_map[sid].append((word, lemma, pos.strip(), wid))
+            self.new_sent(text.strip(), ID=sid)
+        # Read tokens if available
+        if os.path.isfile(self.token_path):
+            sent_tokens_map = dd(list)
+            token_rows = CSV.read_tsv(self.token_path)
+            for sid, wid, token, lemma, pos in token_rows:
+                sent_tokens_map[sid].append((token, lemma, pos.strip(), wid))
                 # TODO: verify wid?
-            # import words
-            for sent in self.sents:
-                sent_words = sent_words_map[sent.ID]
-                sent.import_tokens([x[0] for x in sent_words])
-                for ((word, lemma, pos, wid), token) in zip(sent_words, sent.tokens):
-                    token.tag(tagtype=Token.POS, label=pos)
-                    token.tag(tagtype=Token.LEMMA, label=lemma)
-                    token.tag(tagtype='wid', label=wid)
-            # only read concepts if words are available
+            # import tokens
+            for sent in self.__sents:
+                sent_tokens = sent_tokens_map[sent.ID]
+                sent.import_tokens([x[0] for x in sent_tokens])
+                for ((token, lemma, pos, wid), token) in zip(sent_tokens, sent.tokens):
+                    token.pos = pos
+                    token.lemma = lemma
+                    token.new_tag(label=wid, tagtype='wid')
+            # only read concepts if tokens are available
             if os.path.isfile(self.concept_path):
                 # read concepts
                 concept_rows = CSV.read_tsv(self.concept_path)
                 for sid, cid, clemma, tag in concept_rows:
-                    self.sent_map[sid].add_concept(cid, clemma, tag.strip())
-                # only read concept-word links if words and concepts are available
+                    self.__sent_map[sid].new_concept(tag.strip(), clemma=clemma, cid=cid)
+                # only read concept-token links if tokens and concepts are available
                 link_rows = CSV.read_tsv(self.link_path)
                 for sid, cid, wid in link_rows:
-                    sent = self.sent_map[sid]
+                    sent = self.__sent_map[sid]
                     wid = int(wid.strip())
-                    sent.concept_map[cid].words.append(sent[wid])
+                    sent.concept(cid).add_token(sent[wid])
         # read sentence level tags
         if os.path.isfile(self.tag_path):
             rows = CSV.read_tsv(self.tag_path)
             for sid, cfrom, cto, label, tagtype in rows:
-                self.sent_map[sid].add_tag(label, cfrom, cto, tagtype=tagtype)
+                self.__sent_map[sid].new_tag(label, cfrom, cto, tagtype=tagtype)
         return self
 
-    def export(self, sent_stream, word_stream, concept_stream, link_stream, tag_stream):
+    def write_ttl_streams(self, sent_stream, token_stream, concept_stream, link_stream, tag_stream):
         # export to TTL format (multiple text files)
         sent_writer = csv.writer(sent_stream, dialect=STD_DIALECT, quoting=STD_QUOTING)
-        word_writer = csv.writer(word_stream, dialect=STD_DIALECT, quoting=STD_QUOTING)
+        token_writer = csv.writer(token_stream, dialect=STD_DIALECT, quoting=STD_QUOTING)
         concept_writer = csv.writer(concept_stream, dialect=STD_DIALECT, quoting=STD_QUOTING)
         link_writer = csv.writer(link_stream, dialect=STD_DIALECT, quoting=STD_QUOTING)
         tag_writer = csv.writer(tag_stream, dialect=STD_DIALECT, quoting=STD_QUOTING)
-        for sent in self.sents:
+        for sent in self:
             sent_writer.writerow((sent.ID, sent.text))
-            # write words
-            for wid, word in enumerate(sent.tokens):
-                word_writer.writerow((word.sent.ID, wid, word.surface, word.lemma, word.pos))
+            # write tokens
+            for wid, token in enumerate(sent.tokens):
+                token_writer.writerow((token.sent.ID, wid, token.text or token.surface(), token.lemma, token.pos))
             # write concepts & wclinks
             for cid, concept in enumerate(sent.concepts):
                 # write concept
                 concept_writer.writerow((sent.ID, cid, concept.clemma, concept.tag))
                 # write cwlinks
-                for word in concept.words:
-                    wid = sent.tokens.index(word)
+                for token in concept.tokens:
+                    wid = sent.tokens.index(token)
                     link_writer.writerow((sent.ID, cid, wid))
             # write tags
             for tag in sent.tags:
                 tag_writer.writerow((sent.ID, tag.cfrom, tag.cto, tag.label, tag.tagtype))
 
-    @staticmethod
-    def read_ttl(path):
-        ''' Path to TTL files '''
-        doc_path = os.path.dirname(path)
-        doc_name = os.path.basename(path)
-        return TaggedDoc(doc_path, doc_name).read()
-
     def write_ttl(self):
         with FileHub(working_dir=self.path, default_mode='w') as output:
-            self.export(output[self.sent_path],
-                        output[self.word_path],
-                        output[self.concept_path],
-                        output[self.link_path],
-                        output[self.tag_path])
+            self.write_ttl_streams(output[self.sent_path],
+                                   output[self.token_path],
+                                   output[self.concept_path],
+                                   output[self.link_path],
+                                   output[self.tag_path])
 
+    @staticmethod
+    def read_ttl(path):
+        ''' Helper function to read Document in TTL format (i.e. ${docname}_*.txt)
+        E.g. Document.read_ttl('~/data/myfile') is the same as Document('myfile', '~/data/').read()
+        '''
+        doc_path = os.path.dirname(path)
+        doc_name = os.path.basename(path)
+        return Document(doc_path, doc_name).read()
 
-class Concept(object):
-
-    FLAG = 'flag'
-    COMMENT = 'comment'
-    NOT_MATCHED = 'E'
-
-    def __init__(self, cid, clemma, tag, sent, words=None, comment=None):
-        self.cid = cid
-        self.clemma = clemma
-        self.tag = tag
-        self.sent = sent
-        self.comment = ''
-        if words:
-            if type(words) == list:
-                self.words = words
-            else:
-                self.words = list(words)
-        else:
-            self.words = []
-        self.flag = None
-
-    def add_word(self, word):
-        self.words.append(word)
-
-    def __repr__(self):
-        return '<{t}:"{l}">'.format(l=self.clemma, t=self.tag)
-
-    def __str__(self):
-        return '<{t}:"{l}">({ws})'.format(l=self.clemma, t=self.tag, ws=self.words)
-
-    def to_json(self):
-        if self.sent:
-            # get word idx from sent
-            words = [self.sent.tokens.index(w) for w in self.words]
-        else:
-            words = [w.label for w in self.words]
-        cdict = {
-            'clemma': self.clemma,
-            'tag': self.tag,
-            'words': words
-        }
-        if self.comment:
-            cdict[Concept.COMMENT] = self.comment
-        if self.flag:
-            cdict[Concept.FLAG] = self.flag
-        return cdict
-
-
-class StringBuffer:
-    def __init__(self, text=None):
-        self.buff = []
-        self.__length = 0
-        self.append(text)
-        self.write = self.append
-
-    def clear(self):
-        del self.buff[:]
-
-    def append(self, text):
-        if text:
-            self.buff.append(text)
-            self.__length += len(text)
-        return self
-
-    def writeline(self, text):
-        return self.append(text).newline()
-
-    def newline(self):
-        return self.append('\n')
-
-    def size(self):
-        return self.__length
-
-    def __len__(self):
-        return self.__length
-
-    def __str__(self):
-        return ''.join(self.buff)
+    @staticmethod
+    def from_json_file(path):
+        if not os.path.isfile(path):
+            raise Exception("Document file could not be found: {}".format(path))
+        doc_name = os.path.basename(path)
+        doc_path = os.path.dirname(path)
+        doc = Document(doc_name, path=doc_path)
+        with open(path, 'rt') as infile:
+            for line in infile:
+                j = json.loads(line)
+                sent = Sentence.from_json(j)
+                doc.sents.append(sent)
+                doc.sent_map[sent.ID] = sent
+        return doc
