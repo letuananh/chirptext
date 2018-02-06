@@ -204,6 +204,17 @@ class Sentence(object):
         self.__concept_map[concept_obj.ID] = concept_obj
         return concept_obj
 
+    def pop_concept(self, cid, **kwargs):
+        if cid not in self.__concept_map:
+            if 'default' in kwargs:
+                return kwargs['default']
+            else:
+                raise KeyError("Invalid cid")
+        concept_obj = self.concept(cid)
+        self.__concept_map.pop(cid)
+        self.__concepts.remove(concept_obj)
+        return concept_obj
+
     def concept(self, cid):
         ''' Get concept by concept ID '''
         return self.__concept_map[cid]
@@ -555,7 +566,7 @@ class Document(object):
         '''
         doc_path = os.path.dirname(path)
         doc_name = os.path.basename(path)
-        return Document(doc_path, doc_name).read()
+        return Document(doc_name, doc_path).read()
 
     @staticmethod
     def from_json_file(path):
