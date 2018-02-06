@@ -181,15 +181,15 @@ class Sentence(object):
             ID += 1
         return ID
 
-    def new_concept(self, tag, clemma="", tokens=None, cid=None, **kwargs):
+    def new_concept(self, tag, clemma="", tokens=None, ID=None, **kwargs):
         ''' Create a new concept object and add it to concept list
         tokens can be a list of Token objects or token indices
         '''
-        if cid is None:
-            cid = self.new_concept_id()
+        if ID is None:
+            ID = self.new_concept_id()
         if tokens:
             tokens = (t if isinstance(t, Token) else self[t] for t in tokens)
-        c = Concept(cid, tag, clemma=clemma, sent=self, tokens=tokens, **kwargs)
+        c = Concept(ID, tag, clemma=clemma, sent=self, tokens=tokens, **kwargs)
         return self.add_concept(c)
 
     def add_concept(self, concept_obj):
@@ -502,7 +502,7 @@ class Document(object):
                 # read concepts
                 concept_rows = CSV.read_tsv(self.concept_path)
                 for sid, cid, clemma, tag in concept_rows:
-                    self.__sent_map[sid].new_concept(tag.strip(), clemma=clemma, cid=cid)
+                    self.__sent_map[sid].new_concept(tag.strip(), clemma=clemma, ID=cid)
                 # only read concept-token links if tokens and concepts are available
                 link_rows = CSV.read_tsv(self.link_path)
                 for sid, cid, wid in link_rows:
