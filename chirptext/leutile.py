@@ -536,31 +536,6 @@ class FileHelper:
             return fileobj.read()
 
 
-# TODO: Should we switch to JSON?
-# or use .ini file: https://docs.python.org/3.5/library/configparser.html
-class ConfigFile:
-
-    def __init__(self, filename, splitter='='):
-        self.filename = os.path.abspath(os.path.expanduser(filename))
-        self.splitter = splitter
-
-    def read(self):
-        ''' If the file does not exist, this function will return an empty dictionary
-        '''
-        kvdict = {}
-        if not os.path.isfile(self.filename):
-            return kvdict
-        with codecs.open(self.filename, 'r', encoding='utf-8') as fileobj:
-            for line in fileobj.readlines():
-                line = line.strip()
-                if line.startswith('#') or len(line) == 0:
-                    continue
-                else:
-                    k, v = line.split(self.splitter, 1)
-                    kvdict[k] = v
-            return kvdict
-
-
 class AppConfig(object):
 
     ''' Application Configuration Helper
