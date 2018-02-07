@@ -34,13 +34,20 @@ Latest version can be found at https://github.com/letuananh/chirptext
 # in lower case: aàảãáạăằẳẵắặâầẩẫấậbcdđeèẻẽéẹêềểễếệghiìỉĩíịklmnoòỏõóọôồổỗốộơờởỡớợpqrstuùủũúụưừửữứựvxyỳỷỹýỵ
 VIETNAMESE_ALPHABET_ORDER = 'aAàÀảẢãÃáÁạẠăĂằẰẳẲẵẴắẮặẶâÂầẦẩẨẫẪấẤậẬbBcCdDđĐeEèÈẻẺẽẼéÉẹẸêÊềỀểỂễỄếẾệỆgGhHiIìÌỉỈĩĨíÍịỊkKlLmMnNoOòÒỏỎõÕóÓọỌôÔồỒổỔỗỖốỐộỘơƠờỜởỞỡỠớỚợỢpPqQrRsStTuUùÙủỦũŨúÚụỤưƯừỪửỬữỮứỨựỰvVxXyYỳỲỷỶỹỸýÝỵỴ'
 VIETNAMESE_SORTING_DICT = dict((x, VIETNAMESE_ALPHABET_ORDER.index(x)) for x in VIETNAMESE_ALPHABET_ORDER)
+python_sorted = sorted
 
 
 # ------------------------------------------------------------------------------
-# Classes
+# Functions
 # ------------------------------------------------------------------------------
 
-class DaoPhay:
-    @staticmethod
-    def vn_sorted(list_of_strings):
-        return sorted(list_of_strings, key=lambda x: [VIETNAMESE_SORTING_DICT[c] for c in x])
+def vnorder_char(c):
+    return VIETNAMESE_SORTING_DICT[c] if c in VIETNAMESE_SORTING_DICT else ord(c)
+
+
+def vnorder(s):
+    return [vnorder_char(c) for c in s]
+
+
+def sorted(list_of_strings):
+    return python_sorted(list_of_strings, key=vnorder)
