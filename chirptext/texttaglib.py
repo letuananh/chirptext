@@ -497,19 +497,19 @@ class Document(object):
         if os.path.isfile(self.token_path):
             sent_tokens_map = dd(list)
             token_rows = CSV.read_tsv(self.token_path)
-            for sid, wid, token, lemma, pos in token_rows:
-                sent_tokens_map[sid].append((token, lemma, pos.strip(), wid))
+            for token_row in token_rows:
+                if len(token_row) == 6:
+                    sid, wid, token, lemma, pos, comment = token_row
+                else:
+                    sid, wid, token, lemma, pos = token_row
+                    comment = ''
+                sent_tokens_map[sid].append((token, lemma, pos.strip(), wid, comment))
                 # TODO: verify wid?
             # import tokens
             for sent in self.__sents:
                 sent_tokens = sent_tokens_map[sent.ID]
                 sent.import_tokens([x[0] for x in sent_tokens])
-                for (token_info, token) in zip(sent_tokens, sent.tokens):
-                    if len(token_info) == 5:
-                        token, lemma, pos, wid, comment = token_info
-                    else:
-                        token, lemma, pos, wid = token_info
-                        comment = ''
+                for ((tk, lemma, pos, wid, comment), token) in zip(sent_tokens, sent.tokens):
                     token.pos = pos
                     token.lemma = lemma
                     token.comment = comment
