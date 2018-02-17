@@ -33,11 +33,16 @@ Latest version can be found at https://github.com/letuananh/chirptext
 ########################################################################
 
 import os
+import logging
 import unittest
 
 from chirptext.leutile import Counter, TextReport, StringTool, LOREM_IPSUM
 from chirptext.leutile import FileHelper
 from chirptext.leutile import AppConfig
+
+
+def getLogger():
+    return logging.getLogger(__name__)
 
 
 # ------------------------------------------------------------------------------
@@ -74,8 +79,11 @@ class TestLeUtile(unittest.TestCase):
             if char == ' ':
                 continue
             ct.count(char)
-        top5chars = [char for char, count in ct.most_common(5)]
-        self.assertEqual(top5chars, ['i', 'e', 't', 'o', 'a'])
+        top5chars = {(char, count) for char, count in ct.most_common(5)}
+        expected = {('o', 29), ('e', 37), ('a', 29), ('t', 32), ('i', 42)}
+        for k, v in ct.most_common(5):
+            getLogger().debug("{}: {}".format(k, v))
+        self.assertEqual(top5chars, expected)
 
     def test_textreport(self):
         with TextReport.null() as rp:
