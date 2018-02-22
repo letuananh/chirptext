@@ -86,8 +86,8 @@ with TextReport.string() as rp:
     rp.header("Lorem Ipsum Analysis", level="h0")
     rp.header("Raw", level="h1")
     rp.print(LOREM_IPSUM)
-    rp.header("Character Frequency")
-    ct.summarise(report=rp)
+    rp.header("Top 5 most common letters")
+    ct.summarise(report=rp, limit=5)
     print(rp.content())
 ```
 
@@ -101,33 +101,11 @@ Raw
 ------------------------------------------------------------ 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. 
  
-Character Frequency 
+Top 5 most common letters
 ------------------------------------------------------------ 
 i: 42 
 e: 37 
 t: 32 
 o: 29 
 a: 29 
-u: 28 
-n: 24 
-r: 22 
-l: 21 
-s: 18 
-d: 18 
-m: 17 
-c: 16 
-p: 11 
-q: 5 
-,: 4 
-.: 4 
-g: 3 
-b: 3 
-v: 3 
-x: 3 
-f: 3 
-L: 1 
-U: 1 
-D: 1 
-h: 1 
-E: 1 
 ```
