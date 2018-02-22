@@ -427,9 +427,14 @@ class Document(object):
     def __getitem__(self, idx):
         return self.__sents[idx]
 
-    def get(self, sent_id):
+    def get(self, sent_id, **kwargs):
+        ''' If sent_id exists, remove and return the associated sentence object else return default.
+        If no default is provided, KeyError will be raised.'''
         if sent_id is None or not self.has_id(sent_id):
-            raise Exception("Invalid sentence ID")
+            if 'default' in kwargs:
+                return kwargs['default']
+            else:
+                raise KeyError("Invalid sentence ID")
         return self.__sent_map[sent_id]
 
     @property
