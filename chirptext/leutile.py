@@ -31,7 +31,6 @@ Latest version can be found at https://github.com/letuananh/chirptext
 
 import os
 import io
-import codecs
 import logging
 import sys
 import time
@@ -288,9 +287,9 @@ class TextReport:
         if self.auto_flush:
             self.__report_file.flush()
 
-    def writeline(self, *msg, level=0):
+    def writeline(self, *msg, **kwargs):
         msg = msg + ('\n',)
-        self.write(*msg, level=level)
+        self.write(*msg, **kwargs)
 
     def header(self, *msg, **kwargs):
         header(*msg, print_out=self.writeline, **kwargs)
