@@ -46,7 +46,7 @@ __description__ = "ChirpText is a collection of text processing tools for Python
 __url__ = "https://github.com/letuananh/chirptext"
 __maintainer__ = "Le Tuan Anh"
 __version_major__ = "0.1"
-__version__ = "{}a6".format(__version_major__)
+__version__ = "{}a7".format(__version_major__)
 __version_long__ = "{} - Alpha".format(__version_major__)
 __status__ = "Prototype"
 
