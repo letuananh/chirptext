@@ -38,11 +38,8 @@ from setuptools import setup
 
 import chirptext
 
+
 ########################################################################
-
-
-here = os.path.abspath(os.path.dirname(__file__))
-
 
 def read(*filenames, **kwargs):
     encoding = kwargs.get('encoding', 'utf-8')
@@ -54,7 +51,9 @@ def read(*filenames, **kwargs):
     return sep.join(buf)
 
 
-long_description = read('README.md', 'CHANGES.md')
+readme_file = 'README.rst' if os.path.isfile('README.rst') else 'README.md'
+print("README file: {}".format(readme_file))
+long_description = read(readme_file)
 
 setup(
     name='chirptext',
