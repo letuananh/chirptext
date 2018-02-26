@@ -543,35 +543,55 @@ This class supports guessing configuration file location, and reads either INI (
     JSON = 'json'
     INI = 'ini'  # Python INI config file
     LOC_TEMPLATE = ['{wd}/.{n}', '{wd}/{n}', '{wd}/data/{n}', '{wd}/data/.{n}', '~/.{n}',
-                    '~/.{n}/config', '~/.config/{n}',
-                    '~/.config/.{n}', '~/.config/{n}/config', '~/.config/{n}/{n}']
+                    '~/.{n}/config', '~/.{n}/config.{mode}', '~/.config/{n}',
+                    '~/.config/.{n}', '~/.config/{n}/config', '~/.config/{n}/config.{mode}',
+                    '~/.config/{n}/{n}']
 
-    def __init__(self, name, mode=INI, working_dir='.'):
+    def __init__(self, name, mode=INI, working_dir='.', extra_potentials=None):
         self.__name = name
         self.__mode = mode
         self.working_dir = working_dir
-        self.__potential = [x.format(wd=self.working_dir, n=self.__name) for x in AppConfig.LOC_TEMPLATE]
-        if os.path.isdir(self.working_dir):
-            self.__potential
+        self.__potential = []
+        if extra_potentials:
+            self.add_potential(*extra_potentials)
+        self.add_potential(*AppConfig.LOC_TEMPLATE)
         self.__config = None
+        self.__config_path = None
 
     def potentials(self):
-        return list(self.__potential)
+        return self.__potential
+
+    def _ptn2fn(self, pattern):
+        ''' Pattern to filename '''
+        return [pattern.format(wd=self.working_dir, n=self.__name, mode=self.__mode),
+                pattern.format(wd=self.working_dir, n='{}.{}'.format(self.__name, self.__mode), mode=self.__mode)]
+
+    def add_potential(self, *patterns):
+        ''' Add a potential config file pattern '''
+        for ptn in patterns:
+            self.__potential.extend(self._ptn2fn(ptn))
+
+    def locate_config(self):
+        ''' Locate config file '''
+        for f in self.__potential:
+            f = FileHelper.abspath(f)
+            if os.path.isfile(f):
+                return f
+        return None
 
     @property
     def config(self):
         ''' Read config automatically if required '''
         if self.__config is None:
-            for f in self.__potential:
-                f = FileHelper.abspath(f)
-                if os.path.isfile(f):
-                    self.__config = self.read_file(f)
-                    break
+            config_path = self.locate_config()
+            if config_path:
+                self.__config = self.read_file(config_path)
+                self.__config_path = config_path
         return self.__config
 
     def read_file(self, file_path):
         ''' Read a configuration file and return configuration data '''
-        getLogger().info("Loading config from {} file: {}".format(self.__mode, file_path))
+        getLogger().info("Loading app config from {} file: {}".format(self.__mode, file_path))
         if self.__mode == AppConfig.JSON:
             return json.loads(FileHelper.read(file_path), object_pairs_hook=OrderedDict)
         elif self.__mode == AppConfig.INI:
