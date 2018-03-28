@@ -56,10 +56,16 @@ def getLogger():
 class TestMain(unittest.TestCase):
 
     def try_cache(self, cache, key, value):
+        # delete the blob if it exists
         if key in cache:
+            print("Deleting blob with key = {}".format(key))
             cache.delete_blob(key)
+        # make sure that it is not there anymore
+        self.assertNotIn(key, cache)
         cache.insert_string(key, value)
+        # make sure that it is inserted
         self.assertIn(key, cache)
+        # make sure that the content is the same
         self.assertEqual(cache.retrieve_string(key), value)
 
     def test_empty_cache(self):

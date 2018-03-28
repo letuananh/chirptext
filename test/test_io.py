@@ -33,8 +33,10 @@ Latest version can be found at https://github.com/letuananh/chirptext
 ########################################################################
 
 import os
+import gzip
 import unittest
 from chirptext.anhxa import to_json, to_obj
+from chirptext import io as chio
 from chirptext.io import CSV
 
 # -------------------------------------------------------------------------------
@@ -79,6 +81,27 @@ class Person:
 # -------------------------------------------------------------------------------
 
 
+class TestIO(unittest.TestCase):
+
+    def test_file_rw(self):
+        tmpfile = os.path.join(TEST_DATA, 'test.txt')
+        tmpgzfile = os.path.join(TEST_DATA, 'test.txt.gz')
+        txt = 'ユニコード大丈夫だよ。'
+        txtz = 'This is a zipped text file.'
+        chio.write_file(txt, mode='wb', outpath=tmpfile)  # write content as bytes
+        chio.write_file(txtz, outpath=tmpgzfile)
+        # ensure that tmpgzfile is actually a gzip file
+        with gzip.open(tmpgzfile, mode='rt') as infile:
+            self.assertEqual(infile.read(), txtz)
+        # verify written content
+        self.assertTrue(chio.is_file(tmpfile))
+        self.assertTrue(chio.is_file(tmpgzfile))
+        self.assertEqual(chio.read_file(tmpfile), txt)
+        self.assertEqual(chio.read_file(tmpgzfile), txtz)
+        self.assertIsInstance(chio.read_file(tmpfile, mode='rb'), bytes)
+        self.assertIsInstance(chio.read_file(tmpgzfile, mode='rb'), bytes)
+
+
 class TestUsingCSV(unittest.TestCase):
 
     def test_csv(self):
@@ -113,7 +136,7 @@ class TestReaders(unittest.TestCase):
         expected = [['Takeshi', 'Goda']]  # not quoting => CSV reader cannot guess the format
         self.assertEqual(indata, expected)
         # read file with a proper dialect
-        indata = CSV.read(TEST_CSV, 'excel-tab')
+        indata = CSV.read(TEST_CSV, dialect='excel-tab')
         self.assertEqual(data, indata)
 
         # write file with forced quoting (default option)
@@ -128,11 +151,12 @@ class TestReaders(unittest.TestCase):
         persons = [Person.parse(name) for name in names]
         header = ['first', 'last']
         CSV.write(TEST_CSV, [to_json(p) for p in persons], header=header)
-        inrows = CSV.read(TEST_CSV, header=header)
+        inrows = CSV.read(TEST_CSV, header=True)
+        print("Inrows:", inrows)
         expected = [{'first': 'Doraemon', 'last': '-'}, {'first': 'Nobita', 'last': 'Nobi'}, {'first': 'Shizuka', 'last': 'Minamoto'}, {'first': 'Dorami', 'last': '-'}, {'first': 'Takeshi', 'last': 'Goda'}, {'first': 'Suneo', 'last': 'Honekawa'}, {'first': 'Jaiko', 'last': '-'}, {'first': 'Hidetoshi', 'last': 'Dekisugi'}]
         self.assertEqual(inrows, expected)
         # read in as objects
-        csv_rows = CSV.read(TEST_CSV, header=header)
+        csv_rows = chio.read_csv(TEST_CSV, fieldnames=True)
         inpersons = [to_obj(Person, row) for row in csv_rows]
         expected_names = [to_obj(Person, row) for row in expected]  # without idno
         self.assertEqual(inpersons, expected_names)
@@ -140,7 +164,7 @@ class TestReaders(unittest.TestCase):
         # with idno
         header = ['first', 'last', 'idno']
         CSV.write(TEST_CSV, [to_json(p) for p in persons], header=header)
-        inpersons = [to_obj(Person, row) for row in CSV.read(TEST_CSV, header=header)]
+        inpersons = [to_obj(Person, row) for row in CSV.read(TEST_CSV, header=True)]
         self.assertEqual(persons, inpersons)
 
 
