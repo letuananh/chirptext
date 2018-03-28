@@ -137,7 +137,7 @@ class WebHelper(object):
             return content.decode(encoding) if content and encoding else content
         except URLError as e:
             if hasattr(e, 'reason'):
-                getLogger().exception('We failed to reach a server. Reason: {}'.format(e.reason))
+                getLogger().exception('We failed to reach {}. Reason: {}'.format(url, e.reason))
             elif hasattr(e, 'code'):
                 getLogger().exception('The server couldn\'t fulfill the request. Error code: {}'.format(e.code))
             else:
