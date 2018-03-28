@@ -117,7 +117,7 @@ class JiCache:
                     c.execute("SELECT value FROM cache_entries WHERE key = ?", (key,))
                 result = c.fetchone()
                 if result is None or len(result) != 1:
-                    getLogger().warning("There's no entry with key={key}".format(key=key))
+                    getLogger().info("There's no entry with key={key}".format(key=key))
                     return None
                 else:
                     return result[0]
@@ -135,8 +135,8 @@ class JiCache:
         '''
         Insert a new key to database
         '''
-        if self.__retrieve(key) is not None:
-            getLogger().debug("Cache entry exists, cannot insert a new entry with key='{key}'".format(key=key))
+        if key in self:
+            getLogger().warning("Cache entry exists, cannot insert a new entry with key='{key}'".format(key=key))
             return False
         with self.get_conn() as conn:
             try:
@@ -148,7 +148,6 @@ class JiCache:
                 # NOTE: A cache error can be forgiven, no?
                 getLogger().debug("Cache Error: Cannot insert | Detail = %s" % (e,))
                 return False
-                pass
 
     def __delete(self, key):
         ''' Delete file key from database
@@ -191,8 +190,12 @@ class JiCache:
             try:
                 c = conn.cursor()
                 c.execute("BEGIN")
-                c.execute("DELETE FROM cache_entries WHERE key = ?", (key,))
-                c.execute("DELETE FROM blob_entries WHERE KEY = ?", (key,))
+                if key is None:
+                    c.execute("DELETE FROM cache_entries WHERE key IS NULL")
+                    c.execute("DELETE FROM blob_entries WHERE KEY IS NULL")
+                else:
+                    c.execute("DELETE FROM cache_entries WHERE key = ?", (key,))
+                    c.execute("DELETE FROM blob_entries WHERE KEY = ?", (key,))
                 c.execute("COMMIT")
             except:
                 getLogger().debug("Cannot delete")
