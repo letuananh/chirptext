@@ -34,7 +34,8 @@ Latest version can be found at https://github.com/letuananh/chirptext
 import os
 import logging
 from collections import defaultdict as dd
-from .io import CSV
+
+from . import io as chio
 from .anhxa import to_obj, to_json
 
 
@@ -89,7 +90,7 @@ class Radical(object):
     @staticmethod
     def kangxi():
         if not Radical.__KANGXI_MAP:
-            kxs = CSV.read(KANGXI_FILE, header=True)
+            kxs = chio.read_csv(KANGXI_FILE, fieldnames=True)
             Radical.__KANGXI_MAP = KangxiMap(kxs)
         return Radical.__KANGXI_MAP
 
