@@ -31,13 +31,21 @@ Latest version can be found at https://github.com/letuananh/chirptext
 
 ########################################################################
 
+import os
 import csv
+import gzip
+import codecs
 import logging
-
+import warnings
 
 # -------------------------------------------------------------------------------
 # Configuration
 # -------------------------------------------------------------------------------
+
+QUOTE_MINIMAL = csv.QUOTE_MINIMAL
+QUOTE_NONE = csv.QUOTE_NONE
+QUOTE_ALL = csv.QUOTE_ALL
+
 
 def getLogger():
     return logging.getLogger()
@@ -47,6 +55,135 @@ def getLogger():
 # Functions
 # -------------------------------------------------------------------------------
 
+def to_string(content, encoding='utf-8'):
+    if isinstance(content, bytes):
+        return content.decode(encoding)
+    elif isinstance(content, str):
+        return content
+    else:
+        return str(content)
+
+
+def is_file(path):
+    ''' Check if path is a path to an existing file '''
+    return path and os.path.isfile(to_string(path))
+
+
+def process_file(path, processor, encoding='utf-8', mode='rt', *args, **kwargs):
+    ''' Process a text file's content. If the file name ends with .gz, read it as gzip file '''
+    if not is_file(path):
+        raise FileNotFoundError("File {} does not exist".format(path))
+    elif path.endswith('.gz'):
+        if mode == 'rb':
+            with gzip.open(path, mode) as infile:
+                return processor(infile)
+        else:
+            with gzip.open(path, mode, encoding=encoding) as infile:
+                return processor(infile)
+    else:
+        if mode == 'rb':
+            with codecs.open(path, mode=mode) as infile:
+                return processor(infile)
+        else:
+            with codecs.open(path, encoding=encoding) as infile:
+                return processor(infile)
+
+
+def read_file(path, encoding='utf-8', *args, **kwargs):
+    ''' Read text file content. If the file name ends with .gz, read it as gzip file.
+    If mode argument is provided as 'rb', content will be read as byte stream.
+    By default, content is read as string.
+    '''
+    if 'mode' in kwargs and kwargs['mode'] == 'rb':
+        return process_file(path, processor=lambda x: x.read(),
+                            encoding=encoding, *args, **kwargs)
+    else:
+        return process_file(path, processor=lambda x: to_string(x.read(), encoding),
+                            encoding=encoding, *args, **kwargs)
+
+
+def write_file(content, outpath, mode=None, encoding='utf-8'):
+    ''' Write content to a file. If the path ends with .gz, gzip will be used. '''
+    if not mode:
+        if isinstance(content, bytes):
+            mode = 'wb'
+        else:
+            mode = 'wt'
+    if not outpath:
+        raise ValueError("Output path is invalid")
+    else:
+        getLogger().debug("Writing content to {}".format(outpath))
+        # convert content to string when writing text data
+        if mode == 'wt' or mode == 'w' and not isinstance(content, str):
+            content = to_string(content)
+        elif mode == 'wb':
+            # content needs to be encoded as bytes
+            if not isinstance(content, str):
+                content = to_string(content).encode(encoding)
+            else:
+                content = content.encode(encoding)
+        if outpath.endswith('.gz'):
+            with gzip.open(outpath, mode) as outfile:
+                outfile.write(content)
+        else:
+            with open(outpath, mode) as outfile:
+                outfile.write(content)
+
+
+def read_csv_iter(input_stream, fieldnames=None, sniff=False, *args, **kwargs):
+    ''' Read CSV content as a table (list of lists) from an input stream '''
+    if 'dialect' not in kwargs and sniff:
+        kwargs['dialect'] = csv.Sniffer().sniff(input_stream.read(1024))
+        input_stream.seek(0)
+    if fieldnames:
+        # read csv using dictreader
+        if isinstance(fieldnames, bool):
+            reader = csv.DictReader(input_stream, *args, **kwargs)
+        else:
+            reader = csv.DictReader(input_stream, *args, fieldnames=fieldnames, **kwargs)
+        for row in reader:
+            yield row
+    else:
+        csvreader = csv.reader(input_stream, *args, **kwargs)
+        for row in csvreader:
+            yield row
+
+
+def read_csv(path, fieldnames=None, sniff=True, encoding='utf-8', *args, **kwargs):
+    ''' Read CSV rows as table from a file.
+    By default, csv.reader() will be used any output will be a list of lists.
+    If fieldnames is provided, DictReader will be used and output will be list of OrderedDict instead.
+    CSV sniffing (dialect detection) is enabled by default, set sniff=False to switch it off.
+    '''
+    return process_file(path,
+                        processor=lambda f: [r for r in read_csv_iter(f, fieldnames=fieldnames, sniff=sniff, *args, **kwargs)],
+                        encoding=encoding, mode='rt')
+
+
+def read_tsv(path, *args, **kwargs):
+    return read_csv(path, dialect='excel-tab', *args, **kwargs)
+
+
+def write_csv(path, rows, dialect='excel', fieldnames=None, quoting=csv.QUOTE_ALL, extrasaction='ignore', *args, **kwargs):
+        ''' Write rows data to a CSV file (with or without fieldnames) '''
+        if not quoting:
+            quoting = csv.QUOTE_MINIMAL
+        with open(path, 'w') as csvfile:
+            if fieldnames:
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames, dialect=dialect, quoting=quoting, extrasaction=extrasaction, *args, **kwargs)
+                writer.writeheader()
+                for row in rows:
+                    writer.writerow(row)
+            else:
+                writer = csv.writer(csvfile, dialect=dialect, quoting=quoting, *args, **kwargs)
+                for row in rows:
+                    writer.writerow(row)
+
+
+def write_tsv(path, rows, *args, **kwargs):
+    return write_csv(path, rows, dialect='excel-tab', *args, **kwargs)
+
+
 class CSV(object):
 
     QUOTE_MINIMAL = csv.QUOTE_MINIMAL
@@ -54,39 +191,22 @@ class CSV(object):
     QUOTE_ALL = csv.QUOTE_ALL
 
     @staticmethod
-    def read(file_name, dialect=None, header=False, *args, **kwargs):
-        with open(file_name, newline='') as csvfile:
-            if not dialect:
-                # auto detect
-                dialect = csv.Sniffer().sniff(csvfile.read(1024))
-                csvfile.seek(0)
-            if not header:
-                reader = csv.reader(csvfile, dialect=dialect, *args, **kwargs)
-                return list(reader)
-            else:
-                reader = csv.DictReader(csvfile, dialect=dialect, *args, **kwargs)
-                return list(reader)
+    def read(file_name, header=False, *args, **kwargs):
+        warnings.warn("chirptext.io.CSV is deprecated and will be removed in near future.", DeprecationWarning)
+        return read_csv(file_name, fieldnames=header, *args, **kwargs)
 
     @staticmethod
     def read_tsv(file_name, *args, **kwargs):
-        return CSV.read(file_name, dialect='excel-tab', *args, **kwargs)
+        warnings.warn("chirptext.io.CSV is deprecated and will be removed in near future.", DeprecationWarning)
+        return read_tsv(file_name, *args, **kwargs)
 
     @staticmethod
-    def write(file_name, rows, dialect='excel', header=None, quoting=csv.QUOTE_ALL, extrasaction='ignore'):
+    def write(file_name, rows, header=None, *args, **kwargs):
         ''' Write rows data to a CSV file (with or without header) '''
-        if not quoting:
-            quoting = csv.QUOTE_MINIMAL
-        with open(file_name, 'w') as csvfile:
-            if not header:
-                writer = csv.writer(csvfile, dialect=dialect, quoting=quoting)
-                for row in rows:
-                    writer.writerow(row)
-            else:
-                writer = csv.DictWriter(csvfile, dialect=dialect, fieldnames=header, quoting=quoting, extrasaction=extrasaction)
-                writer.writeheader()
-                for row in rows:
-                    writer.writerow(row)
+        warnings.warn("chirptext.io.CSV is deprecated and will be removed in near future.", DeprecationWarning)
+        write_csv(file_name, rows, fieldnames=header, *args, **kwargs)
 
     @staticmethod
-    def write_tsv(file_name, rows, quoting=csv.QUOTE_ALL, **kwargs):
-        CSV.write(file_name, rows, dialect='excel-tab', quoting=quoting, **kwargs)
+    def write_tsv(file_name, rows, *args, **kwargs):
+        warnings.warn("chirptext.io.CSV is deprecated and will be removed in near future.", DeprecationWarning)
+        write_tsv(file_name, rows, *args, **kwargs)
