@@ -40,11 +40,11 @@
     "loggers": {
         "__main__": {
             "level": "INFO",
-            "handlers": ["console", "file_handler_verbose"],
+            "handlers": ["file_handler_verbose"],
             "propagate": "no"
         }
         ,"test": {
-            "level": "DEBUG",
+            "level": "INFO",
             "propagate": "no"
          }
     },
