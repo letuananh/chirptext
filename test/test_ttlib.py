@@ -58,6 +58,34 @@ def getLogger():
 # Tests
 # ------------------------------------------------------------------------------
 
+class TestBasicModel(unittest.TestCase):
+
+    def test_sentid(self):
+        doc = ttl.Document('mydoc')
+        sent = doc.new_sent('First sentence.')
+        self.assertEqual(sent.ID, 1)
+        sent2 = doc.new_sent('Second sentence.')
+        self.assertEqual(sent2.ID, 2)
+        # add some sentences manually
+        sentm1 = ttl.Sentence('Another one', ID='foo')
+        sentm2 = ttl.Sentence('Another one 2', ID='5')
+        doc.add_sent(sentm1)
+        doc.add_sent(sentm2)
+        doc.new_sent('Third sentence.')
+        doc.new_sent('Fourth sentence.')
+        sent5 = doc.new_sent('Fifth sentence.')
+        self.assertEqual(sent5.ID, 6)
+        # cannot add foo again
+        sent_foo = ttl.Sentence('Foo sentence.', ID='foo')
+        self.assertRaises(Exception, lambda: doc.add_sent(sent_foo))
+        # cannot add a None sentence
+        self.assertRaises(Exception, lambda: doc.add_sent(None))
+        # cannot add a sentence with None ID
+        self.assertRaises(Exception, lambda: doc.add_sent(ttl.Sentence('None sentence.', ID=None)))
+        # document should have 5 created sentences + 2 imported sentences
+        self.assertEqual(len(doc), 7)
+
+
 class TestBuildTags(unittest.TestCase):
 
     def test_create_sent(self):

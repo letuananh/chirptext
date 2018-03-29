@@ -438,6 +438,13 @@ class Document(object):
         self.__name = name
         self.__sents = []
         self.__sent_map = {}
+        self.__id_seed = 1  # for creating a new sentence without ID
+
+    def new_id(self):
+        ''' Generate a new sentence ID '''
+        while self.has_id(self.__id_seed):
+            self.__id_seed += 1
+        return self.__id_seed
 
     @property
     def name(self):
@@ -484,7 +491,7 @@ class Document(object):
         return os.path.join(self.path, '{}_tags.txt'.format(self.name))
 
     def has_id(self, sent_id):
-        return sent_id in self.__sent_map
+        return str(sent_id) in self.__sent_map
 
     def add_sent(self, sent_obj):
         ''' Add a ttl.Sentence object to this document '''
@@ -494,12 +501,14 @@ class Document(object):
             raise Exception("Sentence ID cannot be None")
         elif self.has_id(sent_obj.ID):
             raise Exception("Sentence ID {} exists".format(sent_obj.ID))
-        self.__sent_map[sent_obj.ID] = sent_obj
+        self.__sent_map[str(sent_obj.ID)] = sent_obj
         self.__sents.append(sent_obj)
         return sent_obj
 
-    def new_sent(self, text, ID):
+    def new_sent(self, text, ID=None):
         ''' Create a new sentence and add it to this Document '''
+        if ID is None:
+            ID = self.new_id()
         return self.add_sent(Sentence(text, ID=ID))
 
     def pop(self, sent_id, **kwargs):
