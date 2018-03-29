@@ -149,6 +149,10 @@ def read_csv_iter(input_stream, fieldnames=None, sniff=False, *args, **kwargs):
             yield row
 
 
+def read_tsv_iter(input_stream, *args, **kwargs):
+    return read_csv_iter(input_stream, dialect='excel-tab', *args, **kwargs)
+
+
 def read_csv(path, fieldnames=None, sniff=True, encoding='utf-8', *args, **kwargs):
     ''' Read CSV rows as table from a file.
     By default, csv.reader() will be used any output will be a list of lists.

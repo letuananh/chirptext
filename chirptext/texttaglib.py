@@ -115,6 +115,9 @@ class Sentence(object):
         self.__concepts = []
         self.__concept_map = OrderedDict()  # concept.ID to concept object
 
+    def __repr__(self):
+        return str(self)
+
     def __str__(self):
         # return format_tag(self)
         if self.ID:
@@ -132,6 +135,12 @@ class Sentence(object):
     def tags(self):
         ''' Sentence level tags '''
         return self.__tags
+
+    def tagmap(self):
+        tm = dd(list)
+        for t in self.tags:
+            tm[t.tagtype].append(t)
+        return tm
 
     @property
     def tokens(self):
@@ -169,6 +178,17 @@ class Sentence(object):
         tag_obj = Tag(label, cfrom, cto, tagtype=tagtype, **kwargs)
         self.tags.append(tag_obj)
         return tag_obj
+
+    def get_tag(self, tagtype):
+        ''' Get the first tag of a particular type'''
+        for tag in self.__tags:
+            if tag.tagtype == tagtype:
+                return tag
+        return None
+
+    def get_tags(self, tagtype):
+        ''' Get all tags of a type '''
+        return [t for t in self.__tags if t.tagtype == tagtype]
 
     def new_token(self, text, cfrom=-1, cto=-1, *args, **kwargs):
         tk = Token(text, cfrom, cto, sent=self, *args, **kwargs)
@@ -235,11 +255,17 @@ class Sentence(object):
         for token in tokens:
             if has_hooker:
                 import_hook(token)
-            start = text.find(token.lower() if ignorecase else token, cfrom)
+            to_find = token.lower() if ignorecase else token
+            start = text.find(to_find, cfrom)
+            if to_find == '``' or to_find == "''":
+                start_dq = text.find('"', cfrom)
+                if start_dq > -1 and (start == -1 or start > start_dq):
+                    to_find = '"'
+                    start = start_dq
             if start == -1:
                 raise LookupError('Cannot find token `{t}` in sent `{s}`({l}) from {i} ({p})'.format(t=token, s=self.text, l=len(self.text), i=cfrom, p=self.text[cfrom:cfrom + 20]))
             cfrom = start
-            cto = cfrom + len(token)
+            cto = cfrom + len(to_find)
             self.new_token(token, cfrom, cto)
             cfrom = cto - 1
 
