@@ -188,6 +188,11 @@ class Timer:
         self.log("Stopped", desc=msg)
         return self
 
+    def do(self, task, desc=''):
+        self.start(desc)
+        task()
+        self.stop(desc)
+
     def __str__(self):
         return "Execution time: %.2f sec(s)" % (self.exec_time(),)
 
