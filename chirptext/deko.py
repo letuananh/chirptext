@@ -45,6 +45,8 @@ import logging
 import MeCab
 import jaconv
 
+from . import texttaglib as ttl
+
 
 # -------------------------------------------------------------------------------
 # Configuration
@@ -169,8 +171,20 @@ class MeCabSent(object):
     def words(self):
         return [x.surface for x in self.tokens if not x.is_eos]
 
+    @property
+    def text(self):
+        return self.surface if self.surface else str(self)
+
     def __str__(self):
         return ' '.join([x.surface for x in self.tokens if not x.is_eos])
+
+    def to_ttl(self):
+        tsent = ttl.Sentence(self.surface)
+        tsent.import_tokens(self.words)
+        for mtk, tk in zip(self, tsent):
+            tk.pos = mtk.pos3()
+            tk.new_tag(mtk.reading_hira(), tagtype="reading", source=ttl.Tag.MECAB)
+        return tsent
 
     @staticmethod
     def parse(text):
@@ -182,8 +196,9 @@ class MeCabSent(object):
 
 class DekoText(object):
 
-    def __init__(self):
+    def __init__(self, name=''):
         self.sents = []
+        self.name = name
 
     def __len__(self):
         return len(self.sents)
@@ -199,6 +214,12 @@ class DekoText(object):
 
     def __str__(self):
         return "\n".join(["#{}. {}".format(idx + 1, x) for idx, x in enumerate(self)])
+
+    def to_ttl(self):
+        doc = ttl.Document(name=self.name)
+        for sent in self.sents:
+            doc.add_sent(sent.to_ttl())
+        return doc
 
     @staticmethod
     def parse(text, splitlines=True, auto_strip=True):
