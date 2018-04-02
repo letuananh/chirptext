@@ -38,8 +38,9 @@ from collections import namedtuple
 from collections import defaultdict as dd
 from collections import OrderedDict
 
-from chirptext import FileHelper, FileHub
-from chirptext.io import CSV
+from .leutile import FileHelper
+from .anhxa import DataObject
+from .io import iter_tsv_stream
 
 
 # -------------------------------------------------------------------------------
@@ -59,7 +60,7 @@ def getLogger():
 # Classes
 # ------------------------------------------------------------------------------
 
-class Tag(object):
+class Tag(DataObject):
 
     DEFAULT = 'n/a'
     GOLD = 'gold'
@@ -73,7 +74,8 @@ class Tag(object):
     BABELNET = 'bn'
     OTHER = 'other'
 
-    def __init__(self, label, cfrom=-1, cto=-1, tagtype='', source=DEFAULT):
+    def __init__(self, label='', cfrom=-1, cto=-1, tagtype='', source=DEFAULT, **kwargs):
+        super().__init__(**kwargs)
         self.cfrom = cfrom
         self.cto = cto
         self.label = label
@@ -101,9 +103,10 @@ class Tag(object):
         return a_dict
 
 
-class Sentence(object):
+class Sentence(DataObject):
 
-    def __init__(self, text, ID=None, tags=None, tokens=None):
+    def __init__(self, text='', ID=None, tags=None, tokens=None, **kwargs):
+        super().__init__(**kwargs)
         self.text = text
         self.ID = ID
         self.__tags = []
@@ -201,15 +204,15 @@ class Sentence(object):
             ID += 1
         return ID
 
-    def new_concept(self, tag, clemma="", tokens=None, ID=None, **kwargs):
+    def new_concept(self, tag, clemma="", tokens=None, cidx=None, **kwargs):
         ''' Create a new concept object and add it to concept list
         tokens can be a list of Token objects or token indices
         '''
-        if ID is None:
-            ID = self.new_concept_id()
+        if cidx is None:
+            cidx = self.new_concept_id()
         if tokens:
             tokens = (t if isinstance(t, Token) else self[t] for t in tokens)
-        c = Concept(ID, tag, clemma=clemma, sent=self, tokens=tokens, **kwargs)
+        c = Concept(cidx=cidx, tag=tag, clemma=clemma, sent=self, tokens=tokens, **kwargs)
         return self.add_concept(c)
 
     def add_concept(self, concept_obj):
@@ -218,10 +221,10 @@ class Sentence(object):
             raise Exception("Concept object cannot be None")
         elif concept_obj in self.__concepts:
             raise Exception("Concept object is already inside")
-        elif concept_obj.ID in self.__concept_map:
-            raise Exception("Duplicated concept ID ({})".format(concept_obj.ID))
+        elif concept_obj.cidx in self.__concept_map:
+            raise Exception("Duplicated concept ID ({})".format(concept_obj.cidx))
         self.__concepts.append(concept_obj)
-        self.__concept_map[concept_obj.ID] = concept_obj
+        self.__concept_map[concept_obj.cidx] = concept_obj
         return concept_obj
 
     def pop_concept(self, cid, **kwargs):
@@ -313,16 +316,17 @@ class Sentence(object):
         return sent
 
 
-class Token(object):
+class Token(DataObject):
 
-    def __init__(self, text, cfrom, cto, sent=None, pos=None, lemma=None, comment=None, source=Tag.DEFAULT):
+    def __init__(self, text='', cfrom=-1, cto=-1, sent=None, pos=None, lemma=None, comment=None, source=Tag.DEFAULT, **kwargs):
         ''' A token (e.g. a word in a sentence) '''
+        super().__init__(**kwargs)
+        self.sent = sent
+        self.__tags = []
         self.cfrom = cfrom
         self.cto = cto
-        self.__tags = []
-        self.sent = sent
-        self.text = text
-        self.lemma = lemma
+        self.text = text  # original form
+        self.lemma = lemma   # dictionary form
         self.pos = pos
         self.comment = comment
 
@@ -334,6 +338,10 @@ class Token(object):
 
     def __iter__(self):
         return iter(self.__tags)
+
+    @property
+    def tags(self):
+        return self.__tags
 
     def surface(self):
         if self.sent and self.sent.text:
@@ -382,22 +390,23 @@ class Token(object):
         return token_json
 
 
-class Concept(object):
+class Concept(DataObject):
 
     FLAG = 'flag'
     COMMENT = 'comment'
     NOT_MATCHED = 'E'
 
-    def __init__(self, ID, tag, clemma, sent=None, tokens=None, comment=None):
-        self.ID = ID
+    def __init__(self, cidx=None, tag='', clemma='', sent=None, tokens=None, comment=None, **kwargs):
+        super().__init__(**kwargs)
+        self.cidx = cidx
+        self.sent = sent
+        self.__tokens = []
         self.clemma = clemma
         self.tag = tag
-        self.sent = sent
+        self.flag = None
         self.comment = ''
-        self.__tokens = []
         if tokens:
             self.__tokens.extend(tokens)
-        self.flag = None
 
     @property
     def tokens(self):
@@ -431,9 +440,10 @@ class Concept(object):
         return cdict
 
 
-class Document(object):
+class Document(DataObject):
 
-    def __init__(self, name, path='.'):
+    def __init__(self, name='', path='.', **kwargs):
+        super().__init__(**kwargs)
         self.__path = FileHelper.abspath(path)
         self.__name = name
         self.__sents = []
@@ -450,9 +460,17 @@ class Document(object):
     def name(self):
         return self.__name
 
+    @name.setter
+    def name(self, value):
+        self.__name = value
+
     @property
     def path(self):
         return self.__path
+
+    @path.setter
+    def path(self, value):
+        self.__path = value
 
     def __len__(self):
         return len(self.__sents)
@@ -498,7 +516,8 @@ class Document(object):
         if sent_obj is None:
             raise Exception("Sentence object cannot be None")
         elif sent_obj.ID is None:
-            raise Exception("Sentence ID cannot be None")
+            # if sentID is None, create a new ID
+            sent_obj.ID = self.new_id()
         elif self.has_id(sent_obj.ID):
             raise Exception("Sentence ID {} exists".format(sent_obj.ID))
         self.__sent_map[str(sent_obj.ID)] = sent_obj
@@ -528,16 +547,86 @@ class Document(object):
 
     def read(self):
         ''' Read tagged doc from mutliple files (sents, tokens, concepts, links, tags) '''
-        if not os.path.isfile(self.sent_path):
-            raise Exception("Sentence file could not be found {}".format(self.sent_path))
-        sent_rows = CSV.read_tsv(self.sent_path)
-        for sid, text in sent_rows:
-            self.new_sent(text.strip(), ID=sid)
+        TxtReader.from_doc(self).read(self)
+        return self
+
+    @staticmethod
+    def read_ttl(path):
+        ''' Helper function to read Document in TTL-TXT format (i.e. ${docname}_*.txt)
+        E.g. Document.read_ttl('~/data/myfile') is the same as Document('myfile', '~/data/').read()
+        '''
+        doc_path = os.path.dirname(path)
+        doc_name = os.path.basename(path)
+        return Document(doc_name, doc_path).read()
+
+    def write_ttl(self):
+        ''' Helper function to write doc to TTL-TXT format '''
+        TxtWriter.from_doc(self).write_doc(self)
+
+    @staticmethod
+    def from_json_file(path):
+        if not os.path.isfile(path):
+            raise Exception("Document file could not be found: {}".format(path))
+        doc_name = os.path.splitext(os.path.basename(path))[0]
+        doc_path = os.path.dirname(path)
+        doc = Document(doc_name, path=doc_path)
+        with open(path, 'rt') as infile:
+            for line in infile:
+                j = json.loads(line)
+                sent = Sentence.from_json(j)
+                doc.add_sent(sent)
+        return doc
+
+
+class TxtReader(object):
+    def __init__(self, sent_stream, token_stream, concept_stream, link_stream, tag_stream, doc_name='', doc_path='.'):
+        self.sent_stream = sent_stream
+        self.token_stream = token_stream
+        self.concept_stream = concept_stream
+        self.link_stream = link_stream
+        self.tag_stream = tag_stream
+        self.doc_name = doc_name
+        self.doc_path = doc_path
+
+    def sent_reader(self):
+        return iter_tsv_stream(self.sent_stream) if self.sent_stream else None
+
+    def token_reader(self):
+        return iter_tsv_stream(self.token_stream) if self.token_stream else None
+
+    def concept_reader(self):
+        return iter_tsv_stream(self.concept_stream) if self.concept_stream else None
+
+    def link_reader(self):
+        return iter_tsv_stream(self.link_stream) if self.link_stream else None
+
+    def tag_reader(self):
+        return iter_tsv_stream(self.tag_stream) if self.tag_stream else None
+
+    @staticmethod
+    def from_doc(doc, encoding='utf-8'):
+        reader = TxtReader(sent_stream=open(doc.sent_path, mode='rt', encoding=encoding),
+                           token_stream=open(doc.token_path, mode='rt', encoding=encoding),
+                           concept_stream=open(doc.concept_path, mode='rt', encoding=encoding),
+                           link_stream=open(doc.link_path, mode='rt', encoding=encoding),
+                           tag_stream=open(doc.tag_path, mode='rt', encoding=encoding),
+                           doc_name=doc.name,
+                           doc_path=doc.path)
+        return reader
+
+    def read(self, doc=None):
+        ''' Read tagged doc from mutliple files (sents, tokens, concepts, links, tags) '''
+        if not self.sent_stream:
+            raise Exception("There is no sentence data stream available")
+        if doc is None:
+            doc = Document(name=self.doc_name, path=self.doc_path)
+        for sid, text in self.sent_reader():
+            doc.new_sent(text.strip(), ID=sid)
         # Read tokens if available
-        if os.path.isfile(self.token_path):
+        if self.token_stream:
+            # read all tokens first
             sent_tokens_map = dd(list)
-            token_rows = CSV.read_tsv(self.token_path)
-            for token_row in token_rows:
+            for token_row in self.token_reader():
                 if len(token_row) == 6:
                     sid, wid, token, lemma, pos, comment = token_row
                 else:
@@ -546,7 +635,7 @@ class Document(object):
                 sent_tokens_map[sid].append((token, lemma, pos.strip(), wid, comment))
                 # TODO: verify wid?
             # import tokens
-            for sent in self.__sents:
+            for sent in doc:
                 sent_tokens = sent_tokens_map[sent.ID]
                 sent.import_tokens([x[0] for x in sent_tokens])
                 for ((tk, lemma, pos, wid, comment), token) in zip(sent_tokens, sent.tokens):
@@ -555,81 +644,85 @@ class Document(object):
                     token.comment = comment
                     token.new_tag(label=wid, tagtype='wid')
             # only read concepts if tokens are available
-            if os.path.isfile(self.concept_path):
+            if self.concept_stream:
                 # read concepts
-                concept_rows = CSV.read_tsv(self.concept_path)
-                for concept_row in concept_rows:
+                for concept_row in self.concept_reader():
                     if len(concept_row) == 5:
                         sid, cid, clemma, tag, comment = concept_row
                     else:
                         sid, cid, clemma, tag = concept_row
                         comment = ''
-                    self.__sent_map[sid].new_concept(tag.strip(), clemma=clemma, ID=cid, comment=comment)
+                    doc.get(sid).new_concept(tag.strip(), clemma=clemma, cidx=cid, comment=comment)
                 # only read concept-token links if tokens and concepts are available
-                link_rows = CSV.read_tsv(self.link_path)
-                for sid, cid, wid in link_rows:
-                    sent = self.__sent_map[sid]
+                for sid, cid, wid in self.link_reader():
+                    sent = doc.get(sid)
                     wid = int(wid.strip())
                     sent.concept(cid).add_token(sent[wid])
         # read sentence level tags
-        if os.path.isfile(self.tag_path):
-            rows = CSV.read_tsv(self.tag_path)
-            for sid, cfrom, cto, label, tagtype in rows:
-                self.__sent_map[sid].new_tag(label, cfrom, cto, tagtype=tagtype)
+        if self.tag_stream:
+            for sid, cfrom, cto, label, tagtype in self.tag_reader():
+                doc.get(sid).new_tag(label, cfrom, cto, tagtype=tagtype)
         return self
 
-    def write_ttl_streams(self, sent_stream, token_stream, concept_stream, link_stream, tag_stream):
-        # export to TTL format (multiple text files)
-        sent_writer = csv.writer(sent_stream, dialect=STD_DIALECT, quoting=STD_QUOTING)
-        token_writer = csv.writer(token_stream, dialect=STD_DIALECT, quoting=STD_QUOTING)
-        concept_writer = csv.writer(concept_stream, dialect=STD_DIALECT, quoting=STD_QUOTING)
-        link_writer = csv.writer(link_stream, dialect=STD_DIALECT, quoting=STD_QUOTING)
-        tag_writer = csv.writer(tag_stream, dialect=STD_DIALECT, quoting=STD_QUOTING)
-        for sent in self:
-            sent_writer.writerow((sent.ID, sent.text))
-            # write tokens
-            for wid, token in enumerate(sent.tokens):
-                token_writer.writerow((token.sent.ID, wid, token.text or token.surface(), token.lemma, token.pos, token.comment))
-            # write concepts & wclinks
-            for cid, concept in enumerate(sent.concepts):
-                # write concept
-                concept_writer.writerow((sent.ID, cid, concept.clemma, concept.tag, concept.comment))
-                # write cwlinks
-                for token in concept.tokens:
-                    wid = sent.tokens.index(token)
-                    link_writer.writerow((sent.ID, cid, wid))
-            # write tags
-            for tag in sent.tags:
-                tag_writer.writerow((sent.ID, tag.cfrom, tag.cto, tag.label, tag.tagtype))
 
-    def write_ttl(self):
-        with FileHub(working_dir=self.path, default_mode='w') as output:
-            self.write_ttl_streams(output[self.sent_path],
-                                   output[self.token_path],
-                                   output[self.concept_path],
-                                   output[self.link_path],
-                                   output[self.tag_path])
+class TxtWriter(object):
+    def __init__(self, sent_stream, token_stream, concept_stream, link_stream, tag_stream):
+        self.sent_stream = sent_stream
+        self.token_stream = token_stream
+        self.concept_stream = concept_stream
+        self.link_stream = link_stream
+        self.tag_stream = tag_stream
+        self.sent_writer = csv.writer(sent_stream, dialect=STD_DIALECT, quoting=STD_QUOTING)
+        self.token_writer = csv.writer(token_stream, dialect=STD_DIALECT, quoting=STD_QUOTING)
+        self.concept_writer = csv.writer(concept_stream, dialect=STD_DIALECT, quoting=STD_QUOTING)
+        self.link_writer = csv.writer(link_stream, dialect=STD_DIALECT, quoting=STD_QUOTING)
+        self.tag_writer = csv.writer(tag_stream, dialect=STD_DIALECT, quoting=STD_QUOTING)
+
+    def write_sent(self, sent):
+        self.sent_writer.writerow((sent.ID, sent.text))
+        # write tokens
+        for wid, token in enumerate(sent.tokens):
+            self.token_writer.writerow((token.sent.ID, wid, token.text or token.surface(), token.lemma, token.pos, token.comment))
+        # write concepts & wclinks
+        for cid, concept in enumerate(sent.concepts):
+            # write concept
+            self.concept_writer.writerow((sent.ID, cid, concept.clemma, concept.tag, concept.comment))
+            # write cwlinks
+            for token in concept.tokens:
+                wid = sent.tokens.index(token)
+                self.link_writer.writerow((sent.ID, cid, wid))
+        # write tags
+        for tag in sent.tags:
+            self.tag_writer.writerow((sent.ID, tag.cfrom, tag.cto, tag.label, tag.tagtype))
+
+    def write_doc(self, doc):
+        for sent in doc:
+            self.write_sent(sent)
+
+    def __enter__(self):
+        return self
+
+    def close(self):
+        self.sent_stream.close()
+        self.token_stream.close()
+        self.concept_stream.close()
+        self.link_stream.close()
+        self.tag_stream.close()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
     @staticmethod
-    def read_ttl(path):
-        ''' Helper function to read Document in TTL format (i.e. ${docname}_*.txt)
-        E.g. Document.read_ttl('~/data/myfile') is the same as Document('myfile', '~/data/').read()
-        '''
-        doc_path = os.path.dirname(path)
-        doc_name = os.path.basename(path)
-        return Document(doc_name, doc_path).read()
+    def from_doc(doc, encoding='utf-8'):
+        return TxtWriter(sent_stream=open(doc.sent_path, mode='wt', encoding=encoding),
+                         token_stream=open(doc.token_path, mode='wt', encoding=encoding),
+                         concept_stream=open(doc.concept_path, mode='wt', encoding=encoding),
+                         link_stream=open(doc.link_path, mode='wt', encoding=encoding),
+                         tag_stream=open(doc.tag_path, mode='wt', encoding=encoding))
 
     @staticmethod
-    def from_json_file(path):
-        if not os.path.isfile(path):
-            raise Exception("Document file could not be found: {}".format(path))
-        doc_name = os.path.basename(path)
+    def from_path(path):
         doc_path = os.path.dirname(path)
-        doc = Document(doc_name, path=doc_path)
-        with open(path, 'rt') as infile:
-            for line in infile:
-                j = json.loads(line)
-                sent = Sentence.from_json(j)
-                doc.sents.append(sent)
-                doc.sent_map[sent.ID] = sent
-        return doc
+        doc_name = os.path.basename(path)
+        doc = Document(name=doc_name, path=doc_path)
+        return TxtWriter.from_doc(doc)
