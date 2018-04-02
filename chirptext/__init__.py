@@ -55,9 +55,11 @@ __status__ = "Prototype"
 from .leutile import uniquify, header, confirm
 from .leutile import Timer, Counter, FileHub, TextReport, FileHelper, AppConfig
 from .arsenal import JiCache
+from .anhxa import DataObject
 from .chirpnet import SmartURL, WebHelper
 
 __all__ = ["uniquify", "header", "confirm",
            "Timer", "Counter",
            "TextReport", "FileHub", "FileHelper", "AppConfig",
-           "JiCache", "SmartURL", "WebHelper"]
+           "JiCache", "SmartURL", "WebHelper",
+           "DataObject"]

@@ -55,8 +55,26 @@ def getLogger():
 # FUNCTIONS
 # -------------------------------------------------------------------------------
 
+class DataObject(object):
+
+    def __init__(self, **kwargs):
+        self.__extra_data = {}
+        add_extra_fields(self, kwargs)
+
+    def __getattr__(self, attr_name):
+        return self.__extra_data[attr_name] if attr_name in self.__extra_data else None
+
+
 def field(f, field_map):
     return f if f not in field_map else field_map[f]
+
+
+def add_extra_fields(obj, kwargs):
+    for k, v in kwargs.items():
+        if k not in obj.__dict__:
+            obj.__dict__[k] = v
+        else:
+            raise Exception("Attribute {} exists".format(k))
 
 
 def dumps(obj, *args, **kwargs):
