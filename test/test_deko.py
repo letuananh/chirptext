@@ -120,6 +120,24 @@ EOS
         for tk in sent:
             getLogger().debug(tk.pos3())
 
+    def test_deko_ttl(self):
+        sent = txt2mecab(txt).to_ttl()
+        getLogger().debug("Sent: {}".format(sent))
+        for tk in sent:
+            getLogger().debug("{} - {}".format(tk, tk.pos))
+        sj = sent.to_json()
+        expected = {'text': '雨が降る。', 'tokens': [{'cfrom': 0, 'cto': 1, 'text': '雨', 'pos': '名詞-一般', 'tags': {'reading': ['あめ']}}, {'cfrom': 1, 'cto': 2, 'text': 'が', 'pos': '助詞-格助詞-一般', 'tags': {'reading': ['が']}}, {'cfrom': 2, 'cto': 4, 'text': '降る', 'pos': '動詞-自立', 'tags': {'reading': ['ふる']}}, {'cfrom': 4, 'cto': 5, 'text': '。', 'pos': '記号-句点', 'tags': {'reading': ['。']}}], 'concepts': []}
+        self.assertEqual(sj, expected)
+        # test doc to ttl
+        doc = DekoText.parse(txt3, splitlines=True)
+        ttl_doc = doc.to_ttl()
+        self.assertEqual(len(ttl_doc), 3)
+        for ds, ts in zip(doc, ttl_doc):
+            self.assertEqual(ds.text, ts.text)
+            for dtk, ttk in zip(ds, ts):
+                self.assertEqual(dtk.surface, ttk.text)
+                self.assertEqual(dtk.pos3(), ttk.pos)
+
     def test_not_split(self):
         doc = DekoText.parse(txt3, splitlines=False)
         docx = DekoText.parse(txt3, splitlines=True)

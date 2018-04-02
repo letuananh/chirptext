@@ -35,6 +35,7 @@ Latest version can be found at https://github.com/letuananh/chirptext
 import os
 import unittest
 import logging
+import json
 from chirptext import TextReport
 from chirptext import texttaglib as ttl
 from chirptext.deko import txt2mecab
@@ -80,10 +81,14 @@ class TestBasicModel(unittest.TestCase):
         self.assertRaises(Exception, lambda: doc.add_sent(sent_foo))
         # cannot add a None sentence
         self.assertRaises(Exception, lambda: doc.add_sent(None))
-        # cannot add a sentence with None ID
-        self.assertRaises(Exception, lambda: doc.add_sent(ttl.Sentence('None sentence.', ID=None)))
         # document should have 5 created sentences + 2 imported sentences
         self.assertEqual(len(doc), 7)
+
+    def test_extra_fields(self):
+        cmt = 'This sentence is in English'
+        s = ttl.Sentence(text='I am a sentence.', docID=1, comment=cmt)
+        self.assertEqual(s.docID, 1)
+        self.assertEqual(s.comment, cmt)
 
 
 class TestBuildTags(unittest.TestCase):
@@ -97,7 +102,7 @@ class TestBuildTags(unittest.TestCase):
         # sense tagging
         sent.new_concept('01148283-a', 'happy', tokens=[sent[1]])
         c = sent.new_concept('02084071-n', 'dog')
-        sent.concept(c.ID).add_token(sent[3])
+        sent.concept(c.cidx).add_token(sent[3])
         sent.new_concept(BARK_SID, 'bark').add_token(sent[4])
         sent.new_concept(GDOG_SID, 'guard-dog').add_token(sent[2], sent[3])  # MWE example
         # verification
@@ -269,7 +274,7 @@ class TestTagging(unittest.TestCase):
         words = TextReport.string()
         doc = ttl.Document('manual', TEST_DATA)
         # create sents in doc
-        raws = ("三毛猫がすきです。", "雨が降る。", "女の子はケーキを食べる。")
+        raws = ("三毛猫が好きです。", "雨が降る。", "女の子はケーキを食べる。")
         for sid, r in enumerate(raws):
             msent = txt2mecab(r)
             tsent = doc.new_sent(msent.surface, sid)
@@ -291,7 +296,8 @@ class TestTagging(unittest.TestCase):
         doc[2].new_tag("WIKI", 0, 3, tagtype="SRC")
         doc[2].new_tag("https://ja.wikipedia.org/wiki/少女", 0, 3, tagtype="URL")
         # export doc
-        doc.write_ttl_streams(sents.file, words.file, concepts.file, links.file, tags.file)
+        writer = ttl.TxtWriter(sents.file, words.file, concepts.file, links.file, tags.file)
+        writer.write_doc(doc)
         getLogger().debug("sents\n{}".format(sents.content()))
         getLogger().debug("words\n{}".format(words.content()))
         getLogger().debug("concepts\n{}".format(concepts.content()))
@@ -302,6 +308,8 @@ class TestTagging(unittest.TestCase):
         self.assertTrue(concepts.content())
         self.assertTrue(links.content())
         self.assertTrue(tags.content())
+        for sent in doc:
+            logging.debug(json.dumps(sent.to_json(), ensure_ascii=False))
 
 
 # ------------------------------------------------------------------------------

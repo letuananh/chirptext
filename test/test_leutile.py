@@ -36,7 +36,7 @@ import os
 import logging
 import unittest
 
-from chirptext.leutile import Counter, TextReport, StringTool, LOREM_IPSUM
+from chirptext.leutile import Counter, TextReport, StringTool, LOREM_IPSUM, Timer
 from chirptext.leutile import FileHelper
 from chirptext.leutile import AppConfig
 
@@ -104,6 +104,31 @@ class TestLeUtile(unittest.TestCase):
             rp.writeline("ABC")
             rp.writeline(123, 456, 789)
             self.assertEqual(rp.content(), 'ABC \n123 456 789 \n')
+
+    def test_timer(self):
+        rp = TextReport.string()
+        t = Timer(report=rp)
+        msg = "Do something expensive"
+        t.start(msg)
+        do_expensive()
+        t.stop(msg)
+        getLogger().debug(rp.content())
+        self.assertIn("Started", rp.content())
+        self.assertIn("Stopped", rp.content())
+        # test do()
+        rp = TextReport.string()
+        t = Timer(report=rp)
+        t.do(lambda: do_expensive(), desc=msg)
+        self.assertIn("Started", rp.content())
+        self.assertIn("Stopped", rp.content())
+        getLogger().debug(rp.content())
+
+
+def do_expensive(n=10000):
+    s = TextReport.string()
+    for i in range(n):
+        s.print("This is string number #{}".format(i))
+    return str(s.content())
 
 
 class TestFileHelper(unittest.TestCase):
