@@ -39,6 +39,7 @@ References:
 ########################################################################
 
 import logging
+import threading
 import json
 from json import JSONDecoder, JSONEncoder
 
@@ -55,14 +56,36 @@ def getLogger():
 # FUNCTIONS
 # -------------------------------------------------------------------------------
 
+class IDGenerator(object):
+    def __init__(self, known_ids=None):
+        self.__known_ids = set()
+        if known_ids:
+            self.__known_ids.update(known_ids)
+        self.__id_seed = 1
+        self.__lock = threading.Lock()
+
+    def new_id(self):
+        with self.__lock:
+            while self.__id_seed in self.__known_ids:
+                self.__id_seed += 1
+            self.__known_ids.add(self.__id_seed)  # remember this new ID
+            return self.__id_seed
+
+
 class DataObject(object):
 
     def __init__(self, **kwargs):
-        self.__extra_data = {}
+        self.__extra_data = {}  # for internal purpose
         add_extra_fields(self, kwargs)
 
     def __getattr__(self, attr_name):
         return self.__extra_data[attr_name] if attr_name in self.__extra_data else None
+
+    def update(self, a_dict, *fields, **field_map):
+        flex_update_obj(a_dict, self, True, *fields, **field_map)
+
+    def to_json(self, *args, **kwargs):
+        return dumps(self, *args, **kwargs)
 
 
 def field(f, field_map):
@@ -83,15 +106,23 @@ def dumps(obj, *args, **kwargs):
 
 
 def update_obj(source, target, *fields, **field_map):
+    flex_update_obj(source, target, False, *fields, **field_map)
+
+
+def flex_update_obj(source, target, __silent, *fields, **field_map):
     source_dict = source.__dict__ if hasattr(source, '__dict__') else source
     if not fields:
         fields = source_dict.keys()
     for f in fields:
+        if f not in source_dict and __silent:
+            continue
         target_f = f if f not in field_map else field_map[f]
         setattr(target, target_f, source_dict[f])
 
 
 def to_json(obj, *fields, **field_map):
+    if isinstance(obj, set):
+        return list(obj)
     obj_dict = obj.__dict__ if hasattr(obj, '__dict__') else obj
     if not fields:
         fields = obj_dict.keys()
