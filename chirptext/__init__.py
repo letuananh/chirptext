@@ -46,7 +46,7 @@ __description__ = "ChirpText is a collection of text processing tools for Python
 __url__ = "https://github.com/letuananh/chirptext"
 __maintainer__ = "Le Tuan Anh"
 __version_major__ = "0.1"
-__version__ = "{}a11".format(__version_major__)
+__version__ = "{}a12".format(__version_major__)
 __version_long__ = "{} - Alpha".format(__version_major__)
 __status__ = "Prototype"
 
@@ -57,9 +57,10 @@ from .leutile import Timer, Counter, FileHub, TextReport, FileHelper, AppConfig
 from .arsenal import JiCache
 from .anhxa import DataObject
 from .chirpnet import SmartURL, WebHelper
+from . import texttaglib as ttl
 
 __all__ = ["uniquify", "header", "confirm",
            "Timer", "Counter",
            "TextReport", "FileHub", "FileHelper", "AppConfig",
            "JiCache", "SmartURL", "WebHelper",
-           "DataObject"]
+           "DataObject", "ttl"]
