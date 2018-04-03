@@ -38,6 +38,7 @@ References:
 import os
 import unittest
 import json
+from chirptext.anhxa import DataObject
 from chirptext.anhxa import to_json, to_obj, dumps, update_obj
 from chirptext.anhxa import TypedJSONDecoder, TypelessSONEncoder, TypedJSONEncoder
 
@@ -108,6 +109,24 @@ class Person(object):
 # -------------------------------------------------------------------------------
 # Tests
 # -------------------------------------------------------------------------------
+
+class TestDataObject(unittest.TestCase):
+
+    def test_dobj(self):
+        desc = 'Just an ordinary foo'
+        source = {'name': 'foo', 'age': 18, 'desc': desc, 'silent': False}
+        obj = DataObject(funny=True)
+        obj.hobbies = {'coding', 'languages'}
+        obj.update(source, desc='description', silent='muet')
+        obj.update(source, 'nonexistence')  # this is OK too
+        self.assertEqual(obj.name, 'foo')
+        self.assertEqual(obj.age, 18)
+        self.assertEqual(obj.description, desc)
+        self.assertFalse(obj.muet)
+        oj = obj.to_json()
+        self.assertNotIn('nonexistence', oj)
+        print(oj)
+
 
 class TestAnhxa(unittest.TestCase):
 

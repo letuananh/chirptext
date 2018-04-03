@@ -33,6 +33,7 @@ Latest version can be found at https://github.com/letuananh/chirptext
 ########################################################################
 
 import os
+import io
 import unittest
 import logging
 import json
@@ -68,16 +69,16 @@ class TestBasicModel(unittest.TestCase):
         sent2 = doc.new_sent('Second sentence.')
         self.assertEqual(sent2.ID, 2)
         # add some sentences manually
-        sentm1 = ttl.Sentence('Another one', ID='foo')
+        sentm1 = ttl.Sentence('Another one', ID=3)
         sentm2 = ttl.Sentence('Another one 2', ID='5')
         doc.add_sent(sentm1)
         doc.add_sent(sentm2)
         doc.new_sent('Third sentence.')
         doc.new_sent('Fourth sentence.')
         sent5 = doc.new_sent('Fifth sentence.')
-        self.assertEqual(sent5.ID, 6)
-        # cannot add foo again
-        sent_foo = ttl.Sentence('Foo sentence.', ID='foo')
+        self.assertEqual(sent5.ID, 7)
+        # cannot add 3 again
+        sent_foo = ttl.Sentence('Foo sentence.', ID=3)
         self.assertRaises(Exception, lambda: doc.add_sent(sent_foo))
         # cannot add a None sentence
         self.assertRaises(Exception, lambda: doc.add_sent(None))
@@ -131,7 +132,7 @@ class TestTagging(unittest.TestCase):
         self.assertEqual(t2.cfrom, 0)
         self.assertEqual(t2.cto, 5)
         self.assertEqual(t2.label, 'bark')
-        self.assertEqual(t2.source, ttl.Tag.DEFAULT)
+        self.assertEqual(t2.source, ttl.Tag.NONE)
 
     def test_tag_token(self):
         token = ttl.Token("Words", 0, 4)
@@ -267,11 +268,6 @@ class TestTagging(unittest.TestCase):
         self.assertEqual(s.text, s.text[cfrom:cto])
 
     def test_export_to_streams(self):
-        concepts = TextReport.string()
-        links = TextReport.string()
-        sents = TextReport.string()
-        tags = TextReport.string()
-        words = TextReport.string()
         doc = ttl.Document('manual', TEST_DATA)
         # create sents in doc
         raws = ("三毛猫が好きです。", "雨が降る。", "女の子はケーキを食べる。")
@@ -282,7 +278,6 @@ class TestTagging(unittest.TestCase):
             # pos tagging
             for mtk, tk in zip(msent, tsent):
                 tk.pos = mtk.pos3()
-                tk.new_tag(mtk.pos3(), tagtype='pos', source=ttl.Tag.MECAB)
                 tk.new_tag(mtk.reading_hira(), tagtype="Reading", source=ttl.Tag.MECAB)
         # sense tagging
         doc[2][4].comment = 'to eat'
@@ -296,6 +291,11 @@ class TestTagging(unittest.TestCase):
         doc[2].new_tag("WIKI", 0, 3, tagtype="SRC")
         doc[2].new_tag("https://ja.wikipedia.org/wiki/少女", 0, 3, tagtype="URL")
         # export doc
+        concepts = TextReport.string()
+        links = TextReport.string()
+        sents = TextReport.string()
+        tags = TextReport.string()
+        words = TextReport.string()
         writer = ttl.TxtWriter(sents.file, words.file, concepts.file, links.file, tags.file)
         writer.write_doc(doc)
         getLogger().debug("sents\n{}".format(sents.content()))
@@ -310,6 +310,59 @@ class TestTagging(unittest.TestCase):
         self.assertTrue(tags.content())
         for sent in doc:
             logging.debug(json.dumps(sent.to_json(), ensure_ascii=False))
+
+
+class TestJSON(unittest.TestCase):
+    def test_tags(self):
+        sent = ttl.Sentence('三毛猫が好きです。')
+        sent.flag = '0'
+        sent.comment = 'written in Japanese'
+        sent.new_tag('I like calico cats.', tagtype='eng')
+        sent.import_tokens('三 毛 猫 が 好き です 。'.split())
+        for tk, pos in zip(sent, '名詞 名詞 名詞 助詞 名詞 助動詞 記号'.split()):
+            tk.pos = pos
+        sent.new_concept("三毛猫", "wiki.ja:三毛猫", tokens=[0, 1, 2])
+        sent[0].new_tag('mi', tagtype='reading')
+        sent[1].new_tag('ke', tagtype='reading')
+        sent[2].new_tag('neko', tagtype='reading')
+        getLogger().debug(sent.to_json())
+        concepts = TextReport.string()
+        links = TextReport.string()
+        sents = TextReport.string()
+        tags = TextReport.string()
+        words = TextReport.string()
+        writer = ttl.TxtWriter(sents.file, words.file, concepts.file, links.file, tags.file)
+        writer.write_sent(sent)
+        sents_txt = sents.content()
+        words_txt = words.content()
+        concepts_txt = concepts.content()
+        links_txt = links.content()
+        tags_txt = tags.content()
+        getLogger().debug("sents\n{}".format(sents_txt))
+        getLogger().debug("words\n{}".format(words_txt))
+        getLogger().debug("concepts\n{}".format(concepts_txt))
+        getLogger().debug("links\n{}".format(links_txt))
+        getLogger().debug("tags\n{}".format(tags_txt))
+        # read it back
+        reader = ttl.TxtReader(io.StringIO(sents_txt),
+                               io.StringIO(words_txt),
+                               io.StringIO(concepts_txt),
+                               io.StringIO(links_txt),
+                               io.StringIO(tags_txt))
+        docx = reader.read()
+        # patch sent.ID
+        sent.ID = 1
+        jo = sent.to_json()
+        jr = docx[0].to_json()
+        getLogger().debug(jo)
+        getLogger().debug(jr)
+        self.assertEqual(jo['text'], jr['text'])
+        self.assertEqual(jo['tokens'], jr['tokens'])
+        self.assertEqual(jo['concepts'], jr['concepts'])
+        self.assertEqual(jo['tags'], jr['tags'])
+        self.assertEqual(jo['flag'], jr['flag'])
+        self.assertEqual(jo['comment'], jr['comment'])
+        self.assertEqual(jo, jr)
 
 
 # ------------------------------------------------------------------------------
