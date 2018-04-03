@@ -57,11 +57,12 @@ def getLogger():
 # -------------------------------------------------------------------------------
 
 class IDGenerator(object):
-    def __init__(self, known_ids=None):
+    def __init__(self, id_seed=1, known_ids=None):
+        ''' id_seed = starting number '''
         self.__known_ids = set()
         if known_ids:
             self.__known_ids.update(known_ids)
-        self.__id_seed = 1
+        self.__id_seed = id_seed
         self.__lock = threading.Lock()
 
     def new_id(self):
