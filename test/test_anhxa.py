@@ -5,39 +5,14 @@
 Test script for anhxa
 Latest version can be found at https://github.com/letuananh/chirptext
 
-References:
-    Python unittest documentation:
-        https://docs.python.org/3/library/unittest.html
-
-@author: Le Tuan Anh <tuananh.ke@gmail.com>
-@license: MIT
+:copyright: (c) 2012 Le Tuan Anh <tuananh.ke@gmail.com>
+:license: MIT, see LICENSE for more details.
 '''
-
-# Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.
-
-########################################################################
 
 import os
 import unittest
 import json
+import logging
 from chirptext.anhxa import DataObject
 from chirptext.anhxa import to_json, to_obj, dumps, update_obj
 from chirptext.anhxa import TypedJSONDecoder, TypelessSONEncoder, TypedJSONEncoder
@@ -48,6 +23,10 @@ from chirptext.anhxa import TypedJSONDecoder, TypelessSONEncoder, TypedJSONEncod
 # -------------------------------------------------------------------------------
 
 TEST_DIR = os.path.dirname(os.path.realpath(__file__))
+
+
+def getLogger():
+    return logging.getLogger(__name__)
 
 
 # -------------------------------------------------------------------------------
@@ -125,7 +104,7 @@ class TestDataObject(unittest.TestCase):
         self.assertFalse(obj.muet)
         oj = obj.to_json()
         self.assertNotIn('nonexistence', oj)
-        print(oj)
+        getLogger().debug(oj)
 
 
 class TestAnhxa(unittest.TestCase):
@@ -168,10 +147,8 @@ class TestAnhxa(unittest.TestCase):
     def test_typeless_json(self):
         p = to_obj(Person, {'name': 'Chun', 'age': 15})
         p.change_job('pupil', -500)
-        # print(p)
         pjstr = json.dumps(p, cls=PersonifyJSONEncoder)
         pjson = json.loads(pjstr)
-        # print(pjson)
         self.assertIn('__type__', pjson)
         self.assertEqual(pjson['__type__'], '__person__')
         self.assertIn('__type__', pjson['job'])

@@ -6,34 +6,13 @@ Test script for readers
 
 Latest version can be found at https://github.com/letuananh/chirptext
 
-@author: Le Tuan Anh <tuananh.ke@gmail.com>
-@license: MIT
+:copyright: (c) 2012 Le Tuan Anh <tuananh.ke@gmail.com>
+:license: MIT, see LICENSE for more details.
 '''
-
-# Copyright (c) 2017, Le Tuan Anh <tuananh.ke@gmail.com>
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.
-
-########################################################################
 
 import os
 import gzip
+import logging
 import unittest
 from chirptext.anhxa import to_json, to_obj
 from chirptext import io as chio
@@ -46,6 +25,10 @@ from chirptext.io import CSV
 TEST_DIR = os.path.dirname(os.path.realpath(__file__))
 TEST_DATA = os.path.join(TEST_DIR, 'data')
 TEST_CSV = os.path.join(TEST_DATA, 'test.csv')
+
+
+def getLogger():
+    return logging.getLogger(__name__)
 
 
 # -------------------------------------------------------------------------------
@@ -152,7 +135,7 @@ class TestReaders(unittest.TestCase):
         header = ['first', 'last']
         CSV.write(TEST_CSV, [to_json(p) for p in persons], header=header)
         inrows = CSV.read(TEST_CSV, header=True)
-        print("Inrows:", inrows)
+        getLogger().debug("Inrows:", inrows)
         expected = [{'first': 'Doraemon', 'last': '-'}, {'first': 'Nobita', 'last': 'Nobi'}, {'first': 'Shizuka', 'last': 'Minamoto'}, {'first': 'Dorami', 'last': '-'}, {'first': 'Takeshi', 'last': 'Goda'}, {'first': 'Suneo', 'last': 'Honekawa'}, {'first': 'Jaiko', 'last': '-'}, {'first': 'Hidetoshi', 'last': 'Dekisugi'}]
         self.assertEqual(inrows, expected)
         # read in as objects

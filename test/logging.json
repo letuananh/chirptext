@@ -43,10 +43,8 @@
             "handlers": ["file_handler_verbose"],
             "propagate": "no"
         }
-        ,"test": {
-            "level": "INFO",
-            "propagate": "no"
-         }
+        ,"chirptext.chirpnet": { "level": "CRITICAL" }
+        ,"test": { "level": "INFO" }
     },
 
     "root": {

@@ -3,8 +3,8 @@
 ''' Chirptext Test Scripts
 Latest version can be found at https://github.com/letuananh/chirptext
 
-@author: Le Tuan Anh <tuananh.ke@gmail.com>
-@license: MIT
+:copyright: (c) 2012 Le Tuan Anh <tuananh.ke@gmail.com>
+:license: MIT, see LICENSE for more details.
 '''
 
 # This source code is a part of chirptext library
