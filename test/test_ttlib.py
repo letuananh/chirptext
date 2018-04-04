@@ -6,31 +6,9 @@ Script for testing leutile
 
 Latest version can be found at https://github.com/letuananh/chirptext
 
-@author: Le Tuan Anh <tuananh.ke@gmail.com>
-@license: MIT
+:copyright: (c) 2012 Le Tuan Anh <tuananh.ke@gmail.com>
+:license: MIT, see LICENSE for more details.
 '''
-
-# Copyright (c) 2015, Le Tuan Anh <tuananh.ke@gmail.com>
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.
-
-########################################################################
 
 import os
 import io
@@ -145,6 +123,24 @@ class TestTagging(unittest.TestCase):
         expected = {"tags": {"unsorted": ["plural", "word-token"]}, "cfrom": 0, "pos": "n", "cto": 4, "text": "Words", "lemma": "word", 'comment': 'an element of speech or writing'}
         self.assertEqual(js_token, expected)
 
+    def import_tokens(self, sent, token_list):
+        sent.tokens = token_list
+
+    def test_import_tokens(self):
+        sent = ttl.Sentence('It rains.')
+        tokens = ['It', 'rains', '.']
+        sent.tokens = tokens
+        self.assertEqual([t.text for t in sent.tokens], tokens)
+        # cannot import twice
+        self.assertRaises(Exception, lambda: self.import_tokens(sent, tokens))
+        # or import half-way
+        sent2 = ttl.Sentence("Cats don't like cats that meow.")
+        sent2.import_tokens(('Cats',))
+        tokens2 = "do n't like cats that meow .".split()
+        self.assertRaises(Exception, lambda: self.import_tokens(sent, tokens2))
+        sent2.import_tokens(tokens2)  # but use import_tokens explicitly is fine
+        self.assertEqual([t.text for t in sent2.tokens], ['Cats', 'do', "n't", 'like', 'cats', 'that', 'meow', '.'])
+
     def test_comment(self):
         sent = ttl.Sentence("Dogs bark.")
         sent.import_tokens("Dogs bark .".split())
@@ -152,8 +148,8 @@ class TestTagging(unittest.TestCase):
         sent.new_concept("02084071-n", "dog", tokens=(sent[0],))
         sent.concepts[0].comment = 'a member of the genus Canis (probably descended from the common wolf) that has been domesticated by man since prehistoric times'
         expected = {'text': 'Dogs bark.', 'tokens': [{'cto': 4, 'cfrom': 0, 'comment': 'canine', 'text': 'Dogs'}, {'cto': 9, 'cfrom': 5, 'text': 'bark'}, {'cto': 10, 'cfrom': 9, 'text': '.'}], 'concepts': [{'tag': '02084071-n', 'clemma': 'dog', 'comment': 'a member of the genus Canis (probably descended from the common wolf) that has been domesticated by man since prehistoric times', 'tokens': [0]}]}
-        print(sent.to_json())
-        print(expected)
+        getLogger().debug(sent.to_json())
+        getLogger().debug(expected)
         self.assertEqual(expected, sent.to_json())
         self.assertFalse(sent.tags)
         sent.new_tag(GDOG_SID, 0, 4, tagtype='wn30')
@@ -215,7 +211,7 @@ class TestTagging(unittest.TestCase):
         self.assertEqual(expected['concepts'], actual['concepts'])
         self.assertEqual(expected['tokens'], actual['tokens'])
         self.assertEqual(expected, actual)
-        print(actual)
+        getLogger().debug(actual)
 
     def test_json_tagged_sent(self):
         raw = {'text': '女の子は猫が好きです。', 'tokens': [{'cfrom': 0, 'cto': 1, 'text': '女', 'lemma': 'おんな'}, {'cfrom': 1, 'cto': 2, 'text': 'の'}, {'cfrom': 2, 'cto': 3, 'text': '子', 'lemma': 'こ'}, {'cfrom': 3, 'cto': 4, 'text': 'は'}, {'cfrom': 4, 'cto': 5, 'text': '猫', 'lemma': 'ねこ', 'pos': '名詞-一般', 'comment': 'Say neh-koh'}, {'cfrom': 5, 'cto': 6, 'text': 'が'}, {'cfrom': 6, 'cto': 8, 'text': '好き', 'lemma': 'すき', 'pos': '名詞-形容動詞語幹'}, {'cfrom': 8, 'cto': 10, 'text': 'です'}, {'cfrom': 10, 'cto': 11, 'text': '。'}], 'concepts': [{'clemma': '女の子', 'tag': '10084295-n', 'tokens': [0, 1, 2], 'comment': '若々しい女の人', 'flag': 'G'}, {'clemma': '猫', 'tag': '02121620-n', 'tokens': [4]}, {'clemma': '好き', 'tag': '01292683-a', 'tokens': [6]}]}

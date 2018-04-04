@@ -143,6 +143,13 @@ class Sentence(DataObject):
     def tokens(self):
         return self.__tokens
 
+    @tokens.setter
+    def tokens(self, tokens):
+        if self.__tokens:
+            raise Exception("Cannot import tokens as my token list is not empty")
+        else:
+            self.import_tokens(tokens)
+
     @property
     def concepts(self):
         return self.__concepts
@@ -260,6 +267,10 @@ class Sentence(DataObject):
         text = self.text.lower() if ignorecase else self.text
         has_hooker = import_hook and callable(import_hook)
         cfrom = 0
+        if self.__tokens:
+            for tk in self.__tokens:
+                if tk.cfrom and tk.cfrom > cfrom:
+                    cfrom = tk.cfrom
         for token in tokens:
             if has_hooker:
                 import_hook(token)
