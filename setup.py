@@ -14,10 +14,9 @@ import io
 import os
 from setuptools import setup
 
-import chirptext
-
 
 def read(*filenames, **kwargs):
+    ''' Read contents of multiple files and join them together '''
     encoding = kwargs.get('encoding', 'utf-8')
     sep = kwargs.get('sep', '\n')
     buf = []
@@ -28,24 +27,26 @@ def read(*filenames, **kwargs):
 
 
 readme_file = 'README.rst' if os.path.isfile('README.rst') else 'README.md'
-print("README file: {}".format(readme_file))
 long_description = read(readme_file)
+pkg_info = {}
+exec(read('chirptext/__version__.py'), pkg_info)
+
 
 setup(
-    name='chirptext',
-    version=chirptext.__version__,
-    url=chirptext.__url__,
+    name='chirptext',  # package file name (<package-name>-version.tar.gz)
+    version=pkg_info['__version__'],
+    url=pkg_info['__url__'],
     project_urls={
         "Bug Tracker": "https://github.com/letuananh/chirptext/issues",
         "Source Code": "https://github.com/letuananh/chirptext/"
     },
     keywords="nlp",
-    license=chirptext.__license__,
-    author=chirptext.__author__,
+    license=pkg_info['__license__'],
+    author=pkg_info['__author__'],
     tests_require=[],
     install_requires=[],
-    author_email=chirptext.__email__,
-    description=chirptext.__description__,
+    author_email=pkg_info['__email__'],
+    description=pkg_info['__description__'],
     long_description=long_description,
     packages=['chirptext'],
     package_data={'chirptext': ['data/luke/swadesh/*.txt',
@@ -59,7 +60,7 @@ setup(
                  'Natural Language :: English',
                  'Environment :: Plugins',
                  'Intended Audience :: Developers',
-                 'License :: OSI Approved :: {}'.format(chirptext.__license__),
+                 'License :: OSI Approved :: {}'.format(pkg_info['__license__']),
                  'Operating System :: OS Independent',
                  'Topic :: Text Processing',
                  'Topic :: Software Development :: Libraries :: Python Modules']
