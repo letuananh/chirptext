@@ -242,8 +242,12 @@ class TextReport:
             self.mode = None
             self.auto_flush = False
         else:
-            self.__path = os.path.expanduser(path)
-            self.__report_file = open(self.__path, mode, encoding=encoding)
+            if os.path == '/dev/null':
+                self.__path = '/dev/null'
+                self.__report_file = open(os.devnull, mode=mode, encoding=encoding)
+            else:
+                self.__path = os.path.expanduser(path)
+                self.__report_file = open(self.__path, mode, encoding=encoding)
             self.name = name if name else FileHelper.getfilename(self.__path)
             self.auto_flush = auto_flush
             self.mode = mode
