@@ -244,9 +244,15 @@ class Sentence(DataObject):
         self.__concepts.remove(concept_obj)
         return concept_obj
 
-    def concept(self, cid):
+    def concept(self, cid, **kwargs):
         ''' Get concept by concept ID '''
-        return self.__concept_map[cid]
+        if cid not in self.__concept_map:
+            if 'default' in kwargs:
+                return kwargs['default']
+            else:
+                raise KeyError("Invalid cid")
+        else:
+            return self.__concept_map[cid]
 
     def to_json(self):
         sent_dict = {'text': self.text,
