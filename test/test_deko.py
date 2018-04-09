@@ -31,18 +31,25 @@ def getLogger():
 
 
 # -------------------------------------------------------------------------------
-# Data Structures
+# Test cases
 # -------------------------------------------------------------------------------
 
-class TestMainApp(unittest.TestCase):
+class TestDeko(unittest.TestCase):
 
     def test_mecab(self):
+        print("Testing mecab")
         tokens = txt2mecab(txt)
         self.assertTrue(tokens[-1].is_eos)
 
+    def test_mecab_lines(self):
+        print(len(txt2.splitlines()))
+        out = txt2mecab(txt2)
+        print(out)
+        self.assertEqual(out, 2)
+
     def test_wakati(self):
         tks = wakati(txt)
-        self.assertEqual(tks, '雨 が 降る 。 \n')
+        self.assertEqual(tks, '雨 が 降る 。 ')
 
     def test_deko(self):
         tokenized = tokenize(txt)
@@ -61,7 +68,9 @@ class TestMainApp(unittest.TestCase):
         self.assertEqual(sents[0].words, ['猫', 'が', '好き', 'です', '。'])
         self.assertEqual(str(sents[1]), '犬 も 好き です 。')
         # 2 sentences
+        print("Tokenized: ", txt2mecab(txt2))
         sents = DekoText.parse(txt2, splitlines=False)
+        print("last test: {} - {} sents".format(sents, len(sents)))
         self.assertEqual(len(sents), 2)
         self.assertEqual(len(sents[0]), 5)
         self.assertEqual(len(sents[1]), 5)

@@ -242,7 +242,7 @@ class TextReport:
             self.mode = None
             self.auto_flush = False
         else:
-            if os.path == '/dev/null':
+            if path == '/dev/null':
                 self.__path = '/dev/null'
                 self.__report_file = open(os.devnull, mode=mode, encoding=encoding)
             else:

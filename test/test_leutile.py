@@ -13,6 +13,7 @@ Latest version can be found at https://github.com/letuananh/chirptext
 import os
 import logging
 import unittest
+from pathlib import Path
 
 from chirptext.leutile import Counter, TextReport, StringTool, LOREM_IPSUM, Timer
 from chirptext.leutile import FileHelper
@@ -125,12 +126,12 @@ class TestFileHelper(unittest.TestCase):
         self.assertRaises(Exception, lambda: FileHelper.replace_ext((1, 2, 3, 4), None))
 
     def test_rename(self):
-        self.assertEqual(FileHelper.replace_name('/data/foo.xml', 'bar'),
-                         '/data/bar.xml')
-        self.assertEqual(FileHelper.replace_name('../data/foo', 'bar'),
-                         '../data/bar')
-        self.assertEqual(FileHelper.replace_name('../foo.xml', 'bar'),
-                         '../bar.xml')
+        self.assertEqual(Path(FileHelper.replace_name('/data/foo.xml', 'bar')),
+                         Path('/data/bar.xml'))
+        self.assertEqual(Path(FileHelper.replace_name('../data/foo', 'bar')),
+                         Path('../data/bar'))
+        self.assertEqual(Path(FileHelper.replace_name('../foo.xml', 'bar')),
+                         Path('../bar.xml'))
         self.assertRaises(Exception, lambda: FileHelper.replace_name(None, None))
         self.assertRaises(Exception, lambda: FileHelper.replace_name('', None))
         self.assertRaises(Exception, lambda: FileHelper.replace_name((1, 2, 3, 4), None))

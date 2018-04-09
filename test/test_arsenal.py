@@ -31,7 +31,7 @@ def getLogger():
 
 ########################################################################
 
-class TestMain(unittest.TestCase):
+class TestArsenal(unittest.TestCase):
 
     def try_cache(self, cache, key, value):
         # delete the blob if it exists

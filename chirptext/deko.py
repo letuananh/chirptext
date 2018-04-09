@@ -20,19 +20,13 @@ import re
 import os
 import logging
 
-import MeCab
-import jaconv
-
 from . import texttaglib as ttl
+from .dekomecab import wakati, parse as mecab_parse
 
 
 # -------------------------------------------------------------------------------
 # Configuration
 # -------------------------------------------------------------------------------
-
-def getLogger():
-    return logging.getLogger(__name__)
-
 
 DATA_FOLDER = os.path.abspath(os.path.expanduser('./data'))
 
@@ -54,6 +48,20 @@ HIRAGANA = 'ぁあぃいぅうぇえぉおかがきぎくぐけげこごさざ�
 # U+30Ex 	ム 	メ 	モ 	ャ 	ヤ 	ュ 	ユ 	ョ 	ヨ 	ラ 	リ 	ル 	レ 	ロ 	ヮ 	ワ
 # U+30Fx 	ヰ 	ヱ 	ヲ 	ン 	ヴ 	ヵ 	ヶ 	ヷ 	ヸ 	ヹ 	ヺ 	・ 	ー 	ヽ 	ヾ 	ヿ
 KATAKANA = '゠ァアィイゥウェエォオカガキギクグケゲコゴサザシジスズセゼソゾタダチヂッツヅテデトドナニヌネノハバパヒビピフブプヘベペホボポマミムメモャヤュユョヨラリルレロヮワヰヱヲンヴヵヶヷヸヹヺ・ーヽヾヿ'
+KATA2HIRA_TRANS = str.maketrans(KATAKANA[:86], HIRAGANA[:86])
+
+def getLogger():
+    return logging.getLogger(__name__)
+
+
+def simple_kata2hira(input_str):
+    return input_str.translate(KATA2HIRA_TRANS)
+
+try:
+    from jaconv import kata2hira
+except:
+    # if jaconv is not available, use built-in method
+    kata2hira = simple_kata2hira
 
 
 # -------------------------------------------------------------------------------
@@ -83,7 +91,7 @@ class MeCabToken(object):
         return str(self)
 
     def reading_hira(self):
-        return jaconv.kata2hira(self.reading)
+        return kata2hira(self.reading)
 
     def need_ruby(self):
         return self.reading and self.reading != self.surface and self.reading_hira() != self.surface
@@ -121,8 +129,6 @@ class MeCabToken(object):
 
 
 class MeCabSent(object):
-
-    mecab = MeCab.Tagger()
 
     def __init__(self, surface, tokens):
         self.surface = surface
@@ -167,7 +173,7 @@ class MeCabSent(object):
     @staticmethod
     def parse(text):
         ''' Use mecab to parse one sentence '''
-        mecab_out = MeCabSent.mecab.parse(text).splitlines()
+        mecab_out = mecab_parse(text).splitlines()
         tokens = [MeCabToken.parse(x) for x in mecab_out]
         return MeCabSent(text, tokens)
 
@@ -222,8 +228,7 @@ class DekoText(object):
 
 def txt2mecab(text):
     ''' Use mecab to parse one sentence '''
-    mecab = MeCab.Tagger()
-    mecab_out = mecab.parse(text).splitlines()
+    mecab_out = mecab_parse(text).splitlines()
     tokens = [MeCabToken.parse(x) for x in mecab_out]
     return MeCabSent(text, tokens)
 
@@ -264,10 +269,6 @@ def tokenize_sent(mtokens, raw='', auto_strip=True):
             sent_text = sent_text.strip()
         sents.append(MeCabSent(sent_text, bucket))
     return sents
-
-
-def wakati(content):
-    return MeCab.Tagger("-O wakati").parse(content)
 
 
 def tokenize(content):

@@ -135,7 +135,7 @@ class TestReaders(unittest.TestCase):
         header = ['first', 'last']
         CSV.write(TEST_CSV, [to_json(p) for p in persons], header=header)
         inrows = CSV.read(TEST_CSV, header=True)
-        getLogger().debug("Inrows:", inrows)
+        getLogger().debug("Inrows: {}".format(inrows))
         expected = [{'first': 'Doraemon', 'last': '-'}, {'first': 'Nobita', 'last': 'Nobi'}, {'first': 'Shizuka', 'last': 'Minamoto'}, {'first': 'Dorami', 'last': '-'}, {'first': 'Takeshi', 'last': 'Goda'}, {'first': 'Suneo', 'last': 'Honekawa'}, {'first': 'Jaiko', 'last': '-'}, {'first': 'Hidetoshi', 'last': 'Dekisugi'}]
         self.assertEqual(inrows, expected)
         # read in as objects

@@ -32,7 +32,7 @@ def getLogger():
 
 ########################################################################
 
-class TestMain(unittest.TestCase):
+class TestChirpnet(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
