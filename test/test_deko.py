@@ -58,7 +58,8 @@ class TestDeko(unittest.TestCase):
 
     def test_mecab_bin_loc(self):
         mbin_original = deko.get_mecab_bin()
-        self.assertTrue(mbin_original == 'mecab' or mbin_original.endswith('mecab.exe'))
+        if mbin_original:
+            self.assertTrue(mbin_original == 'mecab' or mbin_original.endswith('mecab.exe'))
         mecab_custom_loc = 'C:\\mecab\\mecab-console.exe'
         deko.set_mecab_bin(mecab_custom_loc)
         self.assertEqual(deko.get_mecab_bin(), mecab_custom_loc)
@@ -74,10 +75,10 @@ class TestDeko(unittest.TestCase):
 
     def test_mecab_lines(self):
         out = txt2mecab(txt2)
-        self.assertEqual(len(out), 12)
+        self.assertGreaterEqual(len(out), 11)
 
     def test_wakati(self):
-        tks = wakati(txt)
+        tks = wakati(txt).splitlines()[0]
         self.assertEqual(tks, '雨 が 降る 。 ')
 
     def test_deko(self):
@@ -186,6 +187,12 @@ EOS
         getLogger().debug("not splitlines: {} | surface={}".format(doc, doc_words))
         self.assertEqual(doc_words, docx_words)
         getLogger().debug(doc)
+
+    def test_func_alias(self):
+        sent = deko.parse(txt)
+        self.assertEqual(sent.words, ['雨', 'が', '降る', '。'])
+        doc = deko.parse_doc(txt3, splitlines=False)
+        self.assertEqual(len(doc), 3)
 
 
 # -------------------------------------------------------------------------------

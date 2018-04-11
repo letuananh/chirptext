@@ -21,7 +21,7 @@ import os
 import logging
 
 from . import texttaglib as ttl
-from .dekomecab import wakati, parse as mecab_parse, _register_mecab_loc as set_mecab_bin, _get_mecab_loc as get_mecab_bin
+from .dekomecab import wakati, parse as _internal_mecab_parse, _register_mecab_loc as set_mecab_bin, _get_mecab_loc as get_mecab_bin
 
 
 # -------------------------------------------------------------------------------
@@ -178,7 +178,7 @@ class MeCabSent(object):
     @staticmethod
     def parse(text, **kwargs):
         ''' Use mecab to parse one sentence '''
-        mecab_out = mecab_parse(text, **kwargs).splitlines()
+        mecab_out = _internal_mecab_parse(text, **kwargs).splitlines()
         tokens = [MeCabToken.parse(x) for x in mecab_out]
         return MeCabSent(text, tokens)
 
@@ -233,7 +233,7 @@ class DekoText(object):
 
 def txt2mecab(text, **kwargs):
     ''' Use mecab to parse one sentence '''
-    mecab_out = mecab_parse(text, **kwargs).splitlines()
+    mecab_out = _internal_mecab_parse(text, **kwargs).splitlines()
     tokens = [MeCabToken.parse(x) for x in mecab_out]
     return MeCabSent(text, tokens)
 
@@ -245,6 +245,13 @@ def lines2mecab(lines, **kwargs):
         sent = txt2mecab(line, **kwargs)
         sents.append(sent)
     return sents
+
+
+def tokenize(content, **kwargs):
+    ''' Sentence to a list of tokens (string) '''
+    # TODO: Check if wakati better?
+    # return wakati(content).split(' ')
+    return txt2mecab(content, **kwargs).words
 
 
 # TODO: Need to calculate cfrom, cto to get surfaces
@@ -285,13 +292,6 @@ def tokenize_sent(mtokens, raw='', auto_strip=True):
     return sents
 
 
-def tokenize(content, **kwargs):
-    ''' Sentence to a list of tokens (string) '''
-    # TODO: Check if wakati better?
-    # return wakati(content).split(' ')
-    return txt2mecab(content, **kwargs).words
-
-
 def analyse(content, splitlines=True, format=None, **kwargs):
     ''' Japanese text > tokenize/txt/html '''
     sents = DekoText.parse(content, splitlines=splitlines, **kwargs)
@@ -309,3 +309,8 @@ def analyse(content, splitlines=True, format=None, **kwargs):
     elif format == 'txt':
         final = '\n'.join([str(x) for x in sents])
     return final
+
+
+# useful alias
+parse = txt2mecab
+parse_doc = DekoText.parse

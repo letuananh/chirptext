@@ -5,12 +5,13 @@ import subprocess
 
 # Try to use mecab-python3 if it's available
 MECAB_PYTHON3 = False
-MECAB_LOC = None  # location of mecab's binary package
+MECAB_LOC = 'mecab'  # location of mecab's binary package
 try:
     import MeCab
-    Mecab.Tagger().parse("Pythonが好きです。")
+    MeCab.Tagger().parse("Pythonが好きです。")
     MECAB_PYTHON3 = True
 except:
+    logging.getLogger(__name__).exception("Failed to load mecab-python3")
     # use flex-mecab
     try:
         if platform.system() == 'Windows':
@@ -20,6 +21,8 @@ except:
                 MECAB_LOC = "C:\\Program Files\\MeCab\\bin\\mecab.exe"
             else:
                 MECAB_LOC = "mecab.exe"
+        if os.path.isfile('/usr/local/bin/mecab'):
+            MECAB_LOC = '/usr/local/bin/mecab'
         else:
             MECAB_LOC = "mecab"
     except:
@@ -59,7 +62,7 @@ def run_mecab_process(content, *args, **kwargs):
 
 def parse(content, *args, **kwargs):
     ''' Use mecab-python3 by default to parse JP text. Fall back to mecab binary app if needed '''
-    if MECAB_PYTHON3:
+    if 'mecab_loc' not in kwargs and MECAB_PYTHON3:
         return MeCab.Tagger(*args).parse(content)
     else:
         return run_mecab_process(content, *args, **kwargs)

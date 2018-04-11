@@ -30,7 +30,7 @@ You can download mecab binary package from [http://taku910.github.io/mecab/#down
 After installed you can try:
 ```python
 >>> from chirptext import deko
->>> sent = deko.txt2mecab('猫が好きです。')
+>>> sent = deko.parse('猫が好きです。')
 >>> sent.tokens
 [[猫(名詞-一般/*/*|猫|ネコ|ネコ)], [が(助詞-格助詞/一般/*|が|ガ|ガ)], [好き(名詞-形容動詞語幹/*/*|好き|スキ|スキ)], [です(助動詞-*/*/*|です|デス|デス)], [。(記号-句点/*/*|。|。|。)], [EOS(-//|||)]]
 >>> sent.words
@@ -50,7 +50,7 @@ If you installed MeCab to a custom location, for example `C:\mecab\bin\mecab.exe
 'C:\\mecab\\bin\\mecab.exe'
 
 # Just that & now you can use mecab
->>> deko.txt2mecab('雨が降る。').words
+>>> deko.parse('雨が降る。').words
 ['雨', 'が', '降る', '。']
 ```
 
