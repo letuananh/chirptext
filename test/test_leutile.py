@@ -20,6 +20,8 @@ from chirptext.leutile import FileHelper
 from chirptext.leutile import AppConfig
 
 
+TEST_DATA = os.path.join(os.path.dirname(__file__), 'data')
+
 def getLogger():
     return logging.getLogger(__name__)
 
@@ -73,7 +75,7 @@ class TestLeUtile(unittest.TestCase):
             rp.writeline("stdout")
             rp.writeline(123)
             self.assertEqual(rp.content(), '')
-        with TextReport("/tmp/del.me") as rp:
+        with TextReport(os.path.join(TEST_DATA, "del.me")) as rp:
             rp.writeline("ABC")
             rp.writeline(123)
             self.assertEqual(rp.content(), '')
@@ -113,13 +115,13 @@ def do_expensive(n=10000):
 class TestFileHelper(unittest.TestCase):
 
     def test_replace_ext(self):
-        self.assertEqual(FileHelper.replace_ext('../data/foo.xml', 'json'),
+        self.assertEqual(Path(FileHelper.replace_ext('../data/foo.xml', 'json')).as_posix(),
                          '../data/foo.json')
-        self.assertEqual(FileHelper.replace_ext('../data/foo', 'json'),
+        self.assertEqual(Path(FileHelper.replace_ext('../data/foo', 'json')).as_posix(),
                          '../data/foo.json')
-        self.assertEqual(FileHelper.replace_ext('../data/foo.xml', ''),
+        self.assertEqual(Path(FileHelper.replace_ext('../data/foo.xml', '')).as_posix(),
                          '../data/foo')
-        self.assertEqual(FileHelper.replace_ext('../data/foo.xml', None),
+        self.assertEqual(Path(FileHelper.replace_ext('../data/foo.xml', None)).as_posix(),
                          '../data/foo')
         self.assertRaises(Exception, lambda: FileHelper.replace_ext(None, None))
         self.assertRaises(Exception, lambda: FileHelper.replace_ext('', None))
