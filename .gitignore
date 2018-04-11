@@ -1,3 +1,6 @@
+.vscode/
+README.rst
+test/data/test.txt*
 test/data/test.csv
 test/data/test_cache.db
 data/foo.txt
