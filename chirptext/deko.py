@@ -21,7 +21,7 @@ import os
 import logging
 
 from . import texttaglib as ttl
-from .dekomecab import wakati, parse as mecab_parse
+from .dekomecab import wakati, parse as mecab_parse, _register_mecab_loc as set_mecab_bin, _get_mecab_loc as get_mecab_bin
 
 
 # -------------------------------------------------------------------------------
@@ -48,7 +48,8 @@ HIRAGANA = 'ぁあぃいぅうぇえぉおかがきぎくぐけげこごさざ�
 # U+30Ex 	ム 	メ 	モ 	ャ 	ヤ 	ュ 	ユ 	ョ 	ヨ 	ラ 	リ 	ル 	レ 	ロ 	ヮ 	ワ
 # U+30Fx 	ヰ 	ヱ 	ヲ 	ン 	ヴ 	ヵ 	ヶ 	ヷ 	ヸ 	ヹ 	ヺ 	・ 	ー 	ヽ 	ヾ 	ヿ
 KATAKANA = '゠ァアィイゥウェエォオカガキギクグケゲコゴサザシジスズセゼソゾタダチヂッツヅテデトドナニヌネノハバパヒビピフブプヘベペホボポマミムメモャヤュユョヨラリルレロヮワヰヱヲンヴヵヶヷヸヹヺ・ーヽヾヿ'
-KATA2HIRA_TRANS = str.maketrans(KATAKANA[:86], HIRAGANA[:86])
+KATA2HIRA_TRANS = str.maketrans(KATAKANA[1:87], HIRAGANA[:86])
+
 
 def getLogger():
     return logging.getLogger(__name__)
@@ -159,21 +160,25 @@ class MeCabSent(object):
     def text(self):
         return self.surface if self.surface else str(self)
 
+    def __repr__(self):
+        return "MeCabSent({})".format(repr(self.text))
+
     def __str__(self):
         return ' '.join([x.surface for x in self.tokens if not x.is_eos])
 
     def to_ttl(self):
         tsent = ttl.Sentence(self.surface)
         tsent.import_tokens(self.words)
-        for mtk, tk in zip(self, tsent):
+        for mtk, tk in zip((tk for tk in self if not tk.is_eos), tsent):
             tk.pos = mtk.pos3()
+            tk.lemma = mtk.root
             tk.new_tag(mtk.reading_hira(), tagtype="reading", source=ttl.Tag.MECAB)
         return tsent
 
     @staticmethod
-    def parse(text):
+    def parse(text, **kwargs):
         ''' Use mecab to parse one sentence '''
-        mecab_out = mecab_parse(text).splitlines()
+        mecab_out = mecab_parse(text, **kwargs).splitlines()
         tokens = [MeCabToken.parse(x) for x in mecab_out]
         return MeCabSent(text, tokens)
 
@@ -190,35 +195,35 @@ class DekoText(object):
     def __getitem__(self, name):
         return self.sents[name]
 
-    def add(self, sentence_text):
+    def add(self, sentence_text, **kwargs):
         ''' Parse a text string and add it to this doc '''
-        sent = MeCabSent.parse(sentence_text)
+        sent = MeCabSent.parse(sentence_text, **kwargs)
         self.sents.append(sent)
         return sent
 
     def __str__(self):
         return "\n".join(["#{}. {}".format(idx + 1, x) for idx, x in enumerate(self)])
 
-    def to_ttl(self):
-        doc = ttl.Document(name=self.name)
+    def to_ttl(self, name=None):
+        doc = ttl.Document(name=name if name else self.name)
         for sent in self.sents:
             doc.add_sent(sent.to_ttl())
         return doc
 
     @staticmethod
-    def parse(text, splitlines=True, auto_strip=True):
+    def parse(text, splitlines=True, auto_strip=True, **kwargs):
         doc = DekoText()
         if not splitlines:
             # surface is broken right now ...
-            tokens = txt2mecab(text)
+            tokens = txt2mecab(text, **kwargs)
             doc.sents = tokenize_sent(tokens, text, auto_strip)
         else:
             lines = text.splitlines()
             for line in lines:
                 if auto_strip:
-                    doc.add(line.strip())
+                    doc.add(line.strip(), **kwargs)  # auto-parse
                 else:
-                    doc.add(line)
+                    doc.add(line, **kwargs)  # auto-parse
         return doc
 
 
@@ -226,61 +231,70 @@ class DekoText(object):
 # Functions
 # -------------------------------------------------------------------------------
 
-def txt2mecab(text):
+def txt2mecab(text, **kwargs):
     ''' Use mecab to parse one sentence '''
-    mecab_out = mecab_parse(text).splitlines()
+    mecab_out = mecab_parse(text, **kwargs).splitlines()
     tokens = [MeCabToken.parse(x) for x in mecab_out]
     return MeCabSent(text, tokens)
 
 
-def lines2mecab(lines):
+def lines2mecab(lines, **kwargs):
     ''' Use mecab to parse many lines '''
     sents = []
     for line in lines:
-        sent = txt2mecab(line)
+        sent = txt2mecab(line, **kwargs)
         sents.append(sent)
     return sents
 
 
 # TODO: Need to calculate cfrom, cto to get surfaces
 def tokenize_sent(mtokens, raw='', auto_strip=True):
+    ''' Tokenize a text to multiple sentences '''
     sents = []
     bucket = []
     cfrom = 0
     cto = 0
     token_cfrom = 0
+    logger = getLogger()
+    logger.debug("raw text: {}".format(raw))
+    logger.debug("tokens: {}".format(mtokens))
     for t in mtokens:
         if t.is_eos:
-            break
+            continue
         token_cfrom = raw.find(t.surface, cto)
-        cto = token_cfrom + len(t.surface)
-        if not t.is_eos:
-            bucket.append(t)
+        cto = token_cfrom + len(t.surface)  # also token_cto
+        logger.debug("processing token {} <{}:{}>".format(t, token_cfrom, cto))
+        bucket.append(t)
+        # sentence ending
         if t.pos == '記号' and t.sc1 == '句点':
             sent_text = raw[cfrom:cto]
+            getLogger().debug("sent_text = {} | <{}:{}>".format(sent_text, cfrom, cto))
             if auto_strip:
                 sent_text = sent_text.strip()
             sents.append(MeCabSent(sent_text, bucket))
+            logger.debug("Found a sentence: {}".format(sent_text))
             cfrom = cto
             bucket = []
     if bucket:
+        logger.debug("Bucket is not empty: {}".format(bucket))
         sent_text = raw[cfrom:cto]
+        logger.debug("remaining text: {} [{}:{}]".format(sent_text, cfrom, cto))
         if auto_strip:
             sent_text = sent_text.strip()
         sents.append(MeCabSent(sent_text, bucket))
     return sents
 
 
-def tokenize(content):
+def tokenize(content, **kwargs):
     ''' Sentence to a list of tokens (string) '''
     # TODO: Check if wakati better?
     # return wakati(content).split(' ')
-    return txt2mecab(content).words
+    return txt2mecab(content, **kwargs).words
 
 
-def analyse(content, splitlines=True, format=None):
+def analyse(content, splitlines=True, format=None, **kwargs):
     ''' Japanese text > tokenize/txt/html '''
-    sents = DekoText.parse(content, splitlines=splitlines)
+    sents = DekoText.parse(content, splitlines=splitlines, **kwargs)
     doc = []
     final = sents
     # Generate output

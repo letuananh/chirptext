@@ -158,8 +158,10 @@ class TestTagging(unittest.TestCase):
             getLogger().debug("{}: label={} | type = {}".format(t, t.label, t.tagtype))
 
     def test_tagged_sentences(self):
+        print("test converting MeCabSent into TTL Sent manually")
         sent = ttl.Sentence('猫が好きです 。')
         mecab_sent = txt2mecab(sent.text)
+        getLogger().debug((mecab_sent.surface, mecab_sent.words))
         # import tags
         sent.import_tokens(mecab_sent.words)
         for mtoken, token in zip(mecab_sent, sent.tokens):
@@ -169,14 +171,14 @@ class TestTagging(unittest.TestCase):
                 token.lemma = mtoken.reading_hira()
                 token.pos = mtoken.pos3()
         self.assertEqual(mecab_sent.words, [x.text for x in sent.tokens])
-        self.assertEqual(sent.tokens[0][0].label, 'ねこ')
-        self.assertEqual(sent.tokens[0].lemma, 'ねこ')
-        self.assertEqual(sent.tokens[2][0].label, 'すき')
-        self.assertFalse(sent.tokens[3].lemma, '')  # if there is no lemma label => return ''
-        self.assertEqual(sent.tokens[2].surface(), '好き')
-        self.assertFalse(len(sent.tokens[1]))
-        self.assertFalse(len(sent.tokens[3]))
-        self.assertFalse(len(sent.tokens[4]))
+        self.assertEqual(sent[0].find('reading').label, 'ねこ')
+        self.assertEqual(sent[0].lemma, 'ねこ')
+        self.assertEqual(sent[2][0].label, 'すき')
+        self.assertFalse(sent[3].lemma, '')  # if there is no lemma label => return ''
+        self.assertEqual(sent[2].surface(), '好き')
+        self.assertFalse(len(sent[1]))
+        self.assertFalse(len(sent[3]))
+        self.assertFalse(len(sent[4]))
         return sent
 
     def test_tagged_sent_to_json(self):

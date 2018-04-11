@@ -44,6 +44,7 @@
             "propagate": "no"
         }
         ,"chirptext.chirpnet": { "level": "CRITICAL" }
+        ,"chirptext.deko": { "level": "INFO" }
         ,"test": { "level": "INFO" }
     },
 

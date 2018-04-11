@@ -41,6 +41,7 @@ def getLogger():
 
 class Tag(DataObject):
 
+    ''' A general tag which can be used for annotating different linguistic feature '''
     NONE = ''
     DEFAULT = 'n/a'
     GOLD = 'gold'
@@ -61,6 +62,24 @@ class Tag(DataObject):
         self.label = label
         self.source = source
         self.tagtype = tagtype  # tag type
+
+    @property
+    def type(self):
+        ''' Alias for tagtype '''
+        return self.tagtype
+
+    @type.setter
+    def type(self, value):
+        self.tagtype = value
+
+    @property
+    def text(self):
+        ''' Alias for label '''
+        return self.label
+
+    @text.setter
+    def text(self, value):
+        self.label = value
 
     def __repr__(self):
         if not self.tagtype:
@@ -375,6 +394,20 @@ class Token(DataObject):
     def __str__(self):
         return "`{l}`<{f}:{t}>{tgs}".format(l=self.text, f=self.cfrom, t=self.cto, tgs=self.__tags if self.__tags else '')
 
+    def find(self, tagtype, **kwargs):
+        '''Get the first tag with a type in this token '''
+        for t in self.__tags:
+            if t.tagtype == tagtype:
+                return t
+        if 'default' in kwargs:
+            return kwargs['default']
+        else:
+            raise LookupError("Token {} is not tagged with the speficied tagtype ({})".format(self, tagtype))
+
+    def find_all(self, tagtype):
+        ''' Find all token-level tags with the specified tagtype '''
+        return [t for t in self.__tags if t.tagtype == tagtype]
+
     def new_tag(self, label, cfrom=None, cto=None, tagtype=None, **kwargs):
         ''' Create a new tag on this token '''
         if not cfrom:
@@ -404,7 +437,6 @@ class Token(DataObject):
     def from_json(token_dict):
         tk = Token()
         tk.update(token_dict, 'cfrom', 'cto', 'text', 'lemma', 'pos', 'comment')
-        
         return tk
 
 
