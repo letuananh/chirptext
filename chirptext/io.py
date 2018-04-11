@@ -50,24 +50,24 @@ def is_file(path):
 def open(path, encoding='utf-8', mode='rt', *args, **kwargs):
     if not mode:
         raise Exception("Invalid file access mode")
-    elif mode in ('r', 'rt', 'rb') and not is_file(path):
+    elif mode.startswith('r') and not is_file(path):
         raise FileNotFoundError("File {} does not exist".format(path))
     # read or write
     if path.endswith('.gz'):
-        if mode.endswith('b'):
-            return gzip.open(path, mode=mode)
-        else:
+        if mode.endswith('t'):
             return gzip.open(path, mode=mode, encoding=encoding)
-    else:
-        if mode.endswith('b'):
-            return __python_open(path, mode=mode)
         else:
+            return gzip.open(path, mode=mode)
+    else:
+        if mode.endswith('t'):
             return __python_open(path, mode=mode, encoding=encoding)
+        else:
+            return __python_open(path, mode=mode)
 
 
 def process_file(path, processor, encoding='utf-8', mode='rt', *args, **kwargs):
     ''' Process a text file's content. If the file name ends with .gz, read it as gzip file '''
-    if mode not in ('rt', 'rb', 'r'):
+    if mode not in ('rU', 'rt', 'rb', 'r'):
         raise Exception("Invalid file reading mode")
     with open(path, encoding=encoding, mode=mode, *args, **kwargs) as infile:
         return processor(infile)
@@ -98,7 +98,7 @@ def write_file(content, outpath, mode=None, encoding='utf-8'):
     else:
         getLogger().debug("Writing content to {}".format(outpath))
         # convert content to string when writing text data
-        if mode == 'wt' or mode == 'w' and not isinstance(content, str):
+        if mode in ('w', 'wt') and not isinstance(content, str):
             content = to_string(content)
         elif mode == 'wb':
             # content needs to be encoded as bytes
@@ -139,13 +139,13 @@ def iter_tsv_stream(input_stream, *args, **kwargs):
     return iter_csv_stream(input_stream, *args, dialect='excel-tab', **kwargs)
 
 
-def read_csv_iter(path, fieldnames=None, sniff=True, encoding='utf-8', *args, **kwargs):
+def read_csv_iter(path, fieldnames=None, sniff=True, mode='rt', encoding='utf-8', *args, **kwargs):
     ''' Iterate through CSV rows in a file.
     By default, csv.reader() will be used any output will be a list of lists.
     If fieldnames is provided, DictReader will be used and output will be list of OrderedDict instead.
     CSV sniffing (dialect detection) is enabled by default, set sniff=False to switch it off.
     '''
-    with open(path, mode='rt', encoding=encoding) as infile:
+    with open(path, mode=mode, encoding=encoding) as infile:
         for row in iter_csv_stream(infile, fieldnames=fieldnames, sniff=sniff, *args, **kwargs):
             yield row
 
@@ -171,7 +171,9 @@ def write_csv(path, rows, dialect='excel', fieldnames=None, quoting=csv.QUOTE_AL
         ''' Write rows data to a CSV file (with or without fieldnames) '''
         if not quoting:
             quoting = csv.QUOTE_MINIMAL
-        with open(path, mode='wt') as csvfile:
+        if 'lineterminator' not in kwargs:
+            kwargs['lineterminator'] = '\n'
+        with open(path, mode='wt', newline='') as csvfile:
             if fieldnames:
                 writer = csv.DictWriter(csvfile, fieldnames=fieldnames, dialect=dialect, quoting=quoting, extrasaction=extrasaction, *args, **kwargs)
                 writer.writeheader()

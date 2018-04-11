@@ -11,7 +11,6 @@ try:
     MeCab.Tagger().parse("Pythonが好きです。")
     MECAB_PYTHON3 = True
 except:
-    logging.getLogger(__name__).exception("Failed to load mecab-python3")
     # use flex-mecab
     try:
         if platform.system() == 'Windows':
@@ -21,7 +20,7 @@ except:
                 MECAB_LOC = "C:\\Program Files\\MeCab\\bin\\mecab.exe"
             else:
                 MECAB_LOC = "mecab.exe"
-        if os.path.isfile('/usr/local/bin/mecab'):
+        elif os.path.isfile('/usr/local/bin/mecab'):
             MECAB_LOC = '/usr/local/bin/mecab'
         else:
             MECAB_LOC = "mecab"
