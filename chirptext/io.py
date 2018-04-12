@@ -53,7 +53,7 @@ def open(path, encoding='utf-8', mode='rt', *args, **kwargs):
     elif mode.startswith('r') and not is_file(path):
         raise FileNotFoundError("File {} does not exist".format(path))
     # read or write
-    if path.endswith('.gz'):
+    if str(path).endswith('.gz'):
         if mode.endswith('t'):
             return gzip.open(path, mode=mode, encoding=encoding)
         else:
@@ -86,17 +86,17 @@ def read_file(path, encoding='utf-8', *args, **kwargs):
                             encoding=encoding, *args, **kwargs)
 
 
-def write_file(content, outpath, mode=None, encoding='utf-8'):
+def write_file(path, content, mode=None, encoding='utf-8'):
     ''' Write content to a file. If the path ends with .gz, gzip will be used. '''
     if not mode:
         if isinstance(content, bytes):
             mode = 'wb'
         else:
             mode = 'wt'
-    if not outpath:
+    if not path:
         raise ValueError("Output path is invalid")
     else:
-        getLogger().debug("Writing content to {}".format(outpath))
+        getLogger().debug("Writing content to {}".format(path))
         # convert content to string when writing text data
         if mode in ('w', 'wt') and not isinstance(content, str):
             content = to_string(content)
@@ -106,11 +106,11 @@ def write_file(content, outpath, mode=None, encoding='utf-8'):
                 content = to_string(content).encode(encoding)
             else:
                 content = content.encode(encoding)
-        if outpath.endswith('.gz'):
-            with gzip.open(outpath, mode) as outfile:
+        if str(path).endswith('.gz'):
+            with gzip.open(path, mode) as outfile:
                 outfile.write(content)
         else:
-            with open(outpath, mode=mode) as outfile:
+            with open(path, mode=mode) as outfile:
                 outfile.write(content)
 
 
@@ -172,7 +172,7 @@ def write_csv(path, rows, dialect='excel', fieldnames=None, quoting=csv.QUOTE_AL
         if not quoting:
             quoting = csv.QUOTE_MINIMAL
         if 'lineterminator' not in kwargs:
-            kwargs['lineterminator'] = '\n'
+            kwargs['lineterminator'] = '\n'  # use \n to fix double-line in Windows
         with open(path, mode='wt', newline='') as csvfile:
             if fieldnames:
                 writer = csv.DictWriter(csvfile, fieldnames=fieldnames, dialect=dialect, quoting=quoting, extrasaction=extrasaction, *args, **kwargs)

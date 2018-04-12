@@ -14,6 +14,8 @@ import os
 import gzip
 import logging
 import unittest
+import json
+from pathlib import Path
 from chirptext.anhxa import to_json, to_obj
 from chirptext import io as chio
 from chirptext.io import CSV
@@ -66,13 +68,27 @@ class Person:
 
 class TestIO(unittest.TestCase):
 
+    def test_io_with_pathlib(self):
+        print("Make sure that io functions works with pathlib.Path")
+        # test read & write TXT
+        data = [['name', 'foo'], ['age', '18']]
+        json_path = Path(TEST_DATA) / 'temp.json'
+        chio.write_file(json_path, json.dumps(data))
+        json_data = json.loads(chio.read_file(json_path))
+        self.assertEqual(json_data, data)
+        # test read & write CSV
+        filepath = Path(TEST_DATA) / 'temp.csv'
+        chio.write_tsv(filepath, data)
+        actual = chio.read_tsv(filepath)
+        self.assertEqual(actual, data)
+
     def test_file_rw(self):
         tmpfile = os.path.join(TEST_DATA, 'test.txt')
         tmpgzfile = os.path.join(TEST_DATA, 'test.txt.gz')
         txt = 'ユニコード大丈夫だよ。'
         txtz = 'This is a zipped text file.'
-        chio.write_file(txt, mode='wb', outpath=tmpfile)  # write content as bytes
-        chio.write_file(txtz, outpath=tmpgzfile)
+        chio.write_file(content=txt, mode='wb', path=tmpfile)  # write content as bytes
+        chio.write_file(tmpgzfile, content=txtz)
         # ensure that tmpgzfile is actually a gzip file
         with gzip.open(tmpgzfile, mode='rt') as infile:
             self.assertEqual(infile.read(), txtz)
