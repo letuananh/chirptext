@@ -20,7 +20,12 @@ from chirptext.leutile import FileHelper
 from chirptext.leutile import AppConfig
 
 
+# ------------------------------------------------------------------------------
+# Configuration
+# ------------------------------------------------------------------------------
+
 TEST_DATA = os.path.join(os.path.dirname(__file__), 'data')
+
 
 def getLogger():
     return logging.getLogger(__name__)
