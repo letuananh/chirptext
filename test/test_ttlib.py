@@ -40,6 +40,28 @@ def getLogger():
 
 class TestBasicModel(unittest.TestCase):
 
+    def test_tag_model(self):
+        ssid = '06162979-n'
+        tag = ttl.Tag(ssid, tagtype='PWN30')
+        self.assertEqual(tag.type, 'PWN30')
+        self.assertEqual(tag.tagtype, 'PWN30')
+        self.assertEqual(tag.text, ssid)
+        self.assertEqual(tag.label, ssid)
+        tag.text = '00636921-n'
+        self.assertEqual(tag.label, '00636921-n')
+        tag.type = 'OMW1.2'
+        self.assertEqual(tag.tagtype, 'OMW1.2')
+        self.assertEqual(tag.to_json(), {'label': '00636921-n', 'type': 'OMW1.2'})
+        # no type
+        tag_foo = ttl.Tag('foo')
+        tag_foo.source = '頭'
+        self.assertEqual(repr(tag_foo), '`foo`')
+        self.assertEqual(tag_foo.to_json(), {'label': 'foo', 'source': '頭'})
+        # from_json
+        tag_json = {'label': 'foo', 'source': '頭', 'type': '冗談', 'cfrom': 0, 'cto': 3}
+        tag_new = ttl.Tag.from_json(tag_json)
+        self.assertEqual(tag_json, tag_new.to_json())
+
     def test_sentid(self):
         doc = ttl.Document('mydoc')
         sent = doc.new_sent('First sentence.')
@@ -68,6 +90,42 @@ class TestBasicModel(unittest.TestCase):
         s = ttl.Sentence(text='I am a sentence.', docID=1, comment=cmt)
         self.assertEqual(s.docID, 1)
         self.assertEqual(s.comment, cmt)
+
+    def test_creating_sent(self):
+        tokens = 'It rains .'.split()
+        s = ttl.Sentence('It rains.', tokens=tokens)
+        self.assertEqual([t.text for t in s.tokens], tokens)
+        self.assertEqual(repr(s), s.text)
+        self.assertEqual(str(s), s.text)
+        self.assertEqual(s.surface(s[0]), 'It')
+        self.assertEqual(s.surface(ttl.Tag(cfrom=-1, cto=-1)), '')
+        self.assertEqual(s.surface(ttl.Tag(cfrom=-1, cto=3)), '')
+        self.assertEqual(s.surface(ttl.Tag(cfrom=3, cto=-1)), '')
+        self.assertEqual(s.surface(ttl.Tag(cfrom=None, cto=None)), '')
+        s.ID = '1'
+        self.assertEqual(repr(s), '#1: It rains.')
+        self.assertEqual(str(s), '#1: It rains.')
+        # tag sentence
+        url = 'https://github.com/letuananh/chirptext'
+        turl = s.new_tag(url, tagtype='URL')
+        self.assertEqual(s.get_tag('URL').text, url)
+        self.assertEqual(s.tagmap(), {'URL': [turl]})
+        self.assertEqual(s.get_tags('URL'), [turl])
+        # test concepts
+        c = ttl.Concept(tag='02756558-v', clemma='rain')
+        s.add_concept(c)
+        self.assertRaises(Exception, lambda: s.add_concept(None))
+        self.assertRaises(Exception, lambda: s.add_concept(c))
+        c2 = ttl.Concept(tag='dummy', clemma='it')
+        c2.cidx = c.cidx
+        self.assertRaises(Exception, lambda: s.add_concept(c2))
+        c2.cidx = s.new_concept_id()
+        s.add_concept(c2)
+        self.assertEqual(len(s.concepts), 2)
+        self.assertRaises(Exception, lambda: s.pop_concept(3))
+        self.assertEqual(s.pop_concept(3, default=c2), c2)
+        self.assertEqual(s.pop_concept(c2.cidx), c2)
+        self.assertEqual(s.concepts, [c])
 
 
 class TestBuildTags(unittest.TestCase):
@@ -294,20 +352,20 @@ class TestTagging(unittest.TestCase):
         sents = TextReport.string()
         tags = TextReport.string()
         words = TextReport.string()
-        writer = ttl.TxtWriter(sents.file, words.file, concepts.file, links.file, tags.file)
-        writer.write_doc(doc)
-        getLogger().debug("sents\n{}".format(sents.content()))
-        getLogger().debug("words\n{}".format(words.content()))
-        getLogger().debug("concepts\n{}".format(concepts.content()))
-        getLogger().debug("links\n{}".format(links.content()))
-        getLogger().debug("tags\n{}".format(tags.content()))
-        self.assertTrue(sents.content())
-        self.assertTrue(words.content())
-        self.assertTrue(concepts.content())
-        self.assertTrue(links.content())
-        self.assertTrue(tags.content())
-        for sent in doc:
-            logging.debug(json.dumps(sent.to_json(), ensure_ascii=False))
+        with ttl.TxtWriter(sents.file, words.file, concepts.file, links.file, tags.file) as writer:
+            writer.write_doc(doc)
+            getLogger().debug("sents\n{}".format(sents.content()))
+            getLogger().debug("words\n{}".format(words.content()))
+            getLogger().debug("concepts\n{}".format(concepts.content()))
+            getLogger().debug("links\n{}".format(links.content()))
+            getLogger().debug("tags\n{}".format(tags.content()))
+            self.assertTrue(sents.content())
+            self.assertTrue(words.content())
+            self.assertTrue(concepts.content())
+            self.assertTrue(links.content())
+            self.assertTrue(tags.content())
+            for sent in doc:
+                logging.debug(json.dumps(sent.to_json(), ensure_ascii=False))
 
 
 class TestJSON(unittest.TestCase):

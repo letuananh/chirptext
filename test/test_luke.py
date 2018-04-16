@@ -35,6 +35,7 @@ class TestLuke(unittest.TestCase):
         self.assertEqual(len(s71), 100)
         self.assertEqual(len(sr), 100)
         self.assertEqual(len(ss), 100)
+        self.assertEqual(repr(s71[0]), "Word(ID=1, word='I')")
         # are they the same words?
         s71_words = {w.word for w in s71}
         sr_words = {w.word for w in sr}
