@@ -57,11 +57,27 @@ class Tag(DataObject):
 
     def __init__(self, label='', cfrom=-1, cto=-1, tagtype='', source=NONE, **kwargs):
         super().__init__(**kwargs)
-        self.cfrom = cfrom
-        self.cto = cto
+        self.__cfrom = cfrom
+        self.__cto = cto
         self.label = label
         self.source = source
         self.tagtype = tagtype  # tag type
+
+    @property
+    def cfrom(self):
+        return self.__cfrom
+
+    @cfrom.setter
+    def cfrom(self, value):
+        self.__cfrom = int(value) if value is not None else None
+
+    @property
+    def cto(self):
+        return self.__cto
+
+    @cto.setter
+    def cto(self, value):
+        self.__cto = int(value) if value is not None else None
 
     @property
     def type(self):
@@ -104,24 +120,22 @@ class Tag(DataObject):
     @staticmethod
     def from_json(json_dict):
         tag = Tag()
-        tag.update(json_dict, 'cfrom', 'cto', 'label', 'source', 'tagtype')
+        tag.update(json_dict, 'cfrom', 'cto', 'label', 'source', 'type')
         return tag
 
 
 class Sentence(DataObject):
 
-    def __init__(self, text='', ID=None, tags=None, tokens=None, **kwargs):
+    def __init__(self, text='', ID=None, tokens=None, **kwargs):
         super().__init__(**kwargs)
         self.text = text
         self.ID = ID
         self.__tags = []
-        if tags:
-            self.__tags.extend(tags)
         self.__tokens = []
-        if tokens:
-            self.__tokens.extend(tokens)
         self.__concepts = []
         self.__concept_map = OrderedDict()  # concept.ID to concept object
+        if tokens:
+            self.tokens = tokens
 
     @property
     def ID(self):
@@ -191,7 +205,7 @@ class Sentence(DataObject):
 
     def surface(self, tag):
         ''' Get surface string that is associated with a tag object '''
-        if tag.cfrom >= 0 and tag.cto >= 0:
+        if tag.cfrom is not None and tag.cto is not None and tag.cfrom >= 0 and tag.cto >= 0:
             return self.text[tag.cfrom:tag.cto]
         else:
             return ''
