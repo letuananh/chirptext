@@ -1,6 +1,7 @@
 .vscode/
 README.rst
 test/data/test.txt*
+test/data/temp.*
 test/data/del.me
 test/data/test.csv
 test/data/test_cache.db
