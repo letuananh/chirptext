@@ -27,19 +27,19 @@ def getLogger():
 # -------------------------------------------------------------------------------
 
 class IDGenerator(object):
-    def __init__(self, id_seed=1, known_ids=None):
+
+    def __init__(self, id_seed=0, id_hook=None):
         ''' id_seed = starting number '''
-        self.__known_ids = set()
-        if known_ids:
-            self.__known_ids.update(known_ids)
         self.__id_seed = id_seed
+        self.__id_check_hook = id_hook  # external ID checker
         self.__lock = threading.Lock()
 
-    def new_id(self):
+    def __next__(self):
         with self.__lock:
-            while self.__id_seed in self.__known_ids:
+            while True:
                 self.__id_seed += 1
-            self.__known_ids.add(self.__id_seed)  # remember this new ID
+                if self.__id_check_hook is None or not self.__id_check_hook(self.__id_seed):
+                    break
             return self.__id_seed
 
 
@@ -81,6 +81,8 @@ def update_obj(source, target, *fields, **field_map):
 
 
 def flex_update_obj(source, target, __silent, *fields, **field_map):
+    ''' Pull data from source to target.
+    Target's __dict__ (object data) will be used by default. Otherwise, it'll be treated as a dictionary '''
     source_dict = source.__dict__ if hasattr(source, '__dict__') else source
     if not fields:
         fields = source_dict.keys()
