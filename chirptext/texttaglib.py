@@ -12,6 +12,7 @@ import os
 import logging
 import json
 import csv
+import warnings
 from collections import namedtuple
 from collections import defaultdict as dd
 from collections import OrderedDict
@@ -512,13 +513,11 @@ class Document(DataObject):
         self.__name = name
         self.__sents = []
         self.__sent_map = {}
-        self.__id_seed = 1  # for creating a new sentence without ID
+        self.__idgen = IDGenerator(id_hook=self.has_id)  # for creating a new sentence without ID
 
     def new_id(self):
-        ''' Generate a new sentence ID '''
-        while self.has_id(self.__id_seed):
-            self.__id_seed += 1
-        return self.__id_seed
+        warnings.warn("new_id() is deprecated and will be removed in near future.", DeprecationWarning)
+        return next(self.__idgen)
 
     @property
     def name(self):
@@ -583,7 +582,7 @@ class Document(DataObject):
             raise Exception("Sentence object cannot be None")
         elif sent_obj.ID is None:
             # if sentID is None, create a new ID
-            sent_obj.ID = self.new_id()
+            sent_obj.ID = next(self.__idgen)
         elif self.has_id(sent_obj.ID):
             raise Exception("Sentence ID {} exists".format(sent_obj.ID))
         self.__sent_map[sent_obj.ID] = sent_obj
@@ -593,7 +592,7 @@ class Document(DataObject):
     def new_sent(self, text, ID=None):
         ''' Create a new sentence and add it to this Document '''
         if ID is None:
-            ID = self.new_id()
+            ID = next(self.__idgen)
         return self.add_sent(Sentence(text, ID=ID))
 
     def pop(self, sent_id, **kwargs):
@@ -784,7 +783,7 @@ class TxtWriter(object):
     def write_sent(self, sent):
         flag = sent.flag if sent.flag is not None else ''
         comment = sent.comment if sent.comment is not None else ''
-        sid = sent.ID if sent.ID is not None else self.__idgen.new_id()
+        sid = sent.ID if sent.ID is not None else next(self.__idgen)
         self.sent_writer.writerow((sid, sent.text, flag, comment))
         # write tokens
         for wid, token in enumerate(sent.tokens):
