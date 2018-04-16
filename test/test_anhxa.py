@@ -13,7 +13,7 @@ import os
 import unittest
 import json
 import logging
-from chirptext.anhxa import DataObject
+from chirptext.anhxa import IDGenerator, DataObject
 from chirptext.anhxa import to_json, to_obj, dumps, update_obj
 from chirptext.anhxa import TypedJSONDecoder, TypelessSONEncoder, TypedJSONEncoder
 
@@ -88,6 +88,22 @@ class Person(object):
 # -------------------------------------------------------------------------------
 # Tests
 # -------------------------------------------------------------------------------
+
+class TestIDGen(unittest.TestCase):
+
+    def no_even(self, value):
+        if value % 2 == 0:
+            return True
+
+    def test_idgen(self):
+        gen = IDGenerator(id_hook=self.no_even)
+        ids = [next(gen) for i in range(5)]
+        self.assertEqual(ids, [1, 3, 5, 7, 9])
+        # test no hook
+        gen2 = IDGenerator()
+        ids = [next(gen2) for i in range(5)]
+        self.assertEqual(ids, [1, 2, 3, 4, 5])
+
 
 class TestDataObject(unittest.TestCase):
 

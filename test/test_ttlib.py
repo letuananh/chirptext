@@ -152,6 +152,16 @@ class TestBuildTags(unittest.TestCase):
         self.assertTrue(mwe)
         self.assertEqual(mwe[0].tag, GDOG_SID)
 
+    def test_sentids(self):
+        doc = ttl.Document('boo')
+        doc.add_sent(ttl.Sentence('odd', ID=3))  # add sent#3 first
+        doc.new_sent('foo')  # 1
+        doc.new_sent('boo')  # 2
+        moo = doc.new_sent('moo')  # moo will be #4 because sent #3 exists
+        self.assertEqual(moo.ID, 4)
+        sids = [s.ID for s in doc]
+        self.assertEqual(sids, [3, 1, 2, 4])  # sidx is not the same as sent.ID
+
 
 class TestTagging(unittest.TestCase):
 
