@@ -70,6 +70,8 @@ class Radical(object):
         if not Radical.__KANGXI_MAP:
             kxs = chio.read_csv(KANGXI_FILE, fieldnames=True)
             Radical.__KANGXI_MAP = KangxiMap(kxs)
+        else:
+            getLogger().debug("Kangxi has been loaded once. Created KangxiMap will be re-used")
         return Radical.__KANGXI_MAP
 
 
