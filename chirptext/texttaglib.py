@@ -469,7 +469,7 @@ class Concept(DataObject):
         self.clemma = clemma
         self.tag = tag
         self.flag = None
-        self.comment = ''
+        self.comment = comment if comment else ''
         if tokens:
             self.__tokens.extend(tokens)
 
