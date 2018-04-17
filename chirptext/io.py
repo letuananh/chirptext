@@ -52,8 +52,11 @@ def open(path, encoding='utf-8', mode='rt', *args, **kwargs):
         raise Exception("Invalid file access mode")
     elif mode.startswith('r') and not is_file(path):
         raise FileNotFoundError("File {} does not exist".format(path))
+    # ensure that path is a str so it'll work on python 3.5 and prior
+    if not isinstance(path, str):
+        path = str(path)
     # read or write
-    if str(path).endswith('.gz'):
+    if path.endswith('.gz'):
         if mode.endswith('t'):
             return gzip.open(path, mode=mode, encoding=encoding)
         else:
