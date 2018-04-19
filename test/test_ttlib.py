@@ -188,7 +188,8 @@ class TestTagging(unittest.TestCase):
         token.lemma = 'word'
         token.comment = "an element of speech or writing"
         js_token = token.to_json()
-        expected = {"tags": {"unsorted": ["plural", "word-token"]}, "cfrom": 0, "pos": "n", "cto": 4, "text": "Words", "lemma": "word", 'comment': 'an element of speech or writing'}
+        print(js_token)
+        expected = {'cfrom': 0, 'cto': 4, 'text': 'Words', 'lemma': 'word', 'pos': 'n', 'comment': 'an element of speech or writing', 'tags': [{'label': 'plural'}, {'label': 'word-token'}]}
         self.assertEqual(js_token, expected)
 
     def import_tokens(self, sent, token_list):
@@ -378,8 +379,9 @@ class TestTagging(unittest.TestCase):
                 logging.debug(json.dumps(sent.to_json(), ensure_ascii=False))
 
 
-class TestJSON(unittest.TestCase):
-    def test_tags(self):
+class TestSerialization(unittest.TestCase):
+
+    def build_test_sent(self):
         sent = ttl.Sentence('三毛猫が好きです。')
         sent.flag = '0'
         sent.comment = 'written in Japanese'
@@ -392,6 +394,18 @@ class TestJSON(unittest.TestCase):
         sent[1].new_tag('ke', tagtype='reading')
         sent[2].new_tag('neko', tagtype='reading')
         getLogger().debug(sent.to_json())
+        return sent
+
+    def test_json_serialization(self):
+        print("Test serialization to and from JSON")
+        sent = self.build_test_sent()
+        sentj = sent.to_json()
+        sent_re = ttl.Sentence.from_json(sentj)
+        getLogger().debug(sent_re.to_json())
+        self.assertEqual(sent_re.to_json(), sentj)
+
+    def test_ttl_tsv_serialization(self):
+        sent = self.build_test_sent()
         concepts = TextReport.string()
         links = TextReport.string()
         sents = TextReport.string()

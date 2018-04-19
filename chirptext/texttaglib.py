@@ -107,14 +107,15 @@ class Tag(DataObject):
     def __str__(self):
         return "`{l}`<{f}:{t}>{v}".format(l=self.label, f=self.cfrom, t=self.cto, v=self.tagtype)
 
-    def to_json(self):
+    def to_json(self, default_cfrom=-1, default_cto=-1):
         a_dict = {'label': self.label}
         if self.tagtype:
             a_dict['type'] = self.tagtype
         if self.source:
             a_dict['source'] = self.source
-        if self.cfrom >= 0 and self.cto >= 0:
+        if self.cfrom != default_cfrom and self.cfrom >= 0:
             a_dict['cfrom'] = self.cfrom
+        if self.cto != default_cto and self.cto >= 0:
             a_dict['cto'] = self.cto
         return a_dict
 
@@ -211,11 +212,14 @@ class Sentence(DataObject):
         else:
             return ''
 
+    def add_tag(self, tag_obj):
+        self.tags.append(tag_obj)
+        return tag_obj
+
     def new_tag(self, label, cfrom=-1, cto=-1, tagtype='', **kwargs):
         ''' Create a sentence-level tag '''
         tag_obj = Tag(label, cfrom, cto, tagtype=tagtype, **kwargs)
-        self.tags.append(tag_obj)
-        return tag_obj
+        return self.add_tag(tag_obj)
 
     def get_tag(self, tagtype):
         ''' Get the first tag of a particular type'''
@@ -349,15 +353,17 @@ class Sentence(DataObject):
         sent = Sentence(json_sent['text'])
         sent.update(json_sent, 'ID', 'comment', 'flag')
         # import tokens
-        for json_token in json_sent['tokens']:
+        for json_token in json_sent.get('tokens', []):
             sent.add_token_object(Token.from_json(json_token))
         # import concepts
-        for json_concept in json_sent['concepts']:
+        for json_concept in json_sent.get('concepts', []):
             tag = json_concept['tag']
             clemma = json_concept['clemma']
             tokenids = json_concept['tokens']
             concept = sent.new_concept(tag, clemma=clemma, tokens=tokenids)
             concept.update(json_concept, Concept.COMMENT, Concept.FLAG)
+        for json_tag in json_sent.get('tags', []):
+            sent.add_tag(Tag.from_json(json_tag))
         return sent
 
 
@@ -423,6 +429,10 @@ class Token(DataObject):
         ''' Find all token-level tags with the specified tagtype '''
         return [t for t in self.__tags if t.tagtype == tagtype]
 
+    def add_tag(self, tag_obj):
+        self.__tags.append(tag_obj)
+        return tag_obj
+
     def new_tag(self, label, cfrom=None, cto=None, tagtype=None, **kwargs):
         ''' Create a new tag on this token '''
         if not cfrom:
@@ -430,8 +440,7 @@ class Token(DataObject):
         if not cto:
             cto = self.cto
         tag = Tag(label=label, cfrom=cfrom, cto=cto, tagtype=tagtype, **kwargs)
-        self.__tags.append(tag)
-        return tag
+        return self.add_tag(tag)
 
     def to_json(self):
         token_json = {'cfrom': self.cfrom,
@@ -443,15 +452,18 @@ class Token(DataObject):
             token_json['pos'] = self.pos
         if self.comment:
             token_json['comment'] = self.comment
-        tagdict = {k if k else 'unsorted': [t.label for t in tags] for k, tags in self.tag_map().items()}
-        if tagdict:
-            token_json['tags'] = tagdict
+        all_tags = [t.to_json(default_cfrom=self.cfrom, default_cto=self.cto) for t in self.tags]
+        if all_tags:
+            token_json['tags'] = all_tags
         return token_json
 
     @staticmethod
     def from_json(token_dict):
         tk = Token()
         tk.update(token_dict, 'cfrom', 'cto', 'text', 'lemma', 'pos', 'comment')
+        # rebuild tags
+        for tag_json in token_dict.get('tags', []):
+            tk.add_tag(Tag.from_json(tag_json))
         return tk
 
 
