@@ -320,10 +320,16 @@ class Sentence(DataObject):
                 import_hook(token)
             to_find = token.lower() if ignorecase else token
             start = text.find(to_find, cfrom)
+            # stanford parser
             if to_find == '``' or to_find == "''":
                 start_dq = text.find('"', cfrom)
                 if start_dq > -1 and (start == -1 or start > start_dq):
                     to_find = '"'
+                    start = start_dq
+            if to_find == '`' or to_find == "'":
+                start_dq = text.find("'", cfrom)
+                if start_dq > -1 and (start == -1 or start > start_dq):
+                    to_find = "'"
                     start = start_dq
             if start == -1:
                 raise LookupError('Cannot find token `{t}` in sent `{s}`({l}) from {i} ({p})'.format(t=token, s=self.text, l=len(self.text), i=cfrom, p=self.text[cfrom:cfrom + 20]))
