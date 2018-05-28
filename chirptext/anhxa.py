@@ -58,6 +58,9 @@ class DataObject(object):
     def to_json(self, *args, **kwargs):
         return dumps(self, *args, **kwargs)
 
+    def to_dict(self, *args, **kwargs):
+        return to_json(self)
+
 
 def field(f, field_map):
     return f if f not in field_map else field_map[f]
@@ -72,8 +75,8 @@ def add_extra_fields(obj, kwargs):
 
 
 def dumps(obj, *args, **kwargs):
-    ''' Typeless dump an object to json '''
-    return json.dumps(obj, *args, cls=TypelessSONEncoder, **kwargs)
+    ''' Typeless dump an object to json string '''
+    return json.dumps(obj, *args, cls=TypelessSONEncoder, ensure_ascii=False, **kwargs)
 
 
 def update_obj(source, target, *fields, **field_map):
