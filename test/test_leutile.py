@@ -15,7 +15,7 @@ import logging
 import unittest
 from pathlib import Path
 
-from chirptext.leutile import Counter, TextReport, StringTool, LOREM_IPSUM, Timer
+from chirptext.leutile import Counter, TextReport, StringTool, LOREM_IPSUM, Timer, piter
 from chirptext.leutile import FileHelper
 from chirptext.leutile import AppConfig
 
@@ -50,6 +50,35 @@ class TestLeUtile(unittest.TestCase):
         self.assertEqual(StringTool.detokenize("Note : It works .".split()), "Note: It works.")
         self.assertEqual(StringTool.detokenize("( A ) ; ".split()), "(A);")
         self.assertEqual(StringTool.detokenize("( A ) ; B ".split()), "(A); B")
+
+    def test_piter(self):
+        p1 = piter(range(5))
+        l1 = [(x, p1.peep().value if p1.peep() else None) for x in p1]
+        self.assertEqual(l1, [(0, 1), (1, 2), (2, 3), (3, 4), (4, None)])
+        # empty list
+        p2 = piter([])
+        self.assertRaises(StopIteration, lambda: next(p2))
+        self.assertIsNone(p2.current())
+        self.assertIsNone(p2.peep())
+        # 1 element iteration
+        p3 = piter([1])
+        v = next(p3)
+        self.assertEqual(v, 1)
+        self.assertIsNone(p3.peep())
+        self.assertRaises(Exception, lambda: piter(None))
+        # simple parser
+        lssv = "src: me\ntxt:It works\n\nsrc:him\ntxt:It rains\ncmt:I made it up\n\nsrc:anonymous\ntxt:cow level is real"
+        groups = []
+        current = []
+        p = piter(lssv.splitlines())
+        for l in p:
+            if l:
+                current.append(l)
+            if not l or not p.peep():
+                if current:
+                    groups.append(current)
+                    current = []
+        self.assertEqual(groups, [['src: me', 'txt:It works'], ['src:him', 'txt:It rains', 'cmt:I made it up'], ['src:anonymous', 'txt:cow level is real']])
 
     def test_counter(self):
         print("Test counter")
