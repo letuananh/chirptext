@@ -15,14 +15,14 @@ from .__version__ import __author__, __email__, __copyright__, __maintainer__
 from .__version__ import __credits__, __license__, __description__, __url__
 from .__version__ import __version_major__, __version_long__, __version__, __status__
 
-from .leutile import uniquify, header, confirm
+from .leutile import uniquify, header, confirm, piter
 from .leutile import Timer, Counter, FileHub, TextReport, FileHelper, AppConfig
 from .arsenal import JiCache
 from .anhxa import DataObject
 from .chirpnet import SmartURL, WebHelper
 from . import texttaglib as ttl
 
-__all__ = ["uniquify", "header", "confirm",
+__all__ = ["uniquify", "header", "confirm", "piter",
            "Timer", "Counter",
            "TextReport", "FileHub", "FileHelper", "AppConfig",
            "JiCache", "SmartURL", "WebHelper",

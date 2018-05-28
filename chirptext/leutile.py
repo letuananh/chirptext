@@ -21,6 +21,8 @@ from collections import OrderedDict
 
 from itertools import zip_longest
 
+from .io import read_file, write_file
+
 
 # -------------------------------------------------------------------------------
 # Configuration
@@ -82,6 +84,57 @@ def grouper(iterable, n, fillvalue=None):
 
 
 ###############################################################################
+
+class Value(object):
+    ''' Value holder '''
+    def __init__(self, value=None):
+        self.value = value
+
+
+class piter(object):
+    ''' Peep-able iterator '''
+    def __init__(self, iterable):
+        self.__iterable = iter(iterable)
+        self.__current = None
+        self.__peep = None
+        self.__ended = False
+
+    def current(self):
+        return self.__current
+
+    def peep(self):
+        return self.__peep
+
+    def fetch(self, value_obj=None):
+        ''' Fetch the next two values '''
+        val = None
+        try:
+            val = next(self.__iterable)
+        except StopIteration:
+            return None
+            pass
+        if value_obj is None:
+            value_obj = Value(value=val)
+        else:
+            value_obj.value = val
+        return value_obj
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.__peep is not None:
+            self.__current.value = self.__peep.value  # move peep to current
+        else:
+            self.__current = self.fetch(self.__current)
+        # peep
+        if self.__current is None:
+            self.__peep = None  # iteration ended
+            raise StopIteration
+        else:
+            self.__peep = self.fetch(self.__peep)
+            return self.__current.value
+
 
 class Counter(PythonCounter):
     ''' Powerful counter class
@@ -505,22 +558,12 @@ class FileHelper:
                 raise
 
     @staticmethod
-    def save(path, content):
-        try:
-            with open(os.path.abspath(os.path.expanduser(path)), "wb") as local_file:
-                if isinstance(content, str):
-                    local_file.write(bytes(content, 'UTF-8'))
-                else:
-                    local_file.write(content)
-            return True
-        except Exception as e:
-            getLogger().debug("Error while saving content to {file}\r\n{e}".format(file=path, e=e))
-        return False
+    def save(path, content, *args, **kwargs):
+        return write_file(path, content, *args, **kwargs)
 
     @staticmethod
-    def read(a_file, mode='r', encoding='utf-8'):
-        with open(a_file, mode=mode, encoding=encoding) as fileobj:
-            return fileobj.read()
+    def read(path, mode='r', encoding='utf-8', *args, **kwargs):
+        return read_file(path, mode=mode, encoding=encoding, *args, **kwargs)
 
 
 class AppConfig(object):
