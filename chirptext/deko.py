@@ -58,6 +58,19 @@ def getLogger():
 def simple_kata2hira(input_str):
     return input_str.translate(KATA2HIRA_TRANS)
 
+
+def is_kana(text):
+    ''' Check if a text if written in kana only (hiragana & katakana)
+    if text is empty then return True
+    '''
+    if text is None:
+        raise ValueError("text cannot be None")
+    for c in text:
+        if c not in HIRAGANA and c not in KATAKANA:
+            return False
+    return True
+
+
 try:
     from jaconv import kata2hira
 except:
@@ -171,7 +184,10 @@ class MeCabSent(object):
         tsent.import_tokens(self.words)
         for mtk, tk in zip((tk for tk in self if not tk.is_eos), tsent):
             tk.pos = mtk.pos3()
-            tk.lemma = mtk.root
+            if mtk.root and mtk.root != '*':
+                tk.lemma = mtk.root
+            else:
+                tk.lemma = mtk.surface
             tk.new_tag(mtk.reading_hira(), tagtype="reading", source=ttl.Tag.MECAB)
         return tsent
 

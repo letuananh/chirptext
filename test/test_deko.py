@@ -40,13 +40,26 @@ def getLogger():
 
 class TestTool(unittest.TestCase):
 
+    ALL_MAPPING = '''ぁァ|あア|ぃィ|いイ|ぅゥ|うウ|ぇェ|えエ|ぉォ|おオ|かカ|がガ|きキ|ぎギ|くク|ぐグ|けケ|げゲ|こコ|ごゴ|さサ|ざザ|しシ|じジ|すス|ずズ|せセ|ぜゼ|そソ|ぞゾ|たタ|だダ|ちチ|ぢヂ|っッ|つツ|づヅ|てテ|でデ|とト|どド|なナ|にニ|ぬヌ|ねネ|のノ|はハ|ばバ|ぱパ|ひヒ|びビ|ぴピ|ふフ|ぶブ|ぷプ|へヘ|べベ|ぺペ|ほホ|ぼボ|ぽポ|まマ|みミ|むム|めメ|もモ|ゃャ|やヤ|ゅュ|ゆユ|ょョ|よヨ|らラ|りリ|るル|れレ|ろロ|ゎヮ|わワ|ゐヰ|ゑヱ|をヲ|んン|ゔヴ|ゕヵ|ゖヶ|'''
+
     def test_kata2hira(self):
         rp = TextReport.string()
         for k in KATAKANA[1:87]:
             h = simple_kata2hira(k)
             rp.write(h, k, '|', separator='')
-        expected = '''ぁァ|あア|ぃィ|いイ|ぅゥ|うウ|ぇェ|えエ|ぉォ|おオ|かカ|がガ|きキ|ぎギ|くク|ぐグ|けケ|げゲ|こコ|ごゴ|さサ|ざザ|しシ|じジ|すス|ずズ|せセ|ぜゼ|そソ|ぞゾ|たタ|だダ|ちチ|ぢヂ|っッ|つツ|づヅ|てテ|でデ|とト|どド|なナ|にニ|ぬヌ|ねネ|のノ|はハ|ばバ|ぱパ|ひヒ|びビ|ぴピ|ふフ|ぶブ|ぷプ|へヘ|べベ|ぺペ|ほホ|ぼボ|ぽポ|まマ|みミ|むム|めメ|もモ|ゃャ|やヤ|ゅュ|ゆユ|ょョ|よヨ|らラ|りリ|るル|れレ|ろロ|ゎヮ|わワ|ゐヰ|ゑヱ|をヲ|んン|ゔヴ|ゕヵ|ゖヶ|'''
+        expected = TestTool.ALL_MAPPING
         self.assertEqual(rp.content(), expected)
+
+    def test_check_kana(self):
+        self.assertTrue(deko.is_kana(''))
+        self.assertRaises(ValueError, lambda: deko.is_kana(None))
+        self.assertTrue(deko.is_kana('ひらがな'))
+        self.assertTrue(deko.is_kana('カタカナ'))
+        self.assertTrue(deko.is_kana(TestTool.ALL_MAPPING.replace('|', '')))
+        # false
+        self.assertFalse(deko.is_kana(TestTool.ALL_MAPPING))  # with pipe
+        self.assertFalse(deko.is_kana('巡り会う'))  # with kanji
+        self.assertFalse(deko.is_kana('すき です'))  # with a space
 
 
 class TestDeko(unittest.TestCase):
