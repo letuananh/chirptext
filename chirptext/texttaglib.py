@@ -607,11 +607,11 @@ class Document(DataObject):
         self.__sents.append(sent_obj)
         return sent_obj
 
-    def new_sent(self, text, ID=None):
+    def new_sent(self, text, ID=None, **kwargs):
         ''' Create a new sentence and add it to this Document '''
         if ID is None:
             ID = next(self.__idgen)
-        return self.add_sent(Sentence(text, ID=ID))
+        return self.add_sent(Sentence(text, ID=ID, **kwargs))
 
     def pop(self, sent_id, **kwargs):
         ''' If sent_id exists, remove and return the associated sentence object else return default.
