@@ -52,6 +52,7 @@ import os
 import codecs
 import textwrap
 
+import chirptext
 from chirptext import Counter, TextReport
 from chirptext.cli import CLIApp, setup_logging
 
@@ -100,13 +101,17 @@ def gen_vocab(cli, args):
         cli.logger.warning("File {} does not exist".format(args.input))
 
 
+def show_version(cli, args):
+    print("Chirptext toolkit - Version {}".format(chirptext.__version_long__))
+
+
 # -------------------------------------------------------------------------------
 # MAIN
 # -------------------------------------------------------------------------------
 
 def main():
     ''' ChirpText Tools main function '''
-    app = CLIApp(desc='ChirpText Tools', logger=__name__)
+    app = CLIApp(desc='ChirpText Tools', logger=__name__, show_version=show_version)
     # add tasks
     vocab_task = app.add_task('vocab', func=gen_vocab)
     vocab_task.add_argument('input', help='Input file')

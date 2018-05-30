@@ -78,6 +78,9 @@ class CLIApp(object):
             self.__config_logging = kwargs['config_logging']
         if add_vq:
             self.add_vq(self.__parser)
+        self.__show_version_func = None
+        if 'show_version' in kwargs:
+            self.add_version_func(kwargs['show_version'])
         if add_tasks:
             task_desc = kwargs['task_desc'] if 'task_desc' in kwargs else 'Task to be done'
             self.__tasks = self.__parser.add_subparsers(help=task_desc)
@@ -106,6 +109,14 @@ class CLIApp(object):
         group.add_argument("-v", "--verbose", action="store_true")
         group.add_argument("-q", "--quiet", action="store_true")
 
+    def add_version_func(self, show_version):
+        ''' Enable --version and -V to show version information '''
+        if callable(show_version):
+            self.__show_version_func = show_version
+        else:
+            self.__show_version_func = lambda cli, args: print(show_version)
+        self.parser.add_argument("-V", "--version", action="store_true")
+
     @property
     def logger(self):
         ''' Lazy logger '''
@@ -118,7 +129,9 @@ class CLIApp(object):
         args = self.parser.parse_args()
         if self.__add_vq is not None and self.__config_logging:
             self.__config_logging(args)
-        if args.func is not None:
+        if args.version and callable(self.__show_version_func):
+            self.__show_version_func(self, args)
+        elif args.func is not None:
             args.func(self, args)
         elif func is not None:
             func(self, args)
