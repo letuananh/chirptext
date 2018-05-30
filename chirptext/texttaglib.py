@@ -553,24 +553,6 @@ class Document(DataObject):
     def path(self, value):
         self.__path = value
 
-    def __len__(self):
-        return len(self.__sents)
-
-    def __getitem__(self, idx):
-        return self.__sents[idx]
-
-    def get(self, sent_id, **kwargs):
-        ''' If sent_id exists, remove and return the associated sentence object else return default.
-        If no default is provided, KeyError will be raised.'''
-        if sent_id is not None and not isinstance(sent_id, int):
-            sent_id = int(sent_id)
-        if sent_id is None or not self.has_id(sent_id):
-            if 'default' in kwargs:
-                return kwargs['default']
-            else:
-                raise KeyError("Invalid sentence ID ({})".format(sent_id))
-        return self.__sent_map[sent_id]
-
     @property
     def sent_path(self):
         return os.path.join(self.path, '{}_sents.txt'.format(self.name))
@@ -590,6 +572,24 @@ class Document(DataObject):
     @property
     def tag_path(self):
         return os.path.join(self.path, '{}_tags.txt'.format(self.name))
+
+    def __len__(self):
+        return len(self.__sents)
+
+    def __getitem__(self, idx):
+        return self.__sents[idx]
+
+    def get(self, sent_id, **kwargs):
+        ''' If sent_id exists, remove and return the associated sentence object else return default.
+        If no default is provided, KeyError will be raised.'''
+        if sent_id is not None and not isinstance(sent_id, int):
+            sent_id = int(sent_id)
+        if sent_id is None or not self.has_id(sent_id):
+            if 'default' in kwargs:
+                return kwargs['default']
+            else:
+                raise KeyError("Invalid sentence ID ({})".format(sent_id))
+        return self.__sent_map[sent_id]
 
     def has_id(self, sent_id):
         return int(sent_id) in self.__sent_map
@@ -632,6 +632,7 @@ class Document(DataObject):
 
     def read(self):
         ''' Read tagged doc from mutliple files (sents, tokens, concepts, links, tags) '''
+        warnings.warn("Document.read() is deprecated and will be removed in near future.", DeprecationWarning)
         with TxtReader.from_doc(self) as reader:
             reader.read(self)
         return self
@@ -641,6 +642,7 @@ class Document(DataObject):
         ''' Helper function to read Document in TTL-TXT format (i.e. ${docname}_*.txt)
         E.g. Document.read_ttl('~/data/myfile') is the same as Document('myfile', '~/data/').read()
         '''
+        warnings.warn("Document.read_ttl() is deprecated and will be removed in near future.", DeprecationWarning)
         doc_path = os.path.dirname(path)
         doc_name = os.path.basename(path)
         return Document(doc_name, doc_path).read()
@@ -652,17 +654,8 @@ class Document(DataObject):
 
     @staticmethod
     def from_json_file(path):
-        if not os.path.isfile(path):
-            raise Exception("Document file could not be found: {}".format(path))
-        doc_name = os.path.splitext(os.path.basename(path))[0]
-        doc_path = os.path.dirname(path)
-        doc = Document(doc_name, path=doc_path)
-        with open(path, 'rt') as infile:
-            for line in infile:
-                j = json.loads(line)
-                sent = Sentence.from_json(j)
-                doc.add_sent(sent)
-        return doc
+        warnings.warn("Document.from_json_file() is deprecated and will be removed in near future.", DeprecationWarning)
+        return read_json(path)
 
 
 class TxtReader(object):
@@ -691,12 +684,19 @@ class TxtReader(object):
         return iter_tsv_stream(self.tag_stream) if self.tag_stream else None
 
     @staticmethod
+    def from_path(path):
+        doc_path = os.path.dirname(path)
+        doc_name = os.path.basename(path)
+        doc = Document(name=doc_name, path=doc_path)
+        return TxtReader.from_doc(doc)
+
+    @staticmethod
     def from_doc(doc, encoding='utf-8'):
         reader = TxtReader(sent_stream=open(doc.sent_path, mode='rt', encoding=encoding),
-                           token_stream=open(doc.token_path, mode='rt', encoding=encoding),
-                           concept_stream=open(doc.concept_path, mode='rt', encoding=encoding),
-                           link_stream=open(doc.link_path, mode='rt', encoding=encoding),
-                           tag_stream=open(doc.tag_path, mode='rt', encoding=encoding),
+                           token_stream=open(doc.token_path, mode='rt', encoding=encoding) if doc.token_path else None,
+                           concept_stream=open(doc.concept_path, mode='rt', encoding=encoding) if doc.concept_path else None,
+                           link_stream=open(doc.link_path, mode='rt', encoding=encoding) if doc.link_path else None,
+                           tag_stream=open(doc.tag_path, mode='rt', encoding=encoding) if doc.tag_path else None,
                            doc_name=doc.name,
                            doc_path=doc.path)
         return reader
@@ -855,3 +855,41 @@ class TxtWriter(object):
         doc_name = os.path.basename(path)
         doc = Document(name=doc_name, path=doc_path)
         return TxtWriter.from_doc(doc)
+
+
+# ------------------------------------------------------------------------------
+# Helper functions
+# ------------------------------------------------------------------------------
+def read(path):
+    ''' Helper function to read Document in TTL-TXT format (i.e. ${docname}_*.txt)
+    E.g. read('~/data/myfile') is the same as Document('myfile', '~/data/').read()
+    '''
+    return TxtReader.from_path(path).read()
+
+
+def read_json_iter(path):
+    if not os.path.isfile(path):
+        raise Exception("Document file could not be found: {}".format(path))
+    with open(path, 'rt') as infile:
+        for line in infile:
+            j = json.loads(line)
+            sent = Sentence.from_json(j)
+            yield sent
+    return
+
+
+def read_json(path):
+    if not os.path.isfile(path):
+        raise Exception("Document file could not be found: {}".format(path))
+    doc_name = os.path.splitext(os.path.basename(path))[0]
+    doc_path = os.path.dirname(path)
+    doc = Document(doc_name, path=doc_path)
+    for sent in read_json_iter(path):
+        doc.add_sent(sent)
+    return doc
+
+
+def write(self, path, doc):
+    ''' Helper function to write doc to TTL-TXT format '''
+    with TxtWriter.from_path(path) as writer:
+        writer.write_doc(doc)
