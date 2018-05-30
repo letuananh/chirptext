@@ -16,6 +16,7 @@ import time
 import errno
 import json
 import configparser
+import warnings
 from collections import Counter as PythonCounter
 from collections import OrderedDict
 
@@ -490,12 +491,13 @@ class FileHelper:
     def getfilename(file_path):
         ''' Get filename without extension
         '''
-        return os.path.splitext(FileHelper.getfullfilename(file_path))[0]
+        return os.path.splitext(os.path.basename(file_path))[0]
 
     @staticmethod
     def getfullfilename(file_path):
         ''' Get full filename (with extension)
         '''
+        warnings.warn("getfullfilename() is deprecated and will be removed in near future. Use chirptext.io.write_file() instead", DeprecationWarning)
         if file_path:
             return os.path.basename(file_path)
         else:
@@ -559,10 +561,12 @@ class FileHelper:
 
     @staticmethod
     def save(path, content, *args, **kwargs):
+        warnings.warn("save() is deprecated and will be removed in near future. Use chirptext.io.write_file() instead", DeprecationWarning)
         return write_file(path, content, *args, **kwargs)
 
     @staticmethod
     def read(path, mode='r', encoding='utf-8', *args, **kwargs):
+        warnings.warn("read() is deprecated and will be removed in near future. Use chirptext.io.read_file() instead", DeprecationWarning)
         return read_file(path, mode=mode, encoding=encoding, *args, **kwargs)
 
 
