@@ -59,7 +59,10 @@ class DataObject(object):
         return dumps(self, *args, **kwargs)
 
     def to_dict(self, *args, **kwargs):
-        return to_json(self)
+        a_dict = to_json(self)
+        if '_DataObject__extra_data' in a_dict and not a_dict['_DataObject__extra_data']:
+            a_dict.pop('_DataObject__extra_data')
+        return a_dict
 
 
 def field(f, field_map):
