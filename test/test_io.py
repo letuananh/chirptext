@@ -97,6 +97,8 @@ class TestIO(unittest.TestCase):
         self.assertTrue(chio.is_file(tmpgzfile))
         self.assertEqual(chio.read_file(tmpfile), txt)
         self.assertEqual(chio.read_file(tmpgzfile), txtz)
+        self.assertEqual(chio.read_file(tmpfile, mode='r'), txt)
+        self.assertEqual(chio.read_file(tmpgzfile, mode='r'), txtz)
         self.assertIsInstance(chio.read_file(tmpfile, mode='rb'), bytes)
         self.assertIsInstance(chio.read_file(tmpgzfile, mode='rb'), bytes)
 
