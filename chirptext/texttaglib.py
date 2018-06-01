@@ -20,6 +20,7 @@ from collections import OrderedDict
 from .anhxa import IDGenerator
 from .leutile import FileHelper
 from .anhxa import DataObject
+from . import io as chio
 from .io import iter_tsv_stream
 
 
@@ -870,7 +871,7 @@ def read(path):
 def read_json_iter(path):
     if not os.path.isfile(path):
         raise Exception("Document file could not be found: {}".format(path))
-    with open(path, 'rt') as infile:
+    with chio.open(path) as infile:
         for line in infile:
             j = json.loads(line)
             sent = Sentence.from_json(j)
