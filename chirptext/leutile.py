@@ -330,8 +330,8 @@ class TextReport:
             self.__report_file.flush()
 
     def writeline(self, *msg, **kwargs):
-        msg = msg + ('\n',)
         self.write(*msg, **kwargs)
+        self.write('\n')
 
     def header(self, *msg, **kwargs):
         header(*msg, print_out=self.writeline, **kwargs)
