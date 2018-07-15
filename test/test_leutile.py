@@ -118,7 +118,7 @@ class TestLeUtile(unittest.TestCase):
         with TextReport.string() as rp:
             rp.writeline("ABC")
             rp.writeline(123, 456, 789)
-            self.assertEqual(rp.content(), 'ABC \n123 456 789 \n')
+            self.assertEqual(rp.content(), 'ABC\n123 456 789\n')
 
     def test_timer(self):
         rp = TextReport.string()
