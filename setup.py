@@ -26,7 +26,8 @@ def read(*filenames, **kwargs):
     return sep.join(buf)
 
 
-readme_file = 'README.rst' if os.path.isfile('README.rst') else 'README.md'
+# readme_file = 'README.rst' if os.path.isfile('README.rst') else 'README.md'
+readme_file = 'README.md'
 long_description = read(readme_file)
 pkg_info = {}
 exec(read('chirptext/__version__.py'), pkg_info)
@@ -48,6 +49,7 @@ setup(
     author_email=pkg_info['__email__'],
     description=pkg_info['__description__'],
     long_description=long_description,
+    long_description_content_type='text/markdown',
     packages=['chirptext'],
     package_data={'chirptext': ['data/luke/swadesh/*.txt',
                                 'data/sino/*.csv']},

@@ -54,6 +54,25 @@ If you installed MeCab to a custom location, for example `C:\mecab\bin\mecab.exe
 ['雨', 'が', '降る', '。']
 ```
 
+## Convenient IO APIs
+
+```python
+>>> from chirptext import chio
+>>> chio.write_tsv('data/test.tsv', [['a', 'b'], ['c', 'd']])
+>>> chio.read_tsv('data/tes.tsv')
+[['a', 'b'], ['c', 'd']]
+
+>>> chio.write_file('data/content.tar.gz', 'Support writing to .tar.gz file')
+>>> chio.read_file('data/content.tar.gz')
+'Support writing to .tar.gz file'
+
+>>> for row in chio.read_tsv_iter('data/test.tsv'):
+...     print(row)
+... 
+['a', 'b']
+['c', 'd']
+```
+
 ## Web fetcher
 
 ```python
