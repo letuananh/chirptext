@@ -17,8 +17,8 @@ import unittest
 import json
 from pathlib import Path
 from chirptext.anhxa import to_json, to_obj
-from chirptext import io as chio
-from chirptext.io import CSV
+from chirptext import chio
+from chirptext.chio import CSV
 
 # -------------------------------------------------------------------------------
 # Configuration

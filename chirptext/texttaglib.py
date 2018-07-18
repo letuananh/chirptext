@@ -20,8 +20,8 @@ from collections import OrderedDict
 from .anhxa import IDGenerator
 from .leutile import FileHelper
 from .anhxa import DataObject
-from . import io as chio
-from .io import iter_tsv_stream
+from . import chio
+from .chio import iter_tsv_stream
 
 
 # -------------------------------------------------------------------------------

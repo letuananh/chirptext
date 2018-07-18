@@ -13,7 +13,7 @@ import os
 import logging
 from collections import defaultdict as dd
 
-from . import io as chio
+from . import chio
 from .anhxa import to_obj, to_json
 
 

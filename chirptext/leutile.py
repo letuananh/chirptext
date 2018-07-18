@@ -22,7 +22,7 @@ from collections import OrderedDict
 
 from itertools import zip_longest
 
-from .io import read_file, write_file
+from .chio import read_file, write_file
 
 
 # -------------------------------------------------------------------------------
@@ -113,7 +113,6 @@ class piter(object):
             val = next(self.__iterable)
         except StopIteration:
             return None
-            pass
         if value_obj is None:
             value_obj = Value(value=val)
         else:
@@ -342,7 +341,7 @@ class TextReport:
                 self.__report_file.flush()
                 self.__report_file.close()
                 self.__report_file = None
-            except Exception as e:
+            except:
                 getLogger().exception("Error raised while saving report")
                 raise
 
@@ -460,8 +459,11 @@ class Table:
     def print_separator(self, print_func):
         self.print_cells(['-' * (x + (2 if self.padding else 0)) for x in self.max_lengths], print_func, joint='+')
 
-    def print_cells(self, cells, print_func=print, extra_lines=False, joint='|'):
-        print_func(joint + joint.join(cells) + joint)
+    def print_cells(self, cells, print_func=None, extra_lines=False, joint='|'):
+        if print_func is None:
+            print(joint + joint.join(cells) + joint)
+        else:
+            print_func(joint + joint.join(cells) + joint)
         if extra_lines:
             self.print_separator(print_func)
 
@@ -522,7 +524,7 @@ class FileHelper:
         elif not new_name:
             raise Exception("New name cannot be empty")
         dirname = os.path.dirname(file_path)
-        name, ext = os.path.splitext(os.path.basename(file_path))
+        ext = os.path.splitext(os.path.basename(file_path))[1]
         return os.path.join(dirname, new_name + ext)
 
     @staticmethod
@@ -534,7 +536,7 @@ class FileHelper:
         if not os.path.exists(dir_path):
             try:
                 os.makedirs(dir_path)
-            except Exception as e:
+            except:
                 getLogger().exception("Cannot create folder [%s]" % (dir_path,))
                 raise
 
