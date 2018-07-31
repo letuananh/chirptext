@@ -114,9 +114,9 @@ class Tag(DataObject):
             a_dict['type'] = self.tagtype
         if self.source:
             a_dict['source'] = self.source
-        if self.cfrom != default_cfrom and self.cfrom >= 0:
+        if self.cfrom is not None and self.cfrom != default_cfrom and self.cfrom >= 0:
             a_dict['cfrom'] = self.cfrom
-        if self.cto != default_cto and self.cto >= 0:
+        if self.cto is not None and self.cto != default_cto and self.cto >= 0:
             a_dict['cto'] = self.cto
         return a_dict
 
@@ -159,7 +159,7 @@ class Sentence(DataObject):
             return self.text
 
     def __getitem__(self, idx):
-        return self.__tokens[idx]
+        return self.__tokens[int(idx)]
 
     def __len__(self):
         return len(self.__tokens)
@@ -270,6 +270,7 @@ class Sentence(DataObject):
             raise Exception("Duplicated concept ID ({})".format(concept_obj.cidx))
         self.__concepts.append(concept_obj)
         self.__concept_map[concept_obj.cidx] = concept_obj
+        concept_obj.sent = self
         return concept_obj
 
     def pop_concept(self, cid, **kwargs):
@@ -442,9 +443,9 @@ class Token(DataObject):
 
     def new_tag(self, label, cfrom=None, cto=None, tagtype=None, **kwargs):
         ''' Create a new tag on this token '''
-        if not cfrom:
+        if cfrom is None:
             cfrom = self.cfrom
-        if not cto:
+        if cto is None:
             cto = self.cto
         tag = Tag(label=label, cfrom=cfrom, cto=cto, tagtype=tagtype, **kwargs)
         return self.add_tag(tag)
