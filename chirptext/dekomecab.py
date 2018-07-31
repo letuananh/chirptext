@@ -6,27 +6,38 @@ import subprocess
 # Try to use mecab-python3 if it's available
 MECAB_PYTHON3 = False
 MECAB_LOC = 'mecab'  # location of mecab's binary package
-try:
-    import MeCab
-    MeCab.Tagger().parse("Pythonが好きです。")
-    MECAB_PYTHON3 = True
-except:
-    # use flex-mecab
+
+
+def __try_import_mecab(log=False):
+    global MECAB_PYTHON3
+    global MECAB_LOC
+    MECAB_PYTHON3 = False
     try:
-        if platform.system() == 'Windows':
-            if os.path.isfile("C:\\Program Files (x86)\\MeCab\\bin\\mecab.exe"):
-                MECAB_LOC = "C:\\Program Files (x86)\\MeCab\\bin\\mecab.exe"
-            elif os.path.isfile("C:\\Program Files\\MeCab\\bin\\mecab.exe"):
-                MECAB_LOC = "C:\\Program Files\\MeCab\\bin\\mecab.exe"
-            else:
-                MECAB_LOC = "mecab.exe"
-        elif os.path.isfile('/usr/local/bin/mecab'):
-            MECAB_LOC = '/usr/local/bin/mecab'
-        else:
-            MECAB_LOC = "mecab"
+        import MeCab
+        MeCab.Tagger().parse("Pythonが好きです。")
+        MECAB_PYTHON3 = True
     except:
-        pass
-    logging.getLogger(__name__).warning("mecab-python3 could not be loaded. mecab binary package will be used ({})".format(MECAB_LOC))
+        # use flex-mecab
+        try:
+            if platform.system() == 'Windows':
+                if os.path.isfile("C:\\Program Files (x86)\\MeCab\\bin\\mecab.exe"):
+                    MECAB_LOC = "C:\\Program Files (x86)\\MeCab\\bin\\mecab.exe"
+                elif os.path.isfile("C:\\Program Files\\MeCab\\bin\\mecab.exe"):
+                    MECAB_LOC = "C:\\Program Files\\MeCab\\bin\\mecab.exe"
+                else:
+                    MECAB_LOC = "mecab.exe"
+            elif os.path.isfile('/usr/local/bin/mecab'):
+                MECAB_LOC = '/usr/local/bin/mecab'
+            else:
+                MECAB_LOC = "mecab"
+        except:
+            pass
+        if log:
+            logging.getLogger(__name__).warning("mecab-python3 could not be loaded. mecab binary package will be used ({})".format(MECAB_LOC))
+    return MECAB_PYTHON3
+
+
+__try_import_mecab()
 
 
 def _register_mecab_loc(location):
@@ -61,7 +72,8 @@ def run_mecab_process(content, *args, **kwargs):
 
 def parse(content, *args, **kwargs):
     ''' Use mecab-python3 by default to parse JP text. Fall back to mecab binary app if needed '''
-    if 'mecab_loc' not in kwargs and MECAB_PYTHON3:
+    global MECAB_PYTHON3
+    if 'mecab_loc' not in kwargs and MECAB_PYTHON3 and 'MeCab' in globals():
         return MeCab.Tagger(*args).parse(content)
     else:
         return run_mecab_process(content, *args, **kwargs)
