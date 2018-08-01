@@ -30,6 +30,8 @@ from .chio import iter_tsv_stream
 
 STD_DIALECT = 'excel-tab'
 STD_QUOTING = csv.QUOTE_MINIMAL
+MODE_TSV = 'tsv'
+MODE_JSON = 'json'
 TokenInfo = namedtuple("TokenInfo", ['text', 'sk'])
 
 
@@ -515,7 +517,7 @@ class Concept(DataObject):
             tokens = [t.text for t in self.__tokens]
         cdict = {
             'clemma': self.clemma,
-            'tag': self.tag,
+            'tag': str(self.tag),
             'tokens': tokens
         }
         if self.comment:
@@ -802,7 +804,7 @@ class TxtWriter(object):
         self.tag_writer = csv.writer(tag_stream, dialect=STD_DIALECT, quoting=STD_QUOTING)
         self.__idgen = IDGenerator()
 
-    def write_sent(self, sent):
+    def write_sent(self, sent, **kwargs):
         flag = sent.flag if sent.flag is not None else ''
         comment = sent.comment if sent.comment is not None else ''
         sid = sent.ID if sent.ID is not None else next(self.__idgen)
@@ -826,7 +828,7 @@ class TxtWriter(object):
             for tag in token:
                 self.tag_writer.writerow((sid, tag.cfrom, tag.cto, tag.label, tag.tagtype, wid))
 
-    def write_doc(self, doc):
+    def write_doc(self, doc, **kwargs):
         for sent in doc:
             self.write_sent(sent)
 
@@ -859,16 +861,45 @@ class TxtWriter(object):
         return TxtWriter.from_doc(doc)
 
 
+class JSONWriter(object):
+    def __init__(self, output_stream):
+        self.__output_stream = output_stream
+
+    def write_sent(self, sent, ensure_ascii=False, **kwargs):
+        self.__output_stream.write(json.dumps(sent.to_json(), ensure_ascii=ensure_ascii))
+        self.__output_stream.write('\n')
+
+    def write_doc(self, doc, ensure_ascii=False, **kwargs):
+        for sent in doc:
+            self.write_sent(sent, ensure_ascii=ensure_ascii)
+
+    def close(self):
+        try:
+            if self.__output_stream is not None:
+                self.__output_stream.close()
+                self.__output_stream = None
+        except:
+            getLogger().exception("Could not close JSONWriter's output stream properly")
+
+    @staticmethod
+    def from_path(path, **kwargs):
+        return JSONWriter(output_stream=chio.open(path, mode='wt', **kwargs))
+
+    @staticmethod
+    def from_doc(doc, **kwargs):
+        doc_path = os.path.join(doc.path, doc.name + '.ttl.json')
+        return JSONWriter.from_path(doc_path)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+
 # ------------------------------------------------------------------------------
 # Helper functions
 # ------------------------------------------------------------------------------
-def read(path):
-    ''' Helper function to read Document in TTL-TXT format (i.e. ${docname}_*.txt)
-    E.g. read('~/data/myfile') is the same as Document('myfile', '~/data/').read()
-    '''
-    return TxtReader.from_path(path).read()
-
-
 def read_json_iter(path):
     if not os.path.isfile(path):
         raise Exception("Document file could not be found: {}".format(path))
@@ -891,7 +922,27 @@ def read_json(path):
     return doc
 
 
-def write(self, path, doc):
+def write_json(path, doc, ensure_ascii=False, **kwargs):
+    with JSONWriter.from_path(path) as writer:
+        writer.write_doc(doc, ensure_ascii=ensure_ascii, **kwargs)
+
+
+def read(path, mode='tsv'):
+    ''' Helper function to read Document in TTL-TXT format (i.e. ${docname}_*.txt)
+    E.g. read('~/data/myfile') is the same as Document('myfile', '~/data/').read()
+    '''
+    if mode == 'tsv':
+        return TxtReader.from_path(path).read()
+    elif mode == 'json':
+        return read_json(path)
+    else:
+        raise Exception("Invalid mode - [{}] was provided".format(mode))
+
+
+def write(path, doc, mode=MODE_TSV, **kwargs):
     ''' Helper function to write doc to TTL-TXT format '''
-    with TxtWriter.from_path(path) as writer:
-        writer.write_doc(doc)
+    if mode == MODE_TSV:
+        with TxtWriter.from_path(path) as writer:
+            writer.write_doc(doc)
+    elif mode == MODE_JSON:
+        write_json(path, doc, **kwargs)
