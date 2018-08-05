@@ -297,9 +297,11 @@ class Sentence(DataObject):
             return self.__concept_map[cid]
 
     def to_json(self):
-        sent_dict = {'text': self.text,
-                     'tokens': [t.to_json() for t in self.tokens],
-                     'concepts': [c.to_json() for c in self.concepts]}
+        sent_dict = {'text': self.text}
+        if self.tokens:
+            sent_dict['tokens'] = [t.to_json() for t in self.tokens]
+        if self.concepts:
+            sent_dict['concepts'] = [c.to_json() for c in self.concepts]
         if self.ID is not None:
             sent_dict['ID'] = self.ID
         if self.flag is not None:
@@ -791,7 +793,7 @@ class TxtReader(object):
 
 
 class TxtWriter(object):
-    def __init__(self, sent_stream, token_stream, concept_stream, link_stream, tag_stream):
+    def __init__(self, sent_stream, token_stream, concept_stream, link_stream, tag_stream, id_seed=1):
         self.sent_stream = sent_stream
         self.token_stream = token_stream
         self.concept_stream = concept_stream
@@ -802,7 +804,7 @@ class TxtWriter(object):
         self.concept_writer = csv.writer(concept_stream, dialect=STD_DIALECT, quoting=STD_QUOTING)
         self.link_writer = csv.writer(link_stream, dialect=STD_DIALECT, quoting=STD_QUOTING)
         self.tag_writer = csv.writer(tag_stream, dialect=STD_DIALECT, quoting=STD_QUOTING)
-        self.__idgen = IDGenerator()
+        self.__idgen = IDGenerator(id_seed=id_seed)
 
     def write_sent(self, sent, **kwargs):
         flag = sent.flag if sent.flag is not None else ''
@@ -846,26 +848,29 @@ class TxtWriter(object):
         self.close()
 
     @staticmethod
-    def from_doc(doc, encoding='utf-8'):
+    def from_doc(doc, encoding='utf-8', **kwargs):
         return TxtWriter(sent_stream=open(doc.sent_path, mode='wt', encoding=encoding),
                          token_stream=open(doc.token_path, mode='wt', encoding=encoding),
                          concept_stream=open(doc.concept_path, mode='wt', encoding=encoding),
                          link_stream=open(doc.link_path, mode='wt', encoding=encoding),
-                         tag_stream=open(doc.tag_path, mode='wt', encoding=encoding))
+                         tag_stream=open(doc.tag_path, mode='wt', encoding=encoding), **kwargs)
 
     @staticmethod
-    def from_path(path):
+    def from_path(path, **kwargs):
         doc_path = os.path.dirname(path)
         doc_name = os.path.basename(path)
         doc = Document(name=doc_name, path=doc_path)
-        return TxtWriter.from_doc(doc)
+        return TxtWriter.from_doc(doc, **kwargs)
 
 
 class JSONWriter(object):
-    def __init__(self, output_stream):
+    def __init__(self, output_stream, id_seed=1, **kwargs):
         self.__output_stream = output_stream
+        self.__idgen = IDGenerator(id_seed=id_seed)
 
     def write_sent(self, sent, ensure_ascii=False, **kwargs):
+        if sent.ID is None:
+            sent.ID = next(self.__idgen)
         self.__output_stream.write(json.dumps(sent.to_json(), ensure_ascii=ensure_ascii))
         self.__output_stream.write('\n')
 
@@ -876,19 +881,20 @@ class JSONWriter(object):
     def close(self):
         try:
             if self.__output_stream is not None:
+                self.__output_stream.flush()
                 self.__output_stream.close()
                 self.__output_stream = None
         except:
             getLogger().exception("Could not close JSONWriter's output stream properly")
 
     @staticmethod
-    def from_path(path, **kwargs):
-        return JSONWriter(output_stream=chio.open(path, mode='wt', **kwargs))
+    def from_path(path, id_seed=1, **kwargs):
+        return JSONWriter(output_stream=chio.open(path, mode='wt', **kwargs), id_seed=id_seed)
 
     @staticmethod
     def from_doc(doc, **kwargs):
         doc_path = os.path.join(doc.path, doc.name + '.ttl.json')
-        return JSONWriter.from_path(doc_path)
+        return JSONWriter.from_path(doc_path, **kwargs)
 
     def __enter__(self):
         return self
