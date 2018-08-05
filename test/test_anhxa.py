@@ -92,7 +92,7 @@ class Person(object):
 class TestIDGen(unittest.TestCase):
 
     def no_even(self, value):
-        if value % 2 == 0:
+        if value > 0 and value % 2 == 0:
             return True
 
     def test_idgen(self):

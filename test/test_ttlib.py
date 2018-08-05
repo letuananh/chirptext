@@ -127,6 +127,15 @@ class TestBasicModel(unittest.TestCase):
         self.assertEqual(s.pop_concept(c2.cidx), c2)
         self.assertEqual(s.concepts, [c])
 
+    def test_idgen(self):
+        idg = ttl.IDGenerator()
+        _ids = [next(idg) for i in range(3)]
+        idg_explicit = ttl.IDGenerator(id_seed=1)
+        _ids2 = [next(idg_explicit) for i in range(3)]
+        expected = [1, 2, 3]
+        self.assertEqual(_ids, expected)
+        self.assertEqual(_ids2, expected)
+
 
 class TestBuildTags(unittest.TestCase):
 
