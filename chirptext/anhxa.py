@@ -28,7 +28,7 @@ def getLogger():
 
 class IDGenerator(object):
 
-    def __init__(self, id_seed=0, id_hook=None):
+    def __init__(self, id_seed=1, id_hook=None):
         ''' id_seed = starting number '''
         self.__id_seed = id_seed
         self.__id_check_hook = id_hook  # external ID checker
@@ -37,10 +37,11 @@ class IDGenerator(object):
     def __next__(self):
         with self.__lock:
             while True:
+                valid_id = self.__id_seed
                 self.__id_seed += 1
-                if self.__id_check_hook is None or not self.__id_check_hook(self.__id_seed):
+                if self.__id_check_hook is None or not self.__id_check_hook(valid_id):
                     break
-            return self.__id_seed
+            return valid_id
 
 
 class DataObject(object):
