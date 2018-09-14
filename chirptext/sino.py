@@ -60,6 +60,9 @@ class Radical(object):
         self.simplified = simplified
         self.examples = examples
 
+    def __str__(self):
+        return "{}-{}[sc:{}]".format(self.radical, self.meaning, self.strokes)
+
     def to_json(self):
         return to_json(self)
 
