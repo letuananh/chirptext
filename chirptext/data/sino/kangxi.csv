@@ -7,11 +7,11 @@ idseq	radical	variants	strokes	meaning	pinyin	hanviet	hiragana	romaji	hangeul	ro
 6	亅		1	hook	jué	quyết	はねぼう 	 hanebō	갈고리궐 	 galgorigweol	19		了 矛 事
 7	二		2	two	èr	nhị	ふた 	 futa	두이 	 dui	29		亍 于 云
 8	亠		2	lid	tóu	đầu	なべぶた 	 nabebuta	돼지해머리 	 dwaejihaemeori	38		亡 亢 交
-9	人		2	man	rén	nhân (đứng/ nón)	ひと 	 hito	사람인 (변) 	 saramin (byeon)	794		什 仁 仇
-10	儿		2	son/ legs	ér	nhi/ nhân đi	にんにょう 	 ninnyō	어진사람인발 	 eojinsaraminbal	52	兒	兀 允 元
+9	人		2	man	rén	nhân (đứng, nón)	ひと 	 hito	사람인 (변) 	 saramin (byeon)	794		什 仁 仇
+10	儿		2	son/legs	ér	nhi/nhân (đi)	にんにょう 	 ninnyō	어진사람인발 	 eojinsaraminbal	52	兒	兀 允 元
 11	入		2	enter	rù	nhập	いる 	 iru	들입 	 deurip	28		內 全 兩
 12	八		2	eight	bā	bát	はちがしら 	 hachigashira	여덟팔 	 yeodeolbpal	44		公 六 兮
-13	冂		2	(down box)	jiōng	quynh/ khuynh	まきがまえ 	 makigamae	멀경몸 	 meolgyeongmom	50		冇 冊 冉
+13	冂		2	(down box)	jiōng	quynh/khuynh	まきがまえ 	 makigamae	멀경몸 	 meolgyeongmom	50		冇 冊 冉
 14	冖		2	cover	mì	mịch	わかんむり 	 wakammuri	민갓머리 	 mingatmeori	30		冗 冠 冥
 15	冫		2	ice	bīng	băng	にすい 	 nisui	이수변 	 isubyeon	115		冬 冰 冶
 16	几		2	table	jī	kỷ	つくえ 	 tsukue	안석궤 	 anseokgwe	38		凪 凰 凱
@@ -64,7 +64,7 @@ idseq	radical	variants	strokes	meaning	pinyin	hanviet	hiragana	romaji	hangeul	ro
 63	戶		4	door	hù	hộ	と 	 to	지게호 	 jigeho	44	户	戹 戼 戽
 64	手		4	hand	shǒu	thủ	て 	 te	손수 (재방변) 	 sonsu (jaebangbyeon)	1203		才 扎 扐
 65	支		4	branch	zhī	chi	しにょう 	 shinyō	지탱할지 	 jitaenghalji	26		攰 攱 攲
-66	攴		4	rap/ tap	pū	phộc	ぼくづくり 	 bokuzukuri	칠복 (등글월문) 	 chilbok (deunggeulweolmun)	296		收 攷 攸
+66	攴		4	rap/tap	pū	phộc	ぼくづくり 	 bokuzukuri	칠복 (등글월문) 	 chilbok (deunggeulweolmun)	296		收 攷 攸
 67	文		4	script	wén	văn	ぶん 	 bun	글월문 	 geulweolmun	26		斉 斌 斐
 68	斗		4	dipper	dǒu	đẩu	とます 	 tomasu	말두 	 maldu	32		料 斚 斛
 69	斤		4	axe	jīn	cân	おの 	 ono	날근 	 nalgeun	55		斥 斧 斨
@@ -103,7 +103,7 @@ idseq	radical	variants	strokes	meaning	pinyin	hanviet	hiragana	romaji	hangeul	ro
 102	田		5	field	tián	điền	た 	 ta	밭전 	 batjeon	192		由 甲 申
 103	疋		5	bolt of cloth	pǐ	thất/sơ	ひき 	 hiki	짝필 	 jjakpil	15		疌 疏 疎
 104	疒		5	sickness	nè	nạch	やまいだれ 	 yamaidare	병질엄 	 byeongjileom	526		疔 疚 疝
-105	癶		5	dotted tent/ legs	bō	bát	はつがしら 	 hatsugashira	필발머리 	 pilbalmeori	15		癸 癹 発
+105	癶		5	dotted tent/legs	bō	bát	はつがしら 	 hatsugashira	필발머리 	 pilbalmeori	15		癸 癹 発
 106	白		5	white	bái	bạch	しろ 	 shiro	흰백 	 heuinbaek	109		百 皀 皁
 107	皮		5	skin	pí	bì	けがわ 	 kegawa	가죽피 	 gajukpi	94		皯 皰 皴
 108	皿		5	dish	mǐn	mãnh	さら 	 sara	그릇명 	 geureutmyeong	129		盂 盃 盅
@@ -160,7 +160,7 @@ idseq	radical	variants	strokes	meaning	pinyin	hanviet	hiragana	romaji	hangeul	ro
 159	車		7	cart	chē	xa	くるま 	 kuruma	수레거 	 suregeo	361	车	軋 軌 軍
 160	辛		7	bitter	xīn	tân	からい 	 karai	매울신 	 maeulsin	36		辜 辝 辟
 161	辰		7	morning	chén	thần/thìn	しんのたつ 	 shinnotatsu	별진 	 byeoljin	15		辱 農 辴
-162	辵		7	walk	chuò / zouzhi	sước	しんにょう 	 shinnyō	갖은책받침 (책받침) 	 gajeunchaekbatchim (chaekbatchim)	381		边 巡 迂
+162	辵		7	walk	chuò/zouzhi	sước	しんにょう 	 shinnyō	갖은책받침 (책받침) 	 gajeunchaekbatchim (chaekbatchim)	381		边 巡 迂
 163	邑		7	city	yì	ấp	むら 	 mura	고을읍 (우부방) 	 goeureup (ububang)	350		邕 邗 邘
 164	酉		7	wine	yǒu	dậu	ひよみのとり 	 hyominotori	닭유 	 dalgyu	290		酊 酋 酌
 165	釆		7	distinguish	biàn	biện	のごめ 	 nogome	분별할변 	 bunbyeolhalbyeon	14		采 釉 釋
