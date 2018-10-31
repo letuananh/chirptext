@@ -60,6 +60,9 @@ class Radical(object):
         self.simplified = simplified
         self.examples = examples
 
+    def __repr__(self):
+        return str(self)
+        
     def __str__(self):
         return "{}-{}[sc:{}]".format(self.radical, self.meaning, self.strokes)
 
@@ -87,7 +90,11 @@ class KangxiMap:
         self.strokes_map = dd(list)  # map strokes => radicals
         if rads:
             for rad in rads:
-                self.add(to_obj(Radical, rad))
+                rad_obj = to_obj(Radical, rad)
+                rad_obj.frequency = int(rad_obj.frequency)
+                rad_obj.idseq = int(rad_obj.idseq)
+                rad_obj.strokes = int(rad_obj.strokes)
+                self.add(rad_obj)
 
     @property
     def all(self):
@@ -101,7 +108,7 @@ class KangxiMap:
         return len(self.radicals)
 
     def __getitem__(self, key):
-        if key in self.rad_map:
+        if key in self.rad_map:  # literal matching
             return self.rad_map[key]
         elif key in self.id_rad_map:
             return self.id_rad_map[key]
@@ -114,7 +121,7 @@ class KangxiMap:
     def add(self, rad):
         self.radicals.append(rad)
         self.rad_map[rad.radical] = rad
-        self.id_rad_map[rad.idseq] = rad
+        self.id_rad_map[str(rad.idseq)] = rad
         self.strokes_map[int(rad.strokes)].append(rad)
         # map variants & simplified
         if rad.variants:
