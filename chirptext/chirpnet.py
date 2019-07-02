@@ -113,15 +113,16 @@ class WebHelper(object):
                     self.cache.insert_blob(url, content)
             return content.decode(encoding) if content and encoding else content
         except URLError as e:
+            error_message = "Unknown fetching error"
             if hasattr(e, 'reason'):
-                getLogger().exception('We failed to reach {}. Reason: {}'.format(url, e.reason))
+                error_message = 'We failed to reach {}. Reason: {}'.format(url, e.reason)
             elif hasattr(e, 'code'):
-                getLogger().exception('The server couldn\'t fulfill the request. Error code: {}'.format(e.code))
-            else:
-                # Other exception ...
-                getLogger().exception("Fetching error")
+                error_message = 'The server couldn\'t fulfill the request. Error code: {}'.format(e.code)
+            # done!
             if not quiet:
                 raise
+            else:
+                getLogger().debug(error_message)
         return None
 
     def fetch_json(self, *args, **kwargs):
