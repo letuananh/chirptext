@@ -175,21 +175,21 @@ def read_tsv(path, *args, **kwargs):
 
 
 def write_csv(path, rows, dialect='excel', fieldnames=None, quoting=csv.QUOTE_ALL, extrasaction='ignore', *args, **kwargs):
-        ''' Write rows data to a CSV file (with or without fieldnames) '''
-        if not quoting:
-            quoting = csv.QUOTE_MINIMAL
-        if 'lineterminator' not in kwargs:
-            kwargs['lineterminator'] = '\n'  # use \n to fix double-line in Windows
-        with open(path, mode='wt', newline='') as csvfile:
-            if fieldnames:
-                writer = csv.DictWriter(csvfile, fieldnames=fieldnames, dialect=dialect, quoting=quoting, extrasaction=extrasaction, *args, **kwargs)
-                writer.writeheader()
-                for row in rows:
-                    writer.writerow(row)
-            else:
-                writer = csv.writer(csvfile, dialect=dialect, quoting=quoting, *args, **kwargs)
-                for row in rows:
-                    writer.writerow(row)
+    ''' Write rows data to a CSV file (with or without fieldnames) '''
+    if not quoting:
+        quoting = csv.QUOTE_MINIMAL
+    if 'lineterminator' not in kwargs:
+        kwargs['lineterminator'] = '\n'  # use \n to fix double-line in Windows
+    with open(path, mode='wt', newline='') as csvfile:
+        if fieldnames:
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames, dialect=dialect, quoting=quoting, extrasaction=extrasaction, *args, **kwargs)
+            writer.writeheader()
+            for row in rows:
+                writer.writerow(row)
+        else:
+            writer = csv.writer(csvfile, dialect=dialect, quoting=quoting, *args, **kwargs)
+            for row in rows:
+                writer.writerow(row)
 
 
 def write_tsv(path, rows, *args, **kwargs):
@@ -204,21 +204,21 @@ class CSV(object):
 
     @staticmethod
     def read(file_name, header=False, *args, **kwargs):
-        warnings.warn("chirptext.io.CSV is deprecated and will be removed in near future.", DeprecationWarning)
+        warnings.warn("chirptext.io.CSV is deprecated and will be removed in near future.", DeprecationWarning, stacklevel=2)
         return read_csv(file_name, fieldnames=header, *args, **kwargs)
 
     @staticmethod
     def read_tsv(file_name, *args, **kwargs):
-        warnings.warn("chirptext.io.CSV is deprecated and will be removed in near future.", DeprecationWarning)
+        warnings.warn("chirptext.io.CSV is deprecated and will be removed in near future.", DeprecationWarning, stacklevel=2)
         return read_tsv(file_name, *args, **kwargs)
 
     @staticmethod
     def write(file_name, rows, header=None, *args, **kwargs):
         ''' Write rows data to a CSV file (with or without header) '''
-        warnings.warn("chirptext.io.CSV is deprecated and will be removed in near future.", DeprecationWarning)
+        warnings.warn("chirptext.io.CSV is deprecated and will be removed in near future.", DeprecationWarning, stacklevel=2)
         write_csv(file_name, rows, fieldnames=header, *args, **kwargs)
 
     @staticmethod
     def write_tsv(file_name, rows, *args, **kwargs):
-        warnings.warn("chirptext.io.CSV is deprecated and will be removed in near future.", DeprecationWarning)
+        warnings.warn("chirptext.io.CSV is deprecated and will be removed in near future.", DeprecationWarning, stacklevel=2)
         write_tsv(file_name, rows, *args, **kwargs)
