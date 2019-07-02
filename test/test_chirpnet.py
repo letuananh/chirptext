@@ -68,9 +68,11 @@ class TestChirpnet(unittest.TestCase):
         self.assertEqual(data, {"name": "Kungfu Panda"})
         # test fetch non existent URL
         u_error = "https://letuananh.github.io/test/data-null.json"
+        print("Fetch nonexistent url ... default quiet=True")
         data = web.fetch_json(u_error, encoding="utf-8")
         self.assertIsNone(data)
         # must raise exception if not quiet
+        print("Fetch nonexistent url with quiet=False")
         self.assertRaises(Exception, lambda: web.fetch_json(u_error, encoding="utf-8", quiet=False))
 
 
