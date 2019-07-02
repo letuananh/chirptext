@@ -10,7 +10,7 @@ References:
         http://taku910.github.io/mecab/
 
 MeCab, デコ, got the joke?
-* This script is used to be a part of omwtk
+* This script was a part of omwtk
 
 :copyright: (c) 2012 Le Tuan Anh <tuananh.ke@gmail.com>
 :license: MIT, see LICENSE for more details.
@@ -19,6 +19,7 @@ MeCab, デコ, got the joke?
 import re
 import os
 import logging
+import warnings
 
 from . import texttaglib as ttl
 from .dekomecab import wakati, parse as _internal_mecab_parse, _register_mecab_loc as set_mecab_bin, _get_mecab_loc as get_mecab_bin
@@ -231,7 +232,7 @@ class DekoText(object):
         doc = DekoText()
         if not splitlines:
             # surface is broken right now ...
-            tokens = txt2mecab(text, **kwargs)
+            tokens = MeCabSent.parse(text, **kwargs)
             doc.sents = tokenize_sent(tokens, text, auto_strip)
         else:
             lines = text.splitlines()
@@ -244,30 +245,41 @@ class DekoText(object):
 
 
 # -------------------------------------------------------------------------------
-# Functions
+# MeCab helper functions
 # -------------------------------------------------------------------------------
 
-def txt2mecab(text, **kwargs):
-    ''' Use mecab to parse one sentence '''
-    mecab_out = _internal_mecab_parse(text, **kwargs).splitlines()
-    tokens = [MeCabToken.parse(x) for x in mecab_out]
-    return MeCabSent(text, tokens)
-
-
-def lines2mecab(lines, **kwargs):
+def _lines2mecab(lines, **kwargs):
     ''' Use mecab to parse many lines '''
     sents = []
     for line in lines:
-        sent = txt2mecab(line, **kwargs)
+        sent = MeCabSent.parse(line, **kwargs)
         sents.append(sent)
     return sents
 
+
+# -------------------------------------------------------------------------------
+# Legacy functions
+# -------------------------------------------------------------------------------
+
+def txt2mecab(text, **kwargs):
+    warnings.warn("txt2mecab() is deprecated and will be removed in near future. Use deko.parse() instead.", DeprecationWarning, stacklevel=2)
+    return MeCabSent.parse(text, **kwargs)
+
+
+def lines2mecab(lines, **kwargs):
+    warnings.warn("lines2mecab() is deprecated and will be removed in near future.", DeprecationWarning, stacklevel=2)
+    return _lines2mecab(lines, **kwargs)
+
+
+# -------------------------------------------------------------------------------
+# Functions
+# -------------------------------------------------------------------------------
 
 def tokenize(content, **kwargs):
     ''' Sentence to a list of tokens (string) '''
     # TODO: Check if wakati better?
     # return wakati(content).split(' ')
-    return txt2mecab(content, **kwargs).words
+    return MeCabSent.parse(content, **kwargs).words
 
 
 # TODO: Need to calculate cfrom, cto to get surfaces
@@ -328,5 +340,5 @@ def analyse(content, splitlines=True, format=None, **kwargs):
 
 
 # useful alias
-parse = txt2mecab
+parse = MeCabSent.parse
 parse_doc = DekoText.parse
