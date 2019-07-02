@@ -540,7 +540,7 @@ class Document(DataObject):
         self.__idgen = IDGenerator(id_hook=self.has_id)  # for creating a new sentence without ID
 
     def new_id(self):
-        warnings.warn("new_id() is deprecated and will be removed in near future.", DeprecationWarning)
+        warnings.warn("new_id() is deprecated and will be removed in near future.", DeprecationWarning, stacklevel=2)
         return next(self.__idgen)
 
     @property
@@ -638,7 +638,7 @@ class Document(DataObject):
 
     def read(self):
         ''' Read tagged doc from mutliple files (sents, tokens, concepts, links, tags) '''
-        warnings.warn("Document.read() is deprecated and will be removed in near future.", DeprecationWarning)
+        warnings.warn("Document.read() is deprecated and will be removed in near future.", DeprecationWarning, stacklevel=2)
         with TxtReader.from_doc(self) as reader:
             reader.read(self)
         return self
@@ -648,7 +648,7 @@ class Document(DataObject):
         ''' Helper function to read Document in TTL-TXT format (i.e. ${docname}_*.txt)
         E.g. Document.read_ttl('~/data/myfile') is the same as Document('myfile', '~/data/').read()
         '''
-        warnings.warn("Document.read_ttl() is deprecated and will be removed in near future. Use read() instead", DeprecationWarning)
+        warnings.warn("Document.read_ttl() is deprecated and will be removed in near future. Use read() instead", DeprecationWarning, stacklevel=2)
         doc_path = os.path.dirname(path)
         doc_name = os.path.basename(path)
         return Document(doc_name, doc_path).read()
@@ -660,7 +660,7 @@ class Document(DataObject):
 
     @staticmethod
     def from_json_file(path):
-        warnings.warn("Document.from_json_file() is deprecated and will be removed in near future.", DeprecationWarning)
+        warnings.warn("Document.from_json_file() is deprecated and will be removed in near future.", DeprecationWarning, stacklevel=2)
         return read_json(path)
 
 
@@ -938,7 +938,13 @@ def read(path, mode='tsv'):
     E.g. read('~/data/myfile') is the same as Document('myfile', '~/data/').read()
     '''
     if mode == 'tsv':
-        return TxtReader.from_path(path).read()
+        doc_path = os.path.dirname(path)
+        doc_name = os.path.basename(path)
+        doc = Document(name=doc_name, path=doc_path)
+        reader = TxtReader.from_doc(doc)
+        doc = reader.read(doc=doc)
+        reader.close()
+        return doc
     elif mode == 'json':
         return read_json(path)
     else:
