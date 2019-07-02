@@ -18,7 +18,6 @@ import json
 from pathlib import Path
 from chirptext.anhxa import to_json, to_obj
 from chirptext import chio
-from chirptext.chio import CSV
 
 # -------------------------------------------------------------------------------
 # Configuration
@@ -108,8 +107,8 @@ class TestUsingCSV(unittest.TestCase):
     def test_csv(self):
         data = [['abc', 'def\n"xyz'],
                 ["'", '"', ',']]
-        CSV.write(TEST_CSV, data)
-        indata = CSV.read(TEST_CSV)
+        chio.write_csv(TEST_CSV, data)
+        indata = chio.read_csv(TEST_CSV)
         self.assertEqual(data, indata)
 
 
@@ -119,31 +118,31 @@ class TestReaders(unittest.TestCase):
         print("Test CSV io")
         # test writing numbers => strings
         data = ((1, 2, 3), (4, 5, 6))
-        CSV.write(TEST_CSV, data)
-        indata = CSV.read(TEST_CSV)
+        chio.write_csv(TEST_CSV, data)
+        indata = chio.read_csv(TEST_CSV)
         self.assertEqual(indata, [['1', '2', '3'], ['4', '5', '6']])
 
         # test writing strings with spaces
         data = [["Doraemon", "Nobita Nobi", "Shizuka Minamoto", "Dorami"],
                 ["Takeshi Goda", "Suneo Honekawa", "Jaiko", "Hidetoshi Dekisugi"]]
-        CSV.write_tsv(TEST_CSV, data)
-        indata = CSV.read(TEST_CSV)
+        chio.write_tsv(TEST_CSV, data)
+        indata = chio.read_csv(TEST_CSV)
         self.assertEqual(data, indata)
 
         # writing only 1 string with space?
         data = [['Takeshi Goda']]
-        CSV.write_tsv(TEST_CSV, data, quoting=None)
-        indata = CSV.read(TEST_CSV)
+        chio.write_tsv(TEST_CSV, data, quoting=None)
+        indata = chio.read_csv(TEST_CSV)
         expected = [['Takeshi', 'Goda']]  # not quoting => CSV reader cannot guess the format
         self.assertEqual(indata, expected)
         # read file with a proper dialect
-        indata = CSV.read(TEST_CSV, dialect='excel-tab')
+        indata = chio.read_csv(TEST_CSV, dialect='excel-tab')
         self.assertEqual(data, indata)
 
         # write file with forced quoting (default option)
         data = [['Takeshi Goda']]
-        CSV.write_tsv(TEST_CSV, data)
-        indata = CSV.read(TEST_CSV)
+        chio.write_tsv(TEST_CSV, data)
+        indata = chio.read_csv(TEST_CSV)
         self.assertEqual(data, indata)
 
         # with header
@@ -151,8 +150,8 @@ class TestReaders(unittest.TestCase):
                  "Takeshi Goda G001", "Suneo Honekawa H001", "Jaiko - G002", "Hidetoshi Dekisugi D003"]
         persons = [Person.parse(name) for name in names]
         header = ['first', 'last']
-        CSV.write(TEST_CSV, [to_json(p) for p in persons], header=header)
-        inrows = CSV.read(TEST_CSV, header=True)
+        chio.write_csv(TEST_CSV, [to_json(p) for p in persons], fieldnames=header)
+        inrows = chio.read_csv(TEST_CSV, fieldnames=True)
         getLogger().debug("Inrows: {}".format(inrows))
         expected = [{'first': 'Doraemon', 'last': '-'}, {'first': 'Nobita', 'last': 'Nobi'}, {'first': 'Shizuka', 'last': 'Minamoto'}, {'first': 'Dorami', 'last': '-'}, {'first': 'Takeshi', 'last': 'Goda'}, {'first': 'Suneo', 'last': 'Honekawa'}, {'first': 'Jaiko', 'last': '-'}, {'first': 'Hidetoshi', 'last': 'Dekisugi'}]
         self.assertEqual(inrows, expected)
@@ -164,8 +163,8 @@ class TestReaders(unittest.TestCase):
 
         # with idno
         header = ['first', 'last', 'idno']
-        CSV.write(TEST_CSV, [to_json(p) for p in persons], header=header)
-        inpersons = [to_obj(Person, row) for row in CSV.read(TEST_CSV, header=True)]
+        chio.write_csv(TEST_CSV, [to_json(p) for p in persons], fieldnames=header)
+        inpersons = [to_obj(Person, row) for row in chio.read_csv(TEST_CSV, fieldnames=True)]
         self.assertEqual(persons, inpersons)
 
 

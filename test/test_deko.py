@@ -17,7 +17,7 @@ import logging
 from chirptext import TextReport
 from chirptext import deko
 from chirptext.deko import KATAKANA, simple_kata2hira
-from chirptext.deko import wakati, tokenize, txt2mecab, tokenize_sent, analyse
+from chirptext.deko import wakati, tokenize, tokenize_sent, analyse, parse
 from chirptext.deko import MeCabSent, DekoText
 # -------------------------------------------------------------------------------
 # Configuration
@@ -66,7 +66,7 @@ class TestDeko(unittest.TestCase):
 
     def test_mecab(self):
         print("Testing mecab")
-        tokens = txt2mecab(txt)
+        tokens = parse(txt)
         self.assertTrue(tokens[-1].is_eos)
 
     def test_mecab_bin_loc(self):
@@ -81,13 +81,13 @@ class TestDeko(unittest.TestCase):
 
     def test_dekomecab(self):
         # try parsing text using mecab binary
-        self.assertRaises(FileNotFoundError, lambda: txt2mecab(txt, mecab_loc='/usr/bin/path/to/mecab-binary-app'))
+        self.assertRaises(FileNotFoundError, lambda: parse(txt, mecab_loc='/usr/bin/path/to/mecab-binary-app'))
         self.assertRaises(FileNotFoundError, lambda: analyse(txt, mecab_loc='/usr/bin/path/to/mecab-binary-app'))
         self.assertRaises(FileNotFoundError, lambda: DekoText.parse(txt, mecab_loc='/usr/bin/path/to/mecab-binary-app'))
         self.assertRaises(FileNotFoundError, lambda: MeCabSent.parse(txt, mecab_loc='/usr/bin/path/to/mecab-binary-app'))
 
     def test_mecab_lines(self):
-        out = txt2mecab(txt2)
+        out = parse(txt2)
         self.assertGreaterEqual(len(out), 11)
 
     def test_wakati(self):
@@ -99,7 +99,7 @@ class TestDeko(unittest.TestCase):
         self.assertEqual(tokenized, ['雨', 'が', '降る', '。'])
 
     def test_tokenize_sents(self):
-        tokens = txt2mecab(txt2)
+        tokens = parse(txt2)
         sents = tokenize_sent(tokens, txt2)
         print(sents)
 
@@ -116,7 +116,7 @@ class TestDeko(unittest.TestCase):
         self.assertEqual(sents[0].words, ['猫', 'が', '好き', 'です', '。'])
         self.assertEqual(str(sents[1]), '犬 も 好き です 。')
         # 2 sentences
-        print("Tokenized: ", txt2mecab(txt2))
+        print("Tokenized: ", parse(txt2))
         sents = DekoText.parse(txt2, splitlines=False)
         print("last test: {} - {} sents".format(sents, len(sents)))
         self.assertEqual(len(sents), 2)
@@ -129,7 +129,7 @@ class TestDeko(unittest.TestCase):
         sents = analyse(txt2, format='txt')
         self.assertEqual(sents, '猫 が 好き です 。\n犬 も 好き です 。')
         # test sent tokenizing using MeCab
-        tokens = txt2mecab(txt2)
+        tokens = parse(txt2)
         sents = tokenize_sent(tokens)
         # using analyse function
         sents = analyse(txt2, splitlines=False, format='txt').split('\n')
@@ -148,7 +148,7 @@ EOS
         self.assertEqual(c, e)
 
     def test_pos(self):
-        sent = txt2mecab(txt)
+        sent = parse(txt)
         self.assertTrue(sent[-1].is_eos)
         poses = [tk.pos3() for tk in sent if not tk.is_eos]
         self.assertEqual(poses, ['名詞-一般', '助詞-格助詞-一般', '動詞-自立', '記号-句点'])
@@ -156,7 +156,7 @@ EOS
             getLogger().debug(tk.pos3())
 
     def test_deko_ttl(self):
-        sent = txt2mecab(txt).to_ttl()
+        sent = parse(txt).to_ttl()
         getLogger().debug("Sent: {}".format(sent))
         for tk in sent:
             getLogger().debug("{} - {}".format(tk, tk.pos))
@@ -175,7 +175,7 @@ EOS
                 self.assertEqual(dtk.pos3(), ttk.pos)
 
     def test_analyse_multiple_sents(self):
-        msent = txt2mecab(txt4)
+        msent = parse(txt4)
         getLogger().debug(msent.tokens)
         sent = msent.to_ttl()
         expected_tokens = ['猫', 'が', '好き', 'です', '。', '犬', 'も', '好き', 'です', '。', '鳥', 'は']

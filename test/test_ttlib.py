@@ -17,7 +17,7 @@ import logging
 import json
 from chirptext import TextReport
 from chirptext import texttaglib as ttl
-from chirptext.deko import txt2mecab
+from chirptext.deko import parse
 
 # ------------------------------------------------------------------------------
 # Configuration
@@ -25,6 +25,7 @@ from chirptext.deko import txt2mecab
 
 TEST_DIR = os.path.dirname(__file__)
 TEST_DATA = os.path.join(TEST_DIR, 'data')
+TEST_FILE = os.path.join(TEST_DATA, 'test')
 
 BARK_SID = '01047745-v'
 GDOG_SID = '02103841-n'
@@ -238,7 +239,7 @@ class TestTagging(unittest.TestCase):
     def test_tagged_sentences(self):
         print("test converting MeCabSent into TTL Sent manually")
         sent = ttl.Sentence('猫が好きです 。')
-        mecab_sent = txt2mecab(sent.text)
+        mecab_sent = parse(sent.text)
         getLogger().debug((mecab_sent.surface, mecab_sent.words))
         # import tags
         sent.import_tokens(mecab_sent.words)
@@ -312,14 +313,13 @@ class TestTagging(unittest.TestCase):
         self.assertEqual(words, [x.text for x in s.tokens])
 
     def test_tagged_doc(self):
-        doc = ttl.Document('test', TEST_DATA)
-        doc.read()
+        doc = ttl.read(TEST_FILE)
         ts_count = [(len(s), len(s.concepts)) for s in doc]
         self.assertEqual(len(doc), 3)  # 3 sents
         self.assertEqual(ts_count, [(29, 15), (28, 13), (34, 23)])
 
     def test_cwl(self):
-        doc = ttl.Document('test', TEST_DATA).read()
+        doc = ttl.read(TEST_FILE)
         sent = doc[0]
         # ensure that words and concepts are linked properly
         w = doc[0][-4]
@@ -331,7 +331,7 @@ class TestTagging(unittest.TestCase):
         self.assertTrue([str(t) for t in sent.tags])
 
     def test_multiple_tags(self):
-        doc = ttl.Document('test', TEST_DATA).read()
+        doc = ttl.read(TEST_FILE)
         mw_ms = [(len(list(s.mwe())), len(list(s.msw()))) for s in doc]
         self.assertEqual(mw_ms, [(2, 2), (0, 0), (3, 2)])
 
@@ -348,7 +348,7 @@ class TestTagging(unittest.TestCase):
         # create sents in doc
         raws = ("三毛猫が好きです。", "雨が降る。", "女の子はケーキを食べる。")
         for sid, r in enumerate(raws):
-            msent = txt2mecab(r)
+            msent = parse(r)
             tsent = doc.new_sent(msent.surface, sid)
             tsent.import_tokens(msent.words)
             # pos tagging
