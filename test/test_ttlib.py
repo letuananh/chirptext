@@ -349,7 +349,7 @@ class TestTagging(unittest.TestCase):
         raws = ("三毛猫が好きです。", "雨が降る。", "女の子はケーキを食べる。")
         for sid, r in enumerate(raws):
             msent = parse(r)
-            tsent = doc.new_sent(msent.surface, sid)
+            tsent = doc.new_sent(msent.surface, sid + 1)  # sentID starts from 1
             tsent.import_tokens(msent.words)
             # pos tagging
             for mtk, tk in zip(msent, tsent):
