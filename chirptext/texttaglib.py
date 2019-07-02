@@ -148,7 +148,7 @@ class Sentence(DataObject):
 
     @ID.setter
     def ID(self, value):
-        self.__ID = int(value) if value is not None else None
+        self.__ID = int(value) if value else None
 
     def __repr__(self):
         return str(self)
