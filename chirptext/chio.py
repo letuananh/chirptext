@@ -204,21 +204,21 @@ class CSV(object):
 
     @staticmethod
     def read(file_name, header=False, *args, **kwargs):
-        warnings.warn("chirptext.io.CSV is deprecated and will be removed in near future.", DeprecationWarning, stacklevel=2)
+        warnings.warn("chirptext.chio.CSV is deprecated and will be removed in near future. Use chio.read_csv() instead.", DeprecationWarning, stacklevel=2)
         return read_csv(file_name, fieldnames=header, *args, **kwargs)
 
     @staticmethod
     def read_tsv(file_name, *args, **kwargs):
-        warnings.warn("chirptext.io.CSV is deprecated and will be removed in near future.", DeprecationWarning, stacklevel=2)
+        warnings.warn("chirptext.chio.CSV is deprecated and will be removed in near future. Use chio.read_tsv() instead.", DeprecationWarning, stacklevel=2)
         return read_tsv(file_name, *args, **kwargs)
 
     @staticmethod
     def write(file_name, rows, header=None, *args, **kwargs):
         ''' Write rows data to a CSV file (with or without header) '''
-        warnings.warn("chirptext.io.CSV is deprecated and will be removed in near future.", DeprecationWarning, stacklevel=2)
+        warnings.warn("chirptext.io.CSV is deprecated and will be removed in near future. Use chio.write_csv() instead.", DeprecationWarning, stacklevel=2)
         write_csv(file_name, rows, fieldnames=header, *args, **kwargs)
 
     @staticmethod
     def write_tsv(file_name, rows, *args, **kwargs):
-        warnings.warn("chirptext.io.CSV is deprecated and will be removed in near future.", DeprecationWarning, stacklevel=2)
+        warnings.warn("chirptext.io.CSV is deprecated and will be removed in near future. Use chio.write_tsv() instead.", DeprecationWarning, stacklevel=2)
         write_tsv(file_name, rows, *args, **kwargs)
