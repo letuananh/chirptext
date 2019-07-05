@@ -563,12 +563,12 @@ class FileHelper:
 
     @staticmethod
     def save(path, content, *args, **kwargs):
-        warnings.warn("save() is deprecated and will be removed in near future. Use chirptext.io.write_file() instead", DeprecationWarning)
+        warnings.warn("save() is deprecated and will be removed in near future. Use chirptext.io.write_file() instead", DeprecationWarning, stacklevel=2)
         return write_file(path, content, *args, **kwargs)
 
     @staticmethod
     def read(path, mode='r', encoding='utf-8', *args, **kwargs):
-        warnings.warn("read() is deprecated and will be removed in near future. Use chirptext.io.read_file() instead", DeprecationWarning)
+        warnings.warn("read() is deprecated and will be removed in near future. Use chirptext.io.read_file() instead", DeprecationWarning, stacklevel=2)
         return read_file(path, mode=mode, encoding=encoding, *args, **kwargs)
 
 
