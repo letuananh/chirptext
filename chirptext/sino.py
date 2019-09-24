@@ -62,7 +62,7 @@ class Radical(object):
 
     def __repr__(self):
         return str(self)
-        
+
     def __str__(self):
         return "{}-{}[sc:{}]".format(self.radical, self.meaning, self.strokes)
 
