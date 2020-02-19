@@ -311,7 +311,12 @@ class TextReport:
         return self.__report_file is None or self.__report_file.closed
 
     @property
+    def stream(self):
+        return self.__report_file
+    
+    @property
     def file(self):
+        ''' An alias for stream '''
         return self.__report_file
 
     def content(self):
@@ -616,6 +621,23 @@ This class supports guessing configuration file location, and reads either INI (
                 return f
         return None
 
+    def read_config(self, key, strict=False, **kwargs):
+        ''' Read a config by key. Default value can be passed by using the kwarg `default`
+            For example: read_config(key, default='my value')
+            Arguments:
+                default -- Optional kwarg to set default value when key could not be found
+                strict -- Set to True to throw an exception if config key was not set. Defaulted to False
+        '''
+        if self.config and key in self.config:
+            return self.config[key]
+        elif 'default' in kwargs:
+            return kwargs['default']
+        elif strict:
+            if not self.config:
+                raise FileNotFoundError("Configuration file could not be loaded")
+            else:
+                raise KeyError("Key `{}` could not be found in config file: {}".format(key, self.__config_path))
+    
     @property
     def config(self):
         ''' Read config automatically if required '''
