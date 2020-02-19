@@ -173,6 +173,21 @@ class TestBuildTags(unittest.TestCase):
         self.assertEqual(sids, [3, 1, 2, 4])  # sidx is not the same as sent.ID
 
 
+class TestComment(unittest.TestCase):
+    ''' Ensure that all objects may hold comments and flags '''
+
+    def test_storing_flags(self):
+        ''' '''
+        doc = ttl.read(TEST_FILE)
+        sent = doc[0]
+        sent.flag = ttl.Tag.GOLD
+        sent[0].flag = ttl.Tag.NLTK
+        sent.concepts[0].flag = ttl.Tag.ISF
+        sent_json = sent.to_json()
+        self.assertEqual(sent_json['flag'], ttl.Tag.GOLD)
+        self.assertEqual(sent_json['tokens'][0]['flag'], ttl.Tag.NLTK)
+        self.assertEqual(sent_json['concepts'][0]['flag'], ttl.Tag.ISF)
+
 class TestTagging(unittest.TestCase):
 
     def test_taginfo(self):
@@ -198,9 +213,39 @@ class TestTagging(unittest.TestCase):
         token.lemma = 'word'
         token.comment = "an element of speech or writing"
         js_token = token.to_json()
-        print(js_token)
+        getLogger().debug(js_token)
         expected = {'cfrom': 0, 'cto': 4, 'text': 'Words', 'lemma': 'word', 'pos': 'n', 'comment': 'an element of speech or writing', 'tags': [{'label': 'plural'}, {'label': 'word-token'}]}
         self.assertEqual(js_token, expected)
+
+    def test_tag_type_and_searching(self):
+        taggable_objects = [
+            ttl.Token("text", 0, 4),
+            ttl.Sentence('I am a sentence.')
+        ]
+        for obj in taggable_objects:
+            obj.new_tag("06387980-n", tagtype="synset")
+            obj.new_tag("06414372-n", tagtype="synset")
+            obj.new_tag("manual", tagtype="tagtype")
+            # find all tags by type
+            synsets = [x.text for x in obj.get_tags('synset')]
+            self.assertEqual(synsets, ["06387980-n", "06414372-n"])
+            # find a specific tag
+            self.assertEqual(obj.get_tag('tagtype').text, "manual")
+            # not found ...
+            self.assertEqual(obj.get_tag('meaning', default='N/A').text, "N/A")
+            self.assertRaises(LookupError, lambda: obj.get_tag('meaning'))
+            # auto create ..
+            self.assertEqual(obj.get_tag('auto', auto_create=True).text, "")
+            self.assertEqual(obj.get_tag('auto2', auto_create=True, default='X').text, "X")
+            # the tags must persist
+            self.assertEqual(obj.get_tag('auto').text, "")
+            self.assertEqual(obj.get_tag('auto2').text, "X")
+            # test deprecation warning
+            if isinstance(obj, ttl.Token):
+                with self.assertWarnsRegex(Warning, 'Token.find\(\) is deprecated and will be removed in near future. Use Token.get_tag\(\) instead'):
+                    obj.find("auto")
+                with self.assertWarnsRegex(Warning, 'Token.find_all\(\) is deprecated and will be removed in near future. Use Token.get_tags\(\) instead'):
+                    obj.find_all("auto2")
 
     def import_tokens(self, sent, token_list):
         sent.tokens = token_list
@@ -223,10 +268,11 @@ class TestTagging(unittest.TestCase):
     def test_comment(self):
         sent = ttl.Sentence("Dogs bark.")
         sent.import_tokens("Dogs bark .".split())
+        sent.comment = 'I am a test sentence.'
         sent[0].comment = "canine"
         sent.new_concept("02084071-n", "dog", tokens=(sent[0],))
         sent.concepts[0].comment = 'a member of the genus Canis (probably descended from the common wolf) that has been domesticated by man since prehistoric times'
-        expected = {'text': 'Dogs bark.', 'tokens': [{'cto': 4, 'cfrom': 0, 'comment': 'canine', 'text': 'Dogs'}, {'cto': 9, 'cfrom': 5, 'text': 'bark'}, {'cto': 10, 'cfrom': 9, 'text': '.'}], 'concepts': [{'tag': '02084071-n', 'clemma': 'dog', 'comment': 'a member of the genus Canis (probably descended from the common wolf) that has been domesticated by man since prehistoric times', 'tokens': [0]}]}
+        expected = {'text': 'Dogs bark.', 'comment': 'I am a test sentence.', 'tokens': [{'cto': 4, 'cfrom': 0, 'comment': 'canine', 'text': 'Dogs'}, {'cto': 9, 'cfrom': 5, 'text': 'bark'}, {'cto': 10, 'cfrom': 9, 'text': '.'}], 'concepts': [{'tag': '02084071-n', 'clemma': 'dog', 'comment': 'a member of the genus Canis (probably descended from the common wolf) that has been domesticated by man since prehistoric times', 'tokens': [0]}]}
         getLogger().debug(sent.to_json())
         getLogger().debug(expected)
         self.assertEqual(expected, sent.to_json())
@@ -250,7 +296,7 @@ class TestTagging(unittest.TestCase):
                 token.lemma = mtoken.reading_hira()
                 token.pos = mtoken.pos3()
         self.assertEqual(mecab_sent.words, [x.text for x in sent.tokens])
-        self.assertEqual(sent[0].find('reading').label, 'ねこ')
+        self.assertEqual(sent[0].get_tag('reading').label, 'ねこ')
         self.assertEqual(sent[0].lemma, 'ねこ')
         self.assertEqual(sent[2][0].label, 'すき')
         self.assertFalse(sent[3].lemma, '')  # if there is no lemma label => return ''
@@ -306,6 +352,7 @@ class TestTagging(unittest.TestCase):
         self.assertEqual(sent_json['concepts'][0]['flag'], 'G')
 
     def test_tagging_erg_sent(self):
+        ''' Test import tokens '''
         txt = '''In this way I am no doubt indirectly responsible for Dr. Grimesby Roylott's death, and I cannot say that it is likely to weigh very heavily upon my conscience."'''
         words = ['in', 'this', 'way', 'i', 'am', 'no', 'doubt', 'indirectly', 'responsible', 'for', 'dr.', 'Grimesby', 'Roylott', "'s", 'death', ',', 'and', 'i', 'can', 'not', 'say', 'that', 'it', 'is', 'likely', 'to', 'weigh', 'very', 'heavily', 'upon', 'my', 'conscience', '.', '"']
         s = ttl.Sentence(txt)

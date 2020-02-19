@@ -215,25 +215,37 @@ class Sentence(DataObject):
         else:
             return ''
 
-    def add_tag(self, tag_obj):
-        self.tags.append(tag_obj)
-        return tag_obj
-
     def new_tag(self, label, cfrom=-1, cto=-1, tagtype='', **kwargs):
         ''' Create a sentence-level tag '''
         tag_obj = Tag(label, cfrom, cto, tagtype=tagtype, **kwargs)
         return self.add_tag(tag_obj)
 
-    def get_tag(self, tagtype):
-        ''' Get the first tag of a particular type'''
-        for tag in self.__tags:
-            if tag.tagtype == tagtype:
-                return tag
-        return None
+    def get_tag(self, tagtype, auto_create=False, **kwargs):
+        ''' Get the first tag with a type in this sentence
+            use get_tag('mytype', default='somevalue') to get a new tag with default value 
+            when there is no tag with this type. This new tag object will NOT be stored in the current sentence by default.
+           
+            use auto_create=True to auto create a new tag in the current sentence using the 'default' value.
+            If there is no default value provided, an empty string '' will be used.
+        '''
+        for t in self.__tags:
+            if t.tagtype == tagtype:
+                return t
+        if auto_create:
+            return self.new_tag(label='' if 'default' not in kwargs else kwargs['default'], tagtype=tagtype, **kwargs)
+        elif 'default' in kwargs:
+            return Tag(label=kwargs['default'], tagtype=tagtype, **kwargs)
+        else:
+            raise LookupError("Sentence {} was not tagged with the speficied tagtype ({})".format(self, tagtype))
 
-    def get_tags(self, tagtype):
+    def get_tags(self, tagtype, **kwargs):
         ''' Get all tags of a type '''
         return [t for t in self.__tags if t.tagtype == tagtype]
+
+    def add_tag(self, tag_obj):
+        ''' Add an existing tag object into this sentence '''
+        self.tags.append(tag_obj)
+        return tag_obj
 
     def new_token(self, *args, **kwargs):
         tk = Token(*args, **kwargs)
@@ -427,24 +439,6 @@ class Token(DataObject):
     def __str__(self):
         return "`{l}`<{f}:{t}>{tgs}".format(l=self.text, f=self.cfrom, t=self.cto, tgs=self.__tags if self.__tags else '')
 
-    def find(self, tagtype, **kwargs):
-        '''Get the first tag with a type in this token '''
-        for t in self.__tags:
-            if t.tagtype == tagtype:
-                return t
-        if 'default' in kwargs:
-            return kwargs['default']
-        else:
-            raise LookupError("Token {} is not tagged with the speficied tagtype ({})".format(self, tagtype))
-
-    def find_all(self, tagtype):
-        ''' Find all token-level tags with the specified tagtype '''
-        return [t for t in self.__tags if t.tagtype == tagtype]
-
-    def add_tag(self, tag_obj):
-        self.__tags.append(tag_obj)
-        return tag_obj
-
     def new_tag(self, label, cfrom=None, cto=None, tagtype=None, **kwargs):
         ''' Create a new tag on this token '''
         if cfrom is None:
@@ -453,6 +447,43 @@ class Token(DataObject):
             cto = self.cto
         tag = Tag(label=label, cfrom=cfrom, cto=cto, tagtype=tagtype, **kwargs)
         return self.add_tag(tag)
+
+    def get_tag(self, tagtype, auto_create=False, **kwargs):
+        ''' Get the first tag with a type in this token
+            use get_tag('mytype', default='somevalue') to get a new tag with default value 
+            when there is no tag with this type. This new tag object will NOT be stored in the token by default.
+           
+            use auto_create=True to auto create a new tag in the current token using the 'default' value.
+            If there is no default value provided, an empty string '' will be used.
+        '''
+        for t in self.__tags:
+            if t.tagtype == tagtype:
+                return t
+        if auto_create:
+            return self.new_tag(label='' if 'default' not in kwargs else kwargs['default'], tagtype=tagtype, **kwargs)
+        elif 'default' in kwargs:
+            return Tag(label=kwargs['default'], tagtype=tagtype, **kwargs)
+        else:
+            raise LookupError("Token {} is not tagged with the speficied tagtype ({})".format(self, tagtype))
+
+    def get_tags(self, tagtype, **kwargs):
+        ''' Get all token-level tags with the specified tagtype '''
+        return [t for t in self.__tags if t.tagtype == tagtype]
+
+    def add_tag(self, tag_obj):
+        ''' Add an existing tag object into this token '''
+        self.__tags.append(tag_obj)
+        return tag_obj
+
+    def find(self, tagtype, **kwargs):
+        ''' (Deprecated) Return the first tag with a given tagtype in this token '''
+        warnings.warn("Token.find() is deprecated and will be removed in near future. Use Token.get_tag() instead", DeprecationWarning, stacklevel=2)
+        return self.get_tag(tagtype, **kwargs)
+
+    def find_all(self, tagtype, **kwargs):
+        ''' (Deprecated) Find all token-level tags with the specified tagtype '''
+        warnings.warn("Token.find_all() is deprecated and will be removed in near future. Use Token.get_tags() instead", DeprecationWarning, stacklevel=2)
+        return self.get_tags(tagtype, **kwargs)
 
     def to_json(self):
         token_json = {'cfrom': self.cfrom,
@@ -464,6 +495,8 @@ class Token(DataObject):
             token_json['pos'] = self.pos
         if self.comment:
             token_json['comment'] = self.comment
+        if self.flag:
+            token_json['flag'] = self.flag
         all_tags = [t.to_json(default_cfrom=self.cfrom, default_cto=self.cto) for t in self.tags]
         if all_tags:
             token_json['tags'] = all_tags
