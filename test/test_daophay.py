@@ -11,10 +11,15 @@ Latest version can be found at https://github.com/letuananh/chirptext
 '''
 
 import unittest
+import logging
 from chirptext import daophay
 
 
 ########################################################################
+
+def getLogger():
+    return logging.getLogger(__name__)
+
 
 class TestDaoPhay(unittest.TestCase):
 
@@ -32,13 +37,13 @@ class TestDaoPhay(unittest.TestCase):
         # test inplace sorting
         a_list = ['mạ', 'má', 'mã', 'ma', 'mà', 'mả']
         a_list.sort(key=daophay.vnorder)
-        print(a_list)
+        getLogger().debug(a_list)
         expected = ['ma', 'mà', 'mả', 'mã', 'má', 'mạ']
         self.assertEqual(a_list, expected)
         # with other characters
         a_list = ['mà み', 'ma み', 'mà ま', 'ma ま']
         a_list.sort(key=daophay.vnorder)
-        print(a_list)
+        getLogger().debug(a_list)
         expected = ['ma ま', 'ma み', 'mà ま', 'mà み']
         self.assertEqual(a_list, expected)
 
