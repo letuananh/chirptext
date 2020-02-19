@@ -36,7 +36,7 @@ class TestArsenal(unittest.TestCase):
     def try_cache(self, cache, key, value):
         # delete the blob if it exists
         if key in cache:
-            print("Deleting blob with key = {}".format(key))
+            getLogger().debug("Deleting blob with key = {}".format(key))
             cache.delete_blob(key)
         # make sure that it is not there anymore
         self.assertNotIn(key, cache)
