@@ -106,8 +106,8 @@ class TestLeUtile(unittest.TestCase):
             rp.writeline(123)
             self.assertEqual(rp.content(), '')
         with TextReport() as rp:
-            rp.writeline("stdout")
-            rp.writeline(123)
+            rp.writeline("Test writing to stdout ...")
+            rp.writeline("multiple line output", 123)
             self.assertEqual(rp.content(), '')
         with TextReport(os.path.join(TEST_DATA, "del.me")) as rp:
             rp.writeline("ABC")
