@@ -73,11 +73,17 @@ class TestDeko(unittest.TestCase):
         mbin_original = deko.get_mecab_bin()
         if mbin_original:
             self.assertTrue(mbin_original == 'mecab' or mbin_original.endswith('mecab.exe'))
-        mecab_custom_loc = 'C:\\mecab\\mecab-console.exe'
-        deko.set_mecab_bin(mecab_custom_loc)
-        self.assertEqual(deko.get_mecab_bin(), mecab_custom_loc)
-        # set it back
-        deko.set_mecab_bin(mbin_original)
+        with self.assertLogs('chirptext.dekomecab', level='WARNING') as log:
+            mecab_custom_loc = 'C:\\mecab\\mecab-console.exe'
+            deko.set_mecab_bin(mecab_custom_loc)
+            self.assertEqual(deko.get_mecab_bin(), mecab_custom_loc)
+            if not os.path.isfile(mecab_custom_loc):
+                self.assertEqual(log.output, ['WARNING:chirptext.dekomecab:Provided mecab binary location does not exist C:\\mecab\\mecab-console.exe'])
+            # set it back
+        with self.assertLogs('chirptext.dekomecab', level='WARNING') as log:
+            deko.set_mecab_bin(mbin_original)
+            if not os.path.isfile(mbin_original):
+                self.assertEqual(log.output, ['WARNING:chirptext.dekomecab:Provided mecab binary location does not exist ' + mbin_original])
 
     def test_dekomecab(self):
         # try parsing text using mecab binary
@@ -101,7 +107,8 @@ class TestDeko(unittest.TestCase):
     def test_tokenize_sents(self):
         tokens = parse(txt2)
         sents = tokenize_sent(tokens, txt2)
-        print(sents)
+        texts = [x.text for x in sents]
+        self.assertEqual(texts, ['猫が好きです。', '犬も好きです。'])
 
     def test_analyse2(self):
         sents = DekoText.parse(txt)
@@ -116,9 +123,9 @@ class TestDeko(unittest.TestCase):
         self.assertEqual(sents[0].words, ['猫', 'が', '好き', 'です', '。'])
         self.assertEqual(str(sents[1]), '犬 も 好き です 。')
         # 2 sentences
-        print("Tokenized: ", parse(txt2))
+        getLogger().debug("Tokenized: ", parse(txt2))
         sents = DekoText.parse(txt2, splitlines=False)
-        print("last test: {} - {} sents".format(sents, len(sents)))
+        getLogger().debug("last test: {} - {} sents".format(sents, len(sents)))
         self.assertEqual(len(sents), 2)
         self.assertEqual(len(sents[0]), 5)
         self.assertEqual(len(sents[1]), 5)
@@ -182,7 +189,7 @@ EOS
         tokens = [tk.text for tk in sent.tokens]
         self.assertEqual(tokens, expected_tokens)
         # check reading
-        readings = [tk.find('reading').label for tk in sent.tokens]
+        readings = [tk.get_tag('reading').label for tk in sent.tokens]
         expected_readings = ['ねこ', 'が', 'すき', 'です', '。', 'いぬ', 'も', 'すき', 'です', '。', 'とり', 'は']
         self.assertEqual(readings, expected_readings)
         # try tokenizing sentences
