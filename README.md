@@ -12,7 +12,7 @@ It is not meant to be a powerful tank like the popular NTLK but a small package 
 * CSV helper functions
 * Console application template
 
-Project homepage: [https://github.com/letuananh/chirptext](https://github.com/letuananh/chirptext)
+Project homepage: [https://letuananh.github.io/chirptext/](https://letuananh.github.io/chirptext/)
 
 # Installation
 
