@@ -46,6 +46,32 @@ def uniquify(a_list):
     return list(OrderedDict(zip(a_list, range(len(a_list)))).keys())
 
 
+def hamilton_allocate(numbers, total=100, precision=2):
+    ''' Use largest remainder (Hamilton) method to make sure rounded percentages add up to 100 
+    >>> hamilton_allocate((33.33, 33.33, 33.33)) 
+    [33.34, 33.33, 33.33]
+    >>> hamilton_allocate((24.99, 24.99, 24.99, 24.99))
+    [25.0, 25.0, 25.0, 25.0]
+    >>> hamilton_allocate((76.69, 20.83, 2.49))
+    [76.69, 20.83, 2.48]
+    >>> hamilton_allocate([13.626332, 47.989636, 9.596008, 28.788024])
+    [13.63, 47.99, 9.59, 28.79]
+    '''
+    scale = 10 ** precision
+    floored = [[math.floor(n * scale), n * scale - math.floor(n * scale), idx] for idx, n in enumerate(numbers)]
+    remainder = (total * scale) - sum(n[0] for n in floored)
+    if remainder >= len(numbers):
+        for i in range(len(numbers)):
+            floored[i][0] += remainder // len(numbers)
+    delta = (abs(remainder) % len(numbers))
+    if delta:
+        ranked = sorted(floored, key=lambda x: x[1], reverse=remainder > 0)
+        for i in range(delta):
+            idx = ranked[i][2]
+            floored[idx][0] += 1 if remainder > 0 else -1
+    return [n[0] / scale for n in floored]
+
+
 def header(*msg, level='h1', separator=" ", print_out=print):
     ''' Print header block in text mode
     '''
