@@ -29,6 +29,7 @@ __try_import_igo()
 def parse(content, *args, **kwargs):
     global __IGO_TAGGER
     tokens = __IGO_TAGGER.parse(content)
+    return tokens
     # format: same as mecab
     # 表層形,品詞,品詞細分類1,品詞細分類2,品詞細分類3,活用形,活用型,原形,読み,発音
     

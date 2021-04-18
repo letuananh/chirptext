@@ -16,9 +16,11 @@ import logging
 
 from chirptext import TextReport
 from chirptext import deko
-from chirptext.deko import KATAKANA, simple_kata2hira
-from chirptext.deko import wakati, tokenize, tokenize_sent, analyse, parse
+from chirptext.deko import KATAKANA, simple_kata2hira, is_kana
+from chirptext.deko import get_mecab_bin, set_mecab_bin
+from chirptext.deko import wakati, tokenize, tokenize_sent, analyse, parse, parse_doc
 from chirptext.deko import MeCabSent, DekoText
+from chirptext import dekoigo
 # -------------------------------------------------------------------------------
 # Configuration
 # -------------------------------------------------------------------------------
@@ -51,15 +53,15 @@ class TestTool(unittest.TestCase):
         self.assertEqual(rp.content(), expected)
 
     def test_check_kana(self):
-        self.assertTrue(deko.is_kana(''))
-        self.assertRaises(ValueError, lambda: deko.is_kana(None))
-        self.assertTrue(deko.is_kana('ひらがな'))
-        self.assertTrue(deko.is_kana('カタカナ'))
-        self.assertTrue(deko.is_kana(TestTool.ALL_MAPPING.replace('|', '')))
+        self.assertTrue(is_kana(''))
+        self.assertRaises(ValueError, lambda: is_kana(None))
+        self.assertTrue(is_kana('ひらがな'))
+        self.assertTrue(is_kana('カタカナ'))
+        self.assertTrue(is_kana(TestTool.ALL_MAPPING.replace('|', '')))
         # false
-        self.assertFalse(deko.is_kana(TestTool.ALL_MAPPING))  # with pipe
-        self.assertFalse(deko.is_kana('巡り会う'))  # with kanji
-        self.assertFalse(deko.is_kana('すき です'))  # with a space
+        self.assertFalse(is_kana(TestTool.ALL_MAPPING))  # with pipe
+        self.assertFalse(is_kana('巡り会う'))  # with kanji
+        self.assertFalse(is_kana('すき です'))  # with a space
 
 
 class TestDeko(unittest.TestCase):
@@ -70,19 +72,24 @@ class TestDeko(unittest.TestCase):
         self.assertTrue(tokens[-1].is_eos)
 
     def test_mecab_bin_loc(self):
-        mbin_original = deko.get_mecab_bin()
+        mbin_original = get_mecab_bin()
+        mbin_locs = ['mecab', 'mecab.exe', '/usr/local/bin/mecab', '/usr/bin/mecab']
         if mbin_original:
-            self.assertTrue(mbin_original == 'mecab' or mbin_original.endswith('mecab.exe'))
+            self.assertIn(mbin_original, mbin_locs)
         with self.assertLogs('chirptext.dekomecab', level='WARNING') as log:
             mecab_custom_loc = 'C:\\mecab\\mecab-console.exe'
-            deko.set_mecab_bin(mecab_custom_loc)
-            self.assertEqual(deko.get_mecab_bin(), mecab_custom_loc)
+            set_mecab_bin(mecab_custom_loc)
+            self.assertEqual(get_mecab_bin(), mecab_custom_loc)
             if not os.path.isfile(mecab_custom_loc):
                 self.assertEqual(log.output, ['WARNING:chirptext.dekomecab:Provided mecab binary location does not exist C:\\mecab\\mecab-console.exe'])
-            # set it back
-        with self.assertLogs('chirptext.dekomecab', level='WARNING') as log:
-            deko.set_mecab_bin(mbin_original)
-            if not os.path.isfile(mbin_original):
+        # set it back after tested
+        set_mecab_bin(mbin_original)
+        if not os.path.isfile(mbin_original):
+            # this should shout a warning too
+            with self.assertLogs('chirptext.dekomecab', level='WARNING') as log:
+                getLogger().info(f"Original mbin: {mbin_original}")
+                getLogger().info(f"log.output: {log}")
+                getLogger().info(f"{os.path.isfile(mbin_original)}")
                 self.assertEqual(log.output, ['WARNING:chirptext.dekomecab:Provided mecab binary location does not exist ' + mbin_original])
 
     def test_dekomecab(self):
@@ -209,11 +216,19 @@ EOS
         getLogger().debug(doc)
 
     def test_func_alias(self):
-        sent = deko.parse(txt)
+        sent = parse(txt)
         self.assertEqual(sent.words, ['雨', 'が', '降る', '。'])
-        doc = deko.parse_doc(txt3, splitlines=False)
+        doc = parse_doc(txt3, splitlines=False)
         self.assertEqual(len(doc), 3)
 
+
+class TestDekoIgo(unittest.TestCase):
+
+    def test_dekoigo(self):
+        if dekoigo.igo_available():
+            print(dekoigo.parse(txt))
+        else:
+            getLogger().warning("igo is not available, all dekoigo tests will be skipped")
 
 # -------------------------------------------------------------------------------
 # Main

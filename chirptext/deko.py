@@ -22,8 +22,12 @@ import logging
 import warnings
 
 from . import texttaglib as ttl
-from .dekomecab import wakati, parse as _internal_mecab_parse, _register_mecab_loc as set_mecab_bin, _get_mecab_loc as get_mecab_bin
+from .dekomecab import wakati, parse as _internal_mecab_parse, _register_mecab_loc, _get_mecab_loc
 
+
+# allow mecab config
+set_mecab_bin = _register_mecab_loc
+get_mecab_bin = _get_mecab_loc
 
 # -------------------------------------------------------------------------------
 # Configuration
@@ -74,7 +78,7 @@ def is_kana(text):
 
 try:
     from jaconv import kata2hira
-except:
+except Exception:
     # if jaconv is not available, use built-in method
     kata2hira = simple_kata2hira
 
@@ -275,11 +279,12 @@ def lines2mecab(lines, **kwargs):
 # Functions
 # -------------------------------------------------------------------------------
 
-def tokenize(content, **kwargs):
+def tokenize(content, use_wakati=False, **kwargs):
     ''' Sentence to a list of tokens (string) '''
-    # TODO: Check if wakati better?
-    # return wakati(content).split(' ')
-    return MeCabSent.parse(content, **kwargs).words
+    if use_wakati:
+        return wakati(content).split(' ')
+    else:
+        return MeCabSent.parse(content, **kwargs).words
 
 
 # TODO: Need to calculate cfrom, cto to get surfaces

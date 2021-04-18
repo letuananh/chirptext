@@ -67,7 +67,7 @@ class Job(object):
 
 class Person(object):
 
-    def __init__(self, name, age, job=None, pid=None):
+    def __init__(self, name='', age='', job=None, pid=None):
         self.name = name
         self.age = age
         self.job = job if job else None
