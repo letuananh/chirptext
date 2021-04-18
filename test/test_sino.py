@@ -32,6 +32,12 @@ class TestSino(unittest.TestCase):
         km = KangxiMap()
         self.assertEqual(len(km), 0)
 
+    def test_rad_string(self):
+        rads = Radical.kangxi()
+        黃 = rads['黃']
+        self.assertEqual(str(黃), '黃-yellow[sc:12]')
+        self.assertEqual(repr(黃), '黃-yellow[sc:12]')
+        
     def test_sino(self):
         rads = Radical.kangxi()
         rads2 = Radical.kangxi()

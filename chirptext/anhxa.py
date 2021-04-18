@@ -11,7 +11,6 @@ Latest version can be found at https://github.com/letuananh/chirptext
 import logging
 import threading
 import json
-from json import JSONDecoder, JSONEncoder
 
 
 # -------------------------------------------------------------------------------
@@ -118,7 +117,7 @@ def to_obj(cls, obj_data=None, *fields, **field_map):
     try:
         kwargs = {field(f, field_map): obj_data[f] for f in fields if f in obj_data}
         obj = cls(**kwargs)
-    except:
+    except Exception:
         getLogger().exception("Couldn't use kwargs to construct object")
         # use default constructor
         obj = cls()
@@ -126,10 +125,10 @@ def to_obj(cls, obj_data=None, *fields, **field_map):
     return obj
 
 
-class TypedJSONEncoder(JSONEncoder):
+class TypedJSONEncoder(json.JSONEncoder):
 
     def __init__(self, *args, type_map=None, **kwargs):
-        JSONEncoder.__init__(self, *args, **kwargs)
+        json.JSONEncoder.__init__(self, *args, **kwargs)
         self.type_map = type_map if type_map else {}
 
     def default(self, obj):
@@ -138,27 +137,27 @@ class TypedJSONEncoder(JSONEncoder):
             nj['__type__'] = self.type_map[obj.__class__]
             return nj
         else:
-            return JSONEncoder.default(self, obj)
+            return json.JSONEncoder.default(self, obj)
 
 
-class TypelessSONEncoder(JSONEncoder):
+class TypelessSONEncoder(json.JSONEncoder):
 
     def __init__(self, *args, type_map=None, **kwargs):
-        JSONEncoder.__init__(self, *args, **kwargs)
+        json.JSONEncoder.__init__(self, *args, **kwargs)
         self.type_map = type_map if type_map else {}
 
     def default(self, obj):
         try:
-            return JSONEncoder.default(self, obj)
+            return json.JSONEncoder.default(self, obj)
         except TypeError:
             # fall back to to_json helper function
             return to_json(obj)
 
 
-class TypedJSONDecoder(JSONDecoder):
+class TypedJSONDecoder(json.JSONDecoder):
 
     def __init__(self, type_map=None, **kwargs):
-            JSONDecoder.__init__(self, object_hook=self.obj_hooker)
+            json.JSONDecoder.__init__(self, object_hook=self.obj_hooker)
             self.type_map = kwargs
             if type_map:
                 self.type_map.update(type_map)

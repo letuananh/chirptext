@@ -11,7 +11,6 @@ Latest version can be found at https://github.com/letuananh/chirptext
 '''
 
 import io
-import os
 from setuptools import setup
 
 

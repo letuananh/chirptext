@@ -52,7 +52,7 @@ import os
 import codecs
 import textwrap
 
-import chirptext
+from chirptext import __version_long__
 from chirptext import Counter, TextReport
 from chirptext.cli import CLIApp, setup_logging
 
@@ -102,7 +102,7 @@ def gen_vocab(cli, args):
 
 
 def show_version(cli, args):
-    print("Chirptext toolkit - Version {}".format(chirptext.__version_long__))
+    print("Chirptext toolkit - Version {}".format(__version_long__))
 
 
 # -------------------------------------------------------------------------------

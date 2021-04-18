@@ -66,7 +66,7 @@ class JiCache:
                 c = conn.cursor()
                 c.execute("SELECT COUNT(value) FROM cache_entries")
                 return c.fetchone()[0]
-            except:
+            except Exception:
                 getLogger().exception("Cannot count entries")
                 return None
 
@@ -78,7 +78,7 @@ class JiCache:
                 rows = c.fetchall()
                 if rows:
                     return [x[0] for x in rows]
-            except:
+            except Exception:
                 getLogger().exception("Cannot retrieve keys")
                 return None
 
@@ -98,7 +98,7 @@ class JiCache:
                     return None
                 else:
                     return result[0]
-            except:
+            except Exception:
                 getLogger().exception("Cannot retrieve")
                 return None
 
@@ -134,7 +134,7 @@ class JiCache:
                 c = conn.cursor()
                 c.execute("DELETE FROM cache_entries WHERE key = ?", (key,))
                 conn.commit()
-            except:
+            except Exception:
                 getLogger().exception("Cannot delete")
                 return None
 
@@ -155,7 +155,7 @@ class JiCache:
                 c.execute("INSERT INTO blob_entries (key, compressed, blob_data) VALUES (?,?,?)", (key, compressed_flag, sqlite3.Binary(blob),))
                 c.execute("COMMIT")
                 return True
-            except:
+            except Exception:
                 getLogger().debug("Cannot insert")
                 return False
 
@@ -174,7 +174,7 @@ class JiCache:
                     c.execute("DELETE FROM cache_entries WHERE key = ?", (key,))
                     c.execute("DELETE FROM blob_entries WHERE KEY = ?", (key,))
                 c.execute("COMMIT")
-            except:
+            except Exception:
                 getLogger().debug("Cannot delete")
                 return False
             return True
@@ -199,10 +199,9 @@ class JiCache:
                     compressed, blob_data = result
                     logger.debug("retrieving internal BLOB (key={key} | len={ln} | compressed={c})".format(key=key, ln=len(blob_data), c=compressed))
                     return blob_data if not compressed else zlib.decompress(blob_data)
-            except:
+            except Exception:
                 getLogger().exception("Cannot retrieve internal blob (key={})".format(key))
                 return None
-            return True
 
     def insert_blob(self, key, blob):
         if self.__retrieve(key) is not None:

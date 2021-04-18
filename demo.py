@@ -24,11 +24,22 @@ ct.summarise(byfreq=True, limit=5)
 # ------------------------------------------------------------------------------
 # a string report
 rp = TextReport()  # by default, TextReport will write to standard output, i.e. terminal
-rp = TextReport(TextReport.STDOUT)  # same as above
-rp = TextReport('~/tmp/my-report.txt')  # output to a file
-rp = TextReport.null()  # ouptut to /dev/null, i.e. nowhere
-rp = TextReport.string()  # output to a string. Call rp.content() to get the string
-rp = TextReport(TextReport.STRINGIO)  # same as above
+rp.write("This line goes to standard output")
+
+rp1 = TextReport(TextReport.STDOUT)  # same as above
+rp1.write("This line goes to standard output")
+
+rp2 = TextReport('~/tmp/my-report.txt')  # output to a file
+rp2.write("This is a line in my-report.txt")
+
+rp3 = TextReport.null()  # ouptut to /dev/null, i.e. nowhere
+rp3.write("This line goes no where")
+
+rp4 = TextReport.string()  # output to a string. Call rp.content() to get the string
+rp4.write("This line will be stored in a string buffer")
+
+rp5 = TextReport(TextReport.STRINGIO)  # same as above
+rp5.write("This line will also be stored in a string buffer")
 
 # TextReport will close the output stream automatically by using the with statement
 with TextReport.string() as rp:

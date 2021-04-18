@@ -917,7 +917,7 @@ class JSONWriter(object):
                 self.__output_stream.flush()
                 self.__output_stream.close()
                 self.__output_stream = None
-        except:
+        except Exception:
             getLogger().exception("Could not close JSONWriter's output stream properly")
 
     @staticmethod

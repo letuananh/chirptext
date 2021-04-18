@@ -346,7 +346,7 @@ class TextReport:
                 self.__report_file.flush()
                 self.__report_file.close()
                 self.__report_file = None
-            except:
+            except Exception:
                 getLogger().exception("Error raised while saving report")
                 raise
 
@@ -541,7 +541,7 @@ class FileHelper:
         if not os.path.exists(dir_path):
             try:
                 os.makedirs(dir_path)
-            except:
+            except Exception:
                 getLogger().exception("Cannot create folder [%s]" % (dir_path,))
                 raise
 

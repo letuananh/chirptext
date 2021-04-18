@@ -16,7 +16,7 @@ def __try_import_mecab(log=False):
         import MeCab
         MeCab.Tagger().parse("Pythonが好きです。")
         MECAB_PYTHON3 = True
-    except:
+    except Exception:
         # use flex-mecab
         try:
             if platform.system() == 'Windows':
@@ -30,7 +30,7 @@ def __try_import_mecab(log=False):
                 MECAB_LOC = '/usr/local/bin/mecab'
             else:
                 MECAB_LOC = "mecab"
-        except:
+        except Exception:
             pass
         if log:
             logging.getLogger(__name__).warning("mecab-python3 could not be loaded. mecab binary package will be used ({})".format(MECAB_LOC))
