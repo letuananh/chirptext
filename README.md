@@ -1,4 +1,8 @@
 ChirpText is a collection of text processing tools for Python.
+
+[![Total alerts](https://img.shields.io/lgtm/alerts/g/letuananh/chirptext.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/letuananh/chirptext/alerts/)
+[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/letuananh/chirptext.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/letuananh/chirptext/context:python)
+
 It is not meant to be a powerful tank like the popular NTLK but a small package which you can pip-install anywhere and write a few lines of code to process textual data.
 
 # Main features
