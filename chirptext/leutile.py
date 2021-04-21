@@ -630,6 +630,11 @@ This class supports guessing configuration file location, and reads either INI (
         self.__config = None
         self.__config_path = None
 
+    @property
+    def config_path(self):
+        ''' Path to config file '''
+        return self.__config_path
+
     def potentials(self):
         return self.__potential
 
