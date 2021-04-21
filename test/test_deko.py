@@ -87,6 +87,7 @@ class TestDeko(unittest.TestCase):
         if not os.path.isfile(mbin_original):
             # this should shout a warning too
             with self.assertLogs('chirptext.dekomecab', level='WARNING') as log:
+                set_mecab_bin(mbin_original)
                 getLogger().info(f"Original mbin: {mbin_original}")
                 getLogger().info(f"log.output: {log}")
                 getLogger().info(f"{os.path.isfile(mbin_original)}")
