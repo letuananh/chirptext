@@ -181,7 +181,13 @@ class TestConfigFile(unittest.TestCase):
     def test_locate_config_file(self):
         cfg = AppConfig(name='foo', mode=AppConfig.JSON)
         actual = cfg.potentials()
-        expected = ['./.foo', './.foo.json', './foo', './foo.json', './data/foo', './data/foo.json', './data/.foo', './data/.foo.json', '~/.foo', '~/.foo.json', '~/.foo/config', '~/.foo.json/config', '~/.foo/config.json', '~/.foo.json/config.json', '~/.config/foo', '~/.config/foo.json', '~/.config/.foo', '~/.config/.foo.json', '~/.config/foo/config', '~/.config/foo.json/config', '~/.config/foo/config.json', '~/.config/foo.json/config.json', '~/.config/foo/foo', '~/.config/foo.json/foo.json']
+        print(actual)
+        expected = ['./.foo.json', './foo.json', './config/foo.json', './config/.foo.json',
+                    '~/.foo/config.json', '~/.config/foo/config.json',
+                    '~/.config/foo/foo.json',
+                    './data/foo.json', './data/.foo.json', './.foo', './foo',
+                    './data/foo', './data/.foo', '~/.config/foo', '~/.config/.foo',
+                    '~/.foo', '~/.foo/config', '~/.config/foo/config', '~/.config/foo/foo']
         self.assertEqual(actual, expected)
         # default mode is INI
         cfg_ini = AppConfig('chirptest', working_dir=os.path.dirname(__file__))

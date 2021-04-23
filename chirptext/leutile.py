@@ -610,10 +610,14 @@ This class supports guessing configuration file location, and reads either INI (
     '''
     JSON = 'json'
     INI = 'ini'  # Python INI config file
-    LOC_TEMPLATE = ['{wd}/.{n}', '{wd}/{n}', '{wd}/data/{n}', '{wd}/data/.{n}', '~/.{n}',
-                    '~/.{n}/config', '~/.{n}/config.{mode}', '~/.config/{n}',
-                    '~/.config/.{n}', '~/.config/{n}/config', '~/.config/{n}/config.{mode}',
-                    '~/.config/{n}/{n}']
+    LOC_TEMPLATE = ['{wd}/.{n}.{mode}', '{wd}/{n}.{mode}',
+                    '{wd}/config/{n}.{mode}', '{wd}/config/.{n}.{mode}',
+                    '~/.{n}/config.{mode}', '~/.config/{n}/config.{mode}',
+                    '~/.config/{n}/{n}.{mode}',
+                    '{wd}/data/{n}.{mode}', '{wd}/data/.{n}.{mode}',
+                    '{wd}/.{n}', '{wd}/{n}', '{wd}/data/{n}', '{wd}/data/.{n}',
+                    '~/.config/{n}', '~/.config/.{n}', '~/.{n}', '~/.{n}/config',
+                    '~/.config/{n}/config', '~/.config/{n}/{n}']
 
     def __init__(self, name, mode=INI, working_dir='.', extra_potentials=None):
         self.__name = name
@@ -626,18 +630,19 @@ This class supports guessing configuration file location, and reads either INI (
         self.__config = None
         self.__config_path = None
 
+    @property
+    def config_path(self):
+        ''' Path to config file '''
+        return self.__config_path
+
     def potentials(self):
         return self.__potential
-
-    def _ptn2fn(self, pattern):
-        ''' Pattern to filename '''
-        return [pattern.format(wd=self.working_dir, n=self.__name, mode=self.__mode),
-                pattern.format(wd=self.working_dir, n='{}.{}'.format(self.__name, self.__mode), mode=self.__mode)]
 
     def add_potential(self, *patterns):
         ''' Add a potential config file pattern '''
         for ptn in patterns:
-            self.__potential.extend(self._ptn2fn(ptn))
+            _p = ptn.format(wd=self.working_dir, n=self.__name, mode=self.__mode)
+            self.__potential.append(_p)
 
     def locate_config(self):
         ''' Locate config file '''

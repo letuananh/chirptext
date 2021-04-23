@@ -7,14 +7,15 @@ It is not meant to be a powerful tank like the popular NTLK but a small package 
 
 # Main features
 
-* **[New]** Does not require `mecab-python3` package to use MeCab/Deko on Windows. Only binary release (`mecab.exe`) is required.
-* Text annotation framework (TTL, a.k.a TextTagLib format) which can import/export JSON or human-readable text files
+* Parse Japanese text with mecab library (Does not require `mecab-python3` package even Windows, only binary release (i.e. `mecab.exe`) is required)
+* Built-in "lite" [text annotation formats](https://pypi.org/project/texttaglib/) (`texttaglib` TTL/CSV and TTL/JSON)
 * Helper functions and useful data for processing English, Japanese, Chinese and Vietnamese.
+* Simple file data manipulation using an enhanced `open()` function (txt, gz, binary, etc.)
+* CSV helper functions
 * Quick text-based report generation
 * Application configuration files management which can make educated guess about config files' whereabouts
-* Web fetcher with responsible web crawling ethics (support caching out of the box)
-* CSV helper functions
-* Console application template
+* **((Experimental)** Web fetcher with responsible web crawling ethics (support caching out of the box)
+* **(Experimental)** Console application template
 
 Project homepage: [https://letuananh.github.io/chirptext/](https://letuananh.github.io/chirptext/)
 
