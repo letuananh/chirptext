@@ -7,7 +7,7 @@ It is not meant to be a powerful tank like the popular NTLK but a small package 
 
 # Main features
 
-* Parse Japanese text with mecab library (Does not require `mecab-python3` package even Windows, only binary release (i.e. `mecab.exe`) is required)
+* Parse Japanese text with mecab library (Does not require `mecab-python3` package even on Windows, only a binary release (i.e. `mecab.exe`) is required)
 * Built-in "lite" [text annotation formats](https://pypi.org/project/texttaglib/) (`texttaglib` TTL/CSV and TTL/JSON)
 * Helper functions and useful data for processing English, Japanese, Chinese and Vietnamese.
 * Simple file data manipulation using an enhanced `open()` function (txt, gz, binary, etc.)
