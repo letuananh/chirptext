@@ -40,11 +40,12 @@ setup(
         "Bug Tracker": "https://github.com/letuananh/chirptext/issues",
         "Source Code": "https://github.com/letuananh/chirptext/"
     },
-    keywords="nlp",
+    keywords=["nlp", "mecab", "language", "linguistics", "vietnamese", "japanese", "chinese", "kanji", "radical"],
     license=pkg_info['__license__'],
     author=pkg_info['__author__'],
     tests_require=[],
     install_requires=[],
+    python_requires=">=3.5",
     author_email=pkg_info['__email__'],
     description=pkg_info['__description__'],
     long_description=long_description,
@@ -57,7 +58,7 @@ setup(
     test_suite='test',
     # Reference: https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=['Programming Language :: Python',
-                 'Development Status :: 3 - Alpha',
+                 'Development Status :: 4 - Beta',
                  'Natural Language :: English',
                  'Environment :: Plugins',
                  'Intended Audience :: Developers',
