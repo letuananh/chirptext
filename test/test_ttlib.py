@@ -16,7 +16,7 @@ import unittest
 import logging
 import json
 from chirptext import TextReport
-from chirptext import texttaglib as ttl
+from chirptext import ttl
 from chirptext.deko import MeCabSent
 
 # ------------------------------------------------------------------------------
@@ -50,27 +50,33 @@ def getLogger():
 
 class TestBasicModel(unittest.TestCase):
 
+    def test_tagset(self):
+        tags = ttl.TagSet()
+        tags.pos = "NN"
+        print(tags.pos)
+        pass
+
     def test_tag_model(self):
         ssid = '06162979-n'
-        tag = ttl.Tag(ssid, tagtype='PWN30')
+        tag = ttl.Tag(ssid, type='PWN30')
         self.assertEqual(tag.type, 'PWN30')
-        self.assertEqual(tag.tagtype, 'PWN30')
+        self.assertEqual(tag.type, 'PWN30')
         self.assertEqual(tag.text, ssid)
-        self.assertEqual(tag.label, ssid)
+        self.assertEqual(tag.value, ssid)
         tag.text = '00636921-n'
-        self.assertEqual(tag.label, '00636921-n')
+        self.assertEqual(tag.value, '00636921-n')
         tag.type = 'OMW1.2'
-        self.assertEqual(tag.tagtype, 'OMW1.2')
-        self.assertEqual(tag.to_json(), {'label': '00636921-n', 'type': 'OMW1.2'})
+        self.assertEqual(tag.type, 'OMW1.2')
+        self.assertEqual(tag.to_dict(), {'value': '00636921-n', 'type': 'OMW1.2'})
         # no type
         tag_foo = ttl.Tag('foo')
         tag_foo.source = '頭'
-        self.assertEqual(repr(tag_foo), '`foo`')
-        self.assertEqual(tag_foo.to_json(), {'label': 'foo', 'source': '頭'})
+        self.assertEqual(repr(tag_foo), "Tag(value='foo')")
+        self.assertEqual(tag_foo.to_dict(), {'value': 'foo', 'source': '頭'})
         # from_json
-        tag_json = {'label': 'foo', 'source': '頭', 'type': '冗談', 'cfrom': 0, 'cto': 3}
-        tag_new = ttl.Tag.from_json(tag_json)
-        self.assertEqual(tag_json, tag_new.to_json())
+        tag_json = {'value': 'foo', 'source': '頭', 'type': '冗談', 'cfrom': 0, 'cto': 3}
+        tag_new = ttl.Tag.from_dict(tag_json)
+        self.assertEqual(tag_json, tag_new.to_dict())
 
     def test_sentid(self):
         doc = ttl.Document('mydoc')
@@ -165,11 +171,11 @@ class TestBuildTags(unittest.TestCase):
         tcmap = sent.tcmap()
         self.assertEqual(tcmap[sent[3]][0].clemma, 'dog')
         self.assertEqual(tcmap[sent[3]][1].clemma, 'guard-dog')
-        self.assertEqual(tcmap[sent[3]][1].tag, GDOG_SID)
-        self.assertEqual(tcmap[sent[4]][0].tag, BARK_SID)
+        self.assertEqual(tcmap[sent[3]][1].value, GDOG_SID)
+        self.assertEqual(tcmap[sent[4]][0].value, BARK_SID)
         mwe = list(sent.mwe())
         self.assertTrue(mwe)
-        self.assertEqual(mwe[0].tag, GDOG_SID)
+        self.assertEqual(mwe[0].value, GDOG_SID)
 
     def test_sentids(self):
         doc = ttl.Document('boo')
@@ -186,31 +192,31 @@ class TestComment(unittest.TestCase):
     """ Ensure that all objects may hold comments and flags """
 
     def test_storing_flags(self):
-        """ """
         doc = ttl.read(TEST_FILE)
         sent = doc[0]
         sent.flag = ttl.Tag.GOLD
         sent[0].flag = ttl.Tag.NLTK
         sent.concepts[0].flag = ttl.Tag.ISF
-        sent_json = sent.to_json()
+        sent_json = sent.to_dict()
         self.assertEqual(sent_json['flag'], ttl.Tag.GOLD)
         self.assertEqual(sent_json['tokens'][0]['flag'], ttl.Tag.NLTK)
         self.assertEqual(sent_json['concepts'][0]['flag'], ttl.Tag.ISF)
 
+
 class TestTagging(unittest.TestCase):
 
     def test_taginfo(self):
-        t = ttl.Tag('dog', 1, 4, source=ttl.Tag.ISF)
+        t = ttl.Tag('dog', cfrom=1, cto=4, source=ttl.Tag.ISF)
         self.assertEqual(t.cfrom, 1)
         self.assertEqual(t.cto, 4)
-        self.assertEqual(t.label, 'dog')
+        self.assertEqual(t.value, 'dog')
         self.assertEqual(t.source, ttl.Tag.ISF)
 
         # Source = DEFAULT now
-        t2 = ttl.Tag('bark', 0, 5)
+        t2 = ttl.Tag('bark', cfrom=0, cto=5)
         self.assertEqual(t2.cfrom, 0)
         self.assertEqual(t2.cto, 5)
-        self.assertEqual(t2.label, 'bark')
+        self.assertEqual(t2.value, 'bark')
         self.assertEqual(t2.source, ttl.Tag.NONE)
 
     def test_tag_token(self):
@@ -220,9 +226,11 @@ class TestTagging(unittest.TestCase):
         token.pos = 'n'
         token.lemma = 'word'
         token.comment = "an element of speech or writing"
-        js_token = token.to_json()
+        js_token = token.to_dict()
         getLogger().debug(js_token)
-        expected = {'cfrom': 0, 'cto': 4, 'text': 'Words', 'lemma': 'word', 'pos': 'n', 'comment': 'an element of speech or writing', 'tags': [{'label': 'plural'}, {'label': 'word-token'}]}
+        expected = {'cfrom': 0, 'cto': 4, 'text': 'Words',
+                    'lemma': 'word', 'pos': 'n', 'comment': 'an element of speech or writing',
+                    'tags': [{'value': 'plural'}, {'value': 'word-token'}]}
         self.assertEqual(js_token, expected)
 
     def test_tag_type_and_searching(self):
@@ -280,15 +288,19 @@ class TestTagging(unittest.TestCase):
         sent[0].comment = "canine"
         sent.new_concept("02084071-n", "dog", tokens=(sent[0],))
         sent.concepts[0].comment = 'a member of the genus Canis (probably descended from the common wolf) that has been domesticated by man since prehistoric times'
-        expected = {'text': 'Dogs bark.', 'comment': 'I am a test sentence.', 'tokens': [{'cto': 4, 'cfrom': 0, 'comment': 'canine', 'text': 'Dogs'}, {'cto': 9, 'cfrom': 5, 'text': 'bark'}, {'cto': 10, 'cfrom': 9, 'text': '.'}], 'concepts': [{'tag': '02084071-n', 'clemma': 'dog', 'comment': 'a member of the genus Canis (probably descended from the common wolf) that has been domesticated by man since prehistoric times', 'tokens': [0]}]}
-        getLogger().debug(sent.to_json())
+        expected = {'text': 'Dogs bark.', 'comment': 'I am a test sentence.',
+                    'tokens': [{'cto': 4, 'cfrom': 0, 'comment': 'canine', 'text': 'Dogs'},
+                               {'cto': 9, 'cfrom': 5, 'text': 'bark'},
+                               {'cto': 10, 'cfrom': 9, 'text': '.'}],
+                    'concepts': [{'value': '02084071-n', 'clemma': 'dog', 'comment': 'a member of the genus Canis (probably descended from the common wolf) that has been domesticated by man since prehistoric times', 'tokens': [0]}]}
+        getLogger().debug(sent.to_dict())
         getLogger().debug(expected)
-        self.assertEqual(expected, sent.to_json())
+        self.assertEqual(expected, sent.to_dict())
         self.assertFalse(sent.tags)
         sent.new_tag(GDOG_SID, 0, 4, tagtype='wn30')
         sent.new_tag(BARK_SID, 5, 9, tagtype='wn30')
         for t in sent.tags:
-            getLogger().debug("{}: label={} | type = {}".format(t, t.label, t.tagtype))
+            getLogger().debug("{}: label={} | type = {}".format(t, t.value, t.type))
 
     def test_tagged_sentences(self):
         print("test converting MeCabSent into TTL Sent manually")
@@ -304,9 +316,9 @@ class TestTagging(unittest.TestCase):
                 token.lemma = mtoken.reading_hira()
                 token.pos = mtoken.pos3()
         self.assertEqual(mecab_sent.words, [x.text for x in sent.tokens])
-        self.assertEqual(sent[0].get_tag('reading').label, 'ねこ')
+        self.assertEqual(sent[0].get_tag('reading').value, 'ねこ')
         self.assertEqual(sent[0].lemma, 'ねこ')
-        self.assertEqual(sent[2][0].label, 'すき')
+        self.assertEqual(sent[2][0].value, 'すき')
         self.assertFalse(sent[3].lemma, '')  # if there is no lemma label => return ''
         self.assertEqual(sent[2].surface(), '好き')
         self.assertFalse(len(sent[1]))
@@ -338,10 +350,10 @@ class TestTagging(unittest.TestCase):
                                {'cfrom': 8, 'cto': 10, 'text': 'です'},
                                {'cfrom': 10, 'cto': 11, 'text': '。'}],
                     'text': '女の子は猫が好きです。',
-                    'concepts': [{'tag': '10084295-n', 'tokens': [0, 1, 2], 'clemma': '女の子', 'comment': '若々しい女の人'},
-                                 {'tag': '02121620-n', 'tokens': [4], 'clemma': '猫'},
-                                 {'tag': '01292683-a', 'tokens': [6], 'clemma': '好き'}]}
-        actual = sent.to_json()
+                    'concepts': [{'value': '10084295-n', 'tokens': [0, 1, 2], 'clemma': '女の子', 'comment': '若々しい女の人'},
+                                 {'value': '02121620-n', 'tokens': [4], 'clemma': '猫'},
+                                 {'value': '01292683-a', 'tokens': [6], 'clemma': '好き'}]}
+        actual = sent.to_dict()
         self.assertEqual(expected['text'], actual['text'])
         self.assertEqual(expected['concepts'], actual['concepts'])
         self.assertEqual(expected['tokens'], actual['tokens'])
@@ -349,10 +361,21 @@ class TestTagging(unittest.TestCase):
         getLogger().debug(actual)
 
     def test_json_tagged_sent(self):
-        raw = {'text': '女の子は猫が好きです。', 'tokens': [{'cfrom': 0, 'cto': 1, 'text': '女', 'lemma': 'おんな'}, {'cfrom': 1, 'cto': 2, 'text': 'の'}, {'cfrom': 2, 'cto': 3, 'text': '子', 'lemma': 'こ'}, {'cfrom': 3, 'cto': 4, 'text': 'は'}, {'cfrom': 4, 'cto': 5, 'text': '猫', 'lemma': 'ねこ', 'pos': '名詞-一般', 'comment': 'Say neh-koh'}, {'cfrom': 5, 'cto': 6, 'text': 'が'}, {'cfrom': 6, 'cto': 8, 'text': '好き', 'lemma': 'すき', 'pos': '名詞-形容動詞語幹'}, {'cfrom': 8, 'cto': 10, 'text': 'です'}, {'cfrom': 10, 'cto': 11, 'text': '。'}], 'concepts': [{'clemma': '女の子', 'tag': '10084295-n', 'tokens': [0, 1, 2], 'comment': '若々しい女の人', 'flag': 'G'}, {'clemma': '猫', 'tag': '02121620-n', 'tokens': [4]}, {'clemma': '好き', 'tag': '01292683-a', 'tokens': [6]}]}
+        raw = {'text': '女の子は猫が好きです。',
+               'tokens': [{'cfrom': 0, 'cto': 1, 'text': '女', 'lemma': 'おんな'},
+                          {'cfrom': 1, 'cto': 2, 'text': 'の'},
+                          {'cfrom': 2, 'cto': 3, 'text': '子', 'lemma': 'こ'},
+                          {'cfrom': 3, 'cto': 4, 'text': 'は'},
+                          {'cfrom': 4, 'cto': 5, 'text': '猫', 'lemma': 'ねこ', 'pos': '名詞-一般', 'comment': 'Say neh-koh'},
+                          {'cfrom': 5, 'cto': 6, 'text': 'が'}, {'cfrom': 6, 'cto': 8, 'text': '好き', 'lemma': 'すき', 'pos': '名詞-形容動詞語幹'},
+                          {'cfrom': 8, 'cto': 10, 'text': 'です'},
+                          {'cfrom': 10, 'cto': 11, 'text': '。'}],
+               'concepts': [{'clemma': '女の子', 'value': '10084295-n', 'tokens': [0, 1, 2], 'comment': '若々しい女の人', 'flag': 'G'},
+                            {'clemma': '猫', 'value': '02121620-n', 'tokens': [4]},
+                            {'clemma': '好き', 'value': '01292683-a', 'tokens': [6]}]}
         # json => TaggedSentence => json
-        sent = ttl.Sentence.from_json(raw)
-        sent_json = sent.to_json()
+        sent = ttl.Sentence.from_dict(raw)
+        sent_json = sent.to_dict()
         self.assertEqual(raw['text'], sent_json['text'])
         self.assertEqual(raw['concepts'], sent_json['concepts'])
         self.assertEqual(raw['tokens'], sent_json['tokens'])
@@ -441,7 +464,7 @@ class TestTagging(unittest.TestCase):
             self.assertTrue(links.content())
             self.assertTrue(tags.content())
             for sent in doc:
-                logging.debug(json.dumps(sent.to_json(), ensure_ascii=False))
+                logging.debug(json.dumps(sent.to_dict(), ensure_ascii=False))
 
 
 class TestSerialization(unittest.TestCase):
@@ -458,16 +481,16 @@ class TestSerialization(unittest.TestCase):
         sent[0].new_tag('mi', tagtype='reading')
         sent[1].new_tag('ke', tagtype='reading')
         sent[2].new_tag('neko', tagtype='reading')
-        getLogger().debug(sent.to_json())
+        getLogger().debug(sent.to_dict())
         return sent
 
     def test_json_serialization(self):
         print("Test serialization to and from JSON")
         sent = self.build_test_sent()
-        sentj = sent.to_json()
-        sent_re = ttl.Sentence.from_json(sentj)
-        getLogger().debug(sent_re.to_json())
-        self.assertEqual(sent_re.to_json(), sentj)
+        sent_dict = sent.to_dict()
+        sent_re = ttl.Sentence.from_dict(sent_dict)
+        getLogger().debug(sent_re.to_dict())
+        self.assertEqual(sent_re.to_dict(), sent_dict)
 
     def test_ttl_tsv_serialization(self):
         sent = self.build_test_sent()
@@ -497,8 +520,8 @@ class TestSerialization(unittest.TestCase):
         docx = reader.read()
         # patch sent.ID
         sent.ID = 1
-        jo = sent.to_json()
-        jr = docx[0].to_json()
+        jo = sent.to_dict()
+        jr = docx[0].to_dict()
         getLogger().debug(jo)
         getLogger().debug(jr)
         self.assertEqual(jo['text'], jr['text'])

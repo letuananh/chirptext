@@ -47,7 +47,7 @@ class TestSino(unittest.TestCase):
         self.assertIn('黃', rads)
         黃 = rads['黃']
         黃_expected_json = {'idseq': 201, 'radical': '黃', 'variants': '', 'strokes': 12, 'meaning': 'yellow', 'pinyin': 'huáng', 'hanviet': 'hoàng', 'hiragana': 'きいろ ', 'romaji': ' kiiro', 'hangeul': '누를황 ', 'romaja': ' nureulhwang', 'frequency': 42, 'simplified': '', 'examples': '黈 䵍 黌'}
-        黃_actual_json = 黃.to_json()
+        黃_actual_json = 黃.to_dict()
         self.assertEqual(黃_expected_json, 黃_actual_json)
         self.assertEqual(rads['黃'], kiiro)
         self.assertEqual(rads['201'], kiiro)

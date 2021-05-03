@@ -14,7 +14,7 @@ import unittest
 import json
 import logging
 from chirptext.anhxa import IDGenerator, DataObject
-from chirptext.anhxa import to_json, to_obj, dumps, update_obj
+from chirptext.anhxa import to_dict, to_obj, dumps, update_obj
 from chirptext.anhxa import TypedJSONDecoder, TypelessSONEncoder, TypedJSONEncoder
 
 
@@ -128,12 +128,12 @@ class TestAnhxa(unittest.TestCase):
     def test_new_object(self):
         p = to_obj(Person, {'name': 'Ji', 'age': 10, 'pid': 'p001'})
         p.job = 'dev'
-        pj = to_json(p)
+        pj = to_dict(p)
         p2 = to_obj(Person, pj)
         self.assertIsInstance(p2, Person)
         self.assertEqual(p, p2)
         #
-        pj2 = to_json(pj, 'name', 'age', 'pid')
+        pj2 = to_dict(pj, 'name', 'age', 'pid')
         p3 = to_obj(Person, pj2)
         self.assertFalse(p3.job)
         # obj to obj
@@ -196,7 +196,7 @@ class TestAnhxa(unittest.TestCase):
         p1 = to_obj(Person, {'name': 'Yin', 'age': 10, 'pid': '001'})
         o2j_map = {'pid': 'perid'}
         j2o_map = {v: k for k, v in o2j_map.items()}
-        p1j = to_json(p1, **o2j_map)
+        p1j = to_dict(p1, **o2j_map)
         p2 = to_obj(Person, p1j, **j2o_map)
         self.assertEqual(p1, p2)
 
