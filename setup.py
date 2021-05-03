@@ -58,8 +58,11 @@ setup(
     test_suite='test',
     # Reference: https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=['Programming Language :: Python',
-                 'Development Status :: 4 - Beta',
+                 'Development Status :: {}'.format(pkg_info['__status__']),
                  'Natural Language :: English',
+                 'Natural Language :: Vietnamese',
+                 'Natural Language :: Japanese',
+                 'Natural Language :: Chinese (Traditional)',
                  'Environment :: Plugins',
                  'Intended Audience :: Developers',
                  'License :: OSI Approved :: {}'.format(pkg_info['__license__']),
