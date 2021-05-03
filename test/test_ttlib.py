@@ -52,9 +52,37 @@ class TestBasicModel(unittest.TestCase):
 
     def test_tagset(self):
         tags = ttl.TagSet()
-        tags.pos = "NN"
-        print(tags.pos)
-        pass
+        tags.add("NN", "pos", source="manual")
+        self.assertTrue(len(tags.pos), 1)
+        self.assertIsInstance(tags.pos, list)
+        self.assertIsInstance(tags.pos[0], ttl.Tag)
+        self.assertEqual(tags.tag.pos.value, "NN")
+        self.assertEqual(tags.tag.pos.type, "pos")
+        self.assertEqual(tags.tag.pos.source, "manual")
+        # replace tag
+        tags.tag.pos = "NNP"
+        self.assertTrue(len(tags.pos), 1)  # still at 1, because we reset it
+        self.assertEqual(tags.tag.pos.value, "NNP")
+        self.assertEqual(tags.tag.pos.type, "pos")
+        self.assertEqual(tags.tag.pos.source, "")  # source should be empty because this is a new tag
+        # test attr access and key access
+        self.assertEqual(tags.tag.pos, tags.tag["pos"])
+        self.assertEqual(tags.pos, tags["pos"])
+        # add another POS
+        tags.add("cat-n-1", "sense")
+        tags.add("cat-n-2", "sense")
+        tags.add("cat-n-3", "sense")
+        tags.add("NN_", "pos")
+        self.assertEqual(len(tags.pos), 2)
+        tags.tag.sense = "cat-n-4"  # set the best sense to cat-n-4
+        self.assertEqual(len(tags.sense), 3)
+        actual = set(tags.values('pos'))
+        expected = {"NNP", "NN_"}
+        self.assertEqual(expected, actual)
+        actual = set(tags.values())
+        expected = {"NNP", "NN_",
+                    "cat-n-2", "cat-n-3", "cat-n-4"}
+        self.assertEqual(expected, actual)
 
     def test_tag_model(self):
         ssid = '06162979-n'
@@ -312,7 +340,7 @@ class TestTagging(unittest.TestCase):
         for mtoken, token in zip(mecab_sent, sent.tokens):
             if mtoken.reading_hira() != token.text:
                 if token.text in ('猫', '好き'):
-                    token.new_tag(mtoken.reading_hira(), tagtype='reading')
+                    token.add(mtoken.reading_hira(), tagtype='reading')
                 token.lemma = mtoken.reading_hira()
                 token.pos = mtoken.pos3()
         self.assertEqual(mecab_sent.words, [x.text for x in sent.tokens])
@@ -433,7 +461,7 @@ class TestTagging(unittest.TestCase):
             # pos tagging
             for mtk, tk in zip(msent, tsent):
                 tk.pos = mtk.pos3()
-                tk.new_tag(mtk.reading_hira(), tagtype="Reading", source=ttl.Tag.MECAB)
+                tk.add(mtk.reading_hira(), tagtype="Reading", source=ttl.Tag.MECAB)
         # sense tagging
         doc[2][4].comment = 'to eat'
         doc[0].new_concept("三毛猫", "wiki.ja:三毛猫", tokens=[0, 1, 2]).comment = 'Calico cat, you know?'
@@ -441,10 +469,10 @@ class TestTagging(unittest.TestCase):
         doc[2].new_concept("女の子", "10084295-n", tokens=(0,))
         doc[2].new_concept("食べる", "01166351-v", (4,))
         # tags
-        doc[0].new_tag("WIKI", 0, 3, tagtype="SRC")
-        doc[0].new_tag("https://ja.wikipedia.org/wiki/三毛猫", 0, 3, tagtype="URL")
-        doc[2].new_tag("WIKI", 0, 3, tagtype="SRC")
-        doc[2].new_tag("https://ja.wikipedia.org/wiki/少女", 0, 3, tagtype="URL")
+        doc[0].add("WIKI", 0, 3, tagtype="SRC")
+        doc[0].add("https://ja.wikipedia.org/wiki/三毛猫", 0, 3, tagtype="URL")
+        doc[2].add("WIKI", 0, 3, tagtype="SRC")
+        doc[2].add("https://ja.wikipedia.org/wiki/少女", 0, 3, tagtype="URL")
         # export doc
         concepts = TextReport.string()
         links = TextReport.string()
@@ -478,9 +506,9 @@ class TestSerialization(unittest.TestCase):
         for tk, pos in zip(sent, '名詞 名詞 名詞 助詞 名詞 助動詞 記号'.split()):
             tk.pos = pos
         sent.new_concept("三毛猫", "wiki.ja:三毛猫", tokens=[0, 1, 2])
-        sent[0].new_tag('mi', tagtype='reading')
-        sent[1].new_tag('ke', tagtype='reading')
-        sent[2].new_tag('neko', tagtype='reading')
+        sent[0].add('mi', tagtype='reading')
+        sent[1].add('ke', tagtype='reading')
+        sent[2].add('neko', tagtype='reading')
         getLogger().debug(sent.to_dict())
         return sent
 

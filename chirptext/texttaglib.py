@@ -95,7 +95,7 @@ class Tag(DataObject):
         if self.cfrom not in (-1, None) and self.cto not in (-1, None):
             return "`{l}`<{f}:{t}>{v}".format(l=self.value, f=self.cfrom, t=self.cto, v=self.type)
         else:
-            return "`{l}`<{f}:{t}>{v}".format(l=self.value, v=self.type)
+            return f"{self.type}/{self.value}"
 
     def to_dict(self, default_cfrom=-1, default_cto=-1, *args, **kwargs):
         """ Serialize this Tag object data into a dict """
@@ -127,8 +127,8 @@ class TagSet:
 
         def __getitem__(self, type):
             """ Get the first tag object in the tag list of a given type if exist, else return None """
-            if type in self.__tagset and len(self.__tagset.get_tags(type)) > 0:
-                return self.__tagset.get_tags(type)
+            if type in self.__tagset and len(self.__tagset[type]) > 0:
+                return self.__tagset[type][0]
             else:
                 return None
 
@@ -137,10 +137,10 @@ class TagSet:
             _old = self[type]
             if not _old:
                 # create a new tag
-                self.__tagset.new_tag(value, type)
+                self.__tagset.add(value=value, type=type)
             else:
                 # pop the old tag and replace it with a new one
-                self.__tagset.replace(_old, _new)
+                self.__tagset.replace(_old, value=value, type=type)
 
         def __getattr__(self, type):
             """ get the first tag object in the tag list of a given type if exist, else return None """
@@ -165,54 +165,42 @@ class TagSet:
         return len(self.__tags)
 
     def __getitem__(self, type):
-        """ Get the first tag of a given type if it exists"""
-        return self.__tagmap[type] if type in self.__tagmap else None
-
-    def __setitem__(self, type, value):
-        """ Set the first tag of a given type """
-        self.__tagmap[type] = value
+        """ Get the all tags of a given type """
+        return self.__tagsmap[type]
 
     def __getattr__(self, type):
         """ Get the first tag of a given type if it exists"""
         return self[type]
 
-    def __setattr__(self, type, value):
-        """ Set the first tag of a given type """
-        self[type] = value
-
     def __contains__(self, type):
         """ Check if there is at least a tag with a type """
-        print(f"checking type {type} in self.__tagsmap = {self.__tagsmap}")
         return type in self.__tagsmap
-        raise Exception()
 
     def __iter__(self):
         """ Loop through all tags in this set """
         return iter(self.__tags)
 
-    def new_tag(self, value, type):
+    def add(self, value, type, *args, **kwargs):
         """ Create a new tag """
-        _tag = Tag(value=value, type=type)
+        _tag = Tag(value=value, type=type, *args, **kwargs)
         self.__tags.append(_tag)
-        self._append(_tag)
+        self.__tagsmap[_tag.type].append(_tag)
 
-    def replace(self, old_tag, new_tag):
+    def replace(self, old_tag, value, type, *args, **kwargs):
         """ Replace an existing tag with a new tag """
         self.__tags.remove(old_tag)
-        self.__tags.insert(new_tag)
+        new_tag = Tag(value=value, type=type, *args, **kwargs)
+        self.__tags.append(new_tag)
         if old_tag.type == new_tag.type:
-            _taglist = self.__tagsmap[old_tag.key]
+            _taglist = self.__tagsmap[old_tag.type]
             _taglist[_taglist.index(old_tag)] = new_tag
         else:
-            self.__tagsmap[old_tag.key].remove(old_tag)
-            self.__tagsmap[new_tag.key].append(new_tag)
+            self.__tagsmap[old_tag.type].remove(old_tag)
+            self.__tagsmap[new_tag.type].append(new_tag)
 
-    def _append(self, tag):
-        self.__tagsmap[tag.type].append(tag)
-
-    def get_tags(self, type):
-        """ Get all tags of a given type """
-        return self.__tagsmap[type]
+    def values(self, type=None):
+        """ Get all values of tags with the specified type or all tags when type is None """
+        return (t.value for t in (self[type] if type is not None else self))
 
     def to_dict(self, *args, **kwargs):
         """ Create a list of dicts from all tag objects """
