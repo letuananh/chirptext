@@ -56,10 +56,10 @@ class DataObject(object):
         flex_update_obj(a_dict, self, True, *fields, **field_map)
 
     def to_json(self, *args, **kwargs):
-        return dumps(self, *args, **kwargs)
+        return dumps(self.to_dict(), *args, **kwargs)
 
     def to_dict(self, *args, **kwargs):
-        a_dict = to_json(self)
+        a_dict = to_dict(self)
         if '_DataObject__extra_data' in a_dict and not a_dict['_DataObject__extra_data']:
             a_dict.pop('_DataObject__extra_data')
         return a_dict
@@ -99,7 +99,8 @@ def flex_update_obj(source, target, __silent, *fields, **field_map):
         setattr(target, target_f, source_dict[f])
 
 
-def to_json(obj, *fields, **field_map):
+def to_dict(obj, *fields, **field_map):
+    """ Convert an object into a dictionary """
     if isinstance(obj, set):
         return list(obj)
     obj_dict = obj.__dict__ if hasattr(obj, '__dict__') else obj
@@ -133,7 +134,7 @@ class TypedJSONEncoder(json.JSONEncoder):
 
     def default(self, obj):
         if obj.__class__ in self.type_map:
-            nj = to_json(obj)
+            nj = to_dict(obj)
             nj['__type__'] = self.type_map[obj.__class__]
             return nj
         else:
@@ -151,7 +152,7 @@ class TypelessSONEncoder(json.JSONEncoder):
             return json.JSONEncoder.default(self, obj)
         except TypeError:
             # fall back to to_json helper function
-            return to_json(obj)
+            return to_dict(obj)
 
 
 class TypedJSONDecoder(json.JSONDecoder):

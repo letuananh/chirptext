@@ -13,7 +13,7 @@ import logging
 from collections import defaultdict as dd
 
 from . import chio
-from .anhxa import to_obj, to_json
+from .anhxa import to_obj, to_dict
 
 
 # -------------------------------------------------------------------------------
@@ -65,8 +65,8 @@ class Radical(object):
     def __str__(self):
         return "{}-{}[sc:{}]".format(self.radical, self.meaning, self.strokes)
 
-    def to_json(self):
-        return to_json(self)
+    def to_dict(self):
+        return to_dict(self)
 
     __KANGXI_MAP = None
 

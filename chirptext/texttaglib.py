@@ -7,31 +7,26 @@
 # :copyright: (c) 2012 Le Tuan Anh <tuananh.ke@gmail.com>
 # :license: MIT, see LICENSE for more details.
 
-import os
-import logging
-import json
 import csv
+import json
+import logging
+import os
 import warnings
-from collections import namedtuple
-from collections import defaultdict as dd
 from collections import OrderedDict
+from collections import defaultdict as dd
 
-from .anhxa import IDGenerator
-from .leutile import FileHelper
-from .anhxa import DataObject
 from . import chio
+from .anhxa import DataObject
+from .anhxa import IDGenerator
 from .chio import iter_tsv_stream
-
+from .leutile import FileHelper
 
 # -------------------------------------------------------------------------------
 # Configuration
 # -------------------------------------------------------------------------------
 
-STD_DIALECT = 'excel-tab'
-STD_QUOTING = csv.QUOTE_MINIMAL
 MODE_TSV = 'tsv'
 MODE_JSON = 'json'
-TokenInfo = namedtuple("TokenInfo", ['text', 'sk'])
 
 
 def getLogger():
@@ -44,7 +39,7 @@ def getLogger():
 
 class Tag(DataObject):
 
-    """ A general tag which can be used for annotating different linguistic features """
+    """ A general tag which can be used for annotating linguistic objects such as Sentence, Chunk, or Token """
     GOLD = 'gold'
     NONE = ''
     DEFAULT = 'n/a'
@@ -55,16 +50,17 @@ class Tag(DataObject):
     ISF = 'isf'  # integrated semantic framework: https://github.com/letuananh/intsem.fx
     MECAB = "mecab"
 
-    def __init__(self, label='', cfrom=-1, cto=-1, tagtype='', source=NONE, **kwargs):
+    def __init__(self, value='', type=NONE, cfrom=-1, cto=-1, source=NONE, **kwargs):
         super().__init__(**kwargs)
+        self.value = value
+        self.type = type  # tag type
         self.__cfrom = cfrom
         self.__cto = cto
-        self.label = label
         self.source = source
-        self.tagtype = tagtype  # tag type
 
     @property
     def cfrom(self):
+        """ starting character index of a Tag """
         return self.__cfrom
 
     @cfrom.setter
@@ -73,6 +69,7 @@ class Tag(DataObject):
 
     @property
     def cto(self):
+        """ ending character index of a Tag """
         return self.__cto
 
     @cto.setter
@@ -80,52 +77,139 @@ class Tag(DataObject):
         self.__cto = int(value) if value is not None else None
 
     @property
-    def type(self):
-        """ Alias for tagtype """
-        return self.tagtype
-
-    @type.setter
-    def type(self, value):
-        self.tagtype = value
-
-    @property
     def text(self):
-        """ Alias for label """
-        return self.label
+        """ Alias for Tag.value """
+        return self.value
 
     @text.setter
     def text(self, value):
-        self.label = value
+        self.value = value
 
     def __repr__(self):
-        if not self.tagtype:
-            return '`{}`'.format(self.label)
+        if not self.type:
+            return f'Tag(value={repr(self.value)})'
         else:
-            return '`{}:{}`'.format(self.tagtype, self.label)
+            return f'Tag(value={repr(self.value)}, type={repr(self.type)})'
 
     def __str__(self):
-        return "`{l}`<{f}:{t}>{v}".format(l=self.label, f=self.cfrom, t=self.cto, v=self.tagtype)
+        if self.cfrom not in (-1, None) and self.cto not in (-1, None):
+            return "`{l}`<{f}:{t}>{v}".format(l=self.value, f=self.cfrom, t=self.cto, v=self.type)
+        else:
+            return f"{self.type}/{self.value}"
 
-    def to_json(self, default_cfrom=-1, default_cto=-1):
-        a_dict = {'label': self.label}
-        if self.tagtype:
-            a_dict['type'] = self.tagtype
+    def to_dict(self, default_cfrom=-1, default_cto=-1, *args, **kwargs):
+        """ Serialize this Tag object data into a dict """
+        a_dict = {'value': self.value}
+        if self.type:
+            a_dict['type'] = self.type
         if self.source:
             a_dict['source'] = self.source
-        if self.cfrom is not None and self.cfrom != default_cfrom and self.cfrom >= 0:
+        if self.cfrom is not None and self.cfrom != -1 and self.cfrom != default_cfrom and self.cfrom >= 0:
             a_dict['cfrom'] = self.cfrom
-        if self.cto is not None and self.cto != default_cto and self.cto >= 0:
+        if self.cto is not None and self.cto != -1 and self.cto != default_cto and self.cto >= 0:
             a_dict['cto'] = self.cto
         return a_dict
 
     @staticmethod
-    def from_json(json_dict):
+    def from_dict(json_dict):
+        """ Create a Tag object from a dict's data """
         tag = Tag()
-        tag.update(json_dict, 'cfrom', 'cto', 'label', 'source', 'type')
+        tag.update(json_dict, 'cfrom', 'cto', 'value', 'source', 'type')
         return tag
 
 
+class TagSet:
+    """ contains all tags of a linguistic object """
+
+    class TagMap:
+        def __init__(self, tagset):
+            self.__dict__["_TagMap__tagset"] = tagset
+
+        def __getitem__(self, type):
+            """ Get the first tag object in the tag list of a given type if exist, else return None """
+            if type in self.__tagset and len(self.__tagset[type]) > 0:
+                return self.__tagset[type][0]
+            else:
+                return None
+
+        def __setitem__(self, type, value):
+            """ Set the first tag object in the tag list of a given type to key if exist, else create a new tag """
+            _old = self[type]
+            if not _old:
+                # create a new tag
+                self.__tagset.add(value=value, type=type)
+            else:
+                # pop the old tag and replace it with a new one
+                self.__tagset.replace(_old, value=value, type=type)
+
+        def __getattr__(self, type):
+            """ get the first tag object in the tag list of a given type if exist, else return None """
+            return self[type]
+
+        def __setattr__(self, type, value):
+            """ Set the first tag object in the tag list of a given type to key if exist, else create a new tag """
+            self[type] = value
+
+    def __init__(self):
+        self.__dict__["_TagSet__tags"] = []
+        self.__dict__["_TagSet__tagmap"] = TagSet.TagMap(self)
+        self.__dict__["_TagSet__tagsmap"] = dd(list)
+
+    @property
+    def tag(self):
+        """ Interact with first tag directly """
+        return self.__tagmap
+
+    def __len__(self):
+        """ Number of tags in this object """
+        return len(self.__tags)
+
+    def __getitem__(self, type):
+        """ Get the all tags of a given type """
+        return self.__tagsmap[type]
+
+    def __getattr__(self, type):
+        """ Get the first tag of a given type if it exists"""
+        return self[type]
+
+    def __contains__(self, type):
+        """ Check if there is at least a tag with a type """
+        return type in self.__tagsmap
+
+    def __iter__(self):
+        """ Loop through all tags in this set """
+        return iter(self.__tags)
+
+    def add(self, value, type, *args, **kwargs):
+        """ Create a new tag """
+        _tag = Tag(value=value, type=type, *args, **kwargs)
+        self.__tags.append(_tag)
+        self.__tagsmap[_tag.type].append(_tag)
+
+    def replace(self, old_tag, value, type, *args, **kwargs):
+        """ Replace an existing tag with a new tag """
+        self.__tags.remove(old_tag)
+        new_tag = Tag(value=value, type=type, *args, **kwargs)
+        self.__tags.append(new_tag)
+        if old_tag.type == new_tag.type:
+            _taglist = self.__tagsmap[old_tag.type]
+            _taglist[_taglist.index(old_tag)] = new_tag
+        else:
+            self.__tagsmap[old_tag.type].remove(old_tag)
+            self.__tagsmap[new_tag.type].append(new_tag)
+
+    def values(self, type=None):
+        """ Get all values of tags with the specified type or all tags when type is None """
+        return (t.value for t in (self[type] if type is not None else self))
+
+    def to_dict(self, *args, **kwargs):
+        """ Create a list of dicts from all tag objects """
+        return {"tags": [t.to_dict(*args, **kwargs) for t in self]}
+
+
 class Sentence(DataObject):
+
+    """ Represent an utterance or a sentence """
 
     def __init__(self, text='', ID=None, tokens=None, **kwargs):
         super().__init__(**kwargs)
@@ -170,7 +254,7 @@ class Sentence(DataObject):
     def tagmap(self):
         tm = dd(list)
         for t in self.tags:
-            tm[t.tagtype].append(t)
+            tm[t.type].append(t)
         return tm
 
     @property
@@ -213,7 +297,7 @@ class Sentence(DataObject):
 
     def new_tag(self, label, cfrom=-1, cto=-1, tagtype='', **kwargs):
         """ Create a sentence-level tag """
-        tag_obj = Tag(label, cfrom, cto, tagtype=tagtype, **kwargs)
+        tag_obj = Tag(label, type=tagtype, cfrom=cfrom, cto=cto, **kwargs)
         return self.add_tag(tag_obj)
 
     def get_tag(self, tagtype, auto_create=False, **kwargs):
@@ -225,18 +309,18 @@ class Sentence(DataObject):
             If there is no default value provided, an empty string '' will be used.
         """
         for t in self.__tags:
-            if t.tagtype == tagtype:
+            if t.type == tagtype:
                 return t
         if auto_create:
             return self.new_tag(label='' if 'default' not in kwargs else kwargs['default'], tagtype=tagtype, **kwargs)
         elif 'default' in kwargs:
-            return Tag(label=kwargs['default'], tagtype=tagtype, **kwargs)
+            return Tag(value=kwargs['default'], type=tagtype, **kwargs)
         else:
             raise LookupError("Sentence {} was not tagged with the speficied tagtype ({})".format(self, tagtype))
 
     def get_tags(self, tagtype, **kwargs):
         """ Get all tags of a type """
-        return [t for t in self.__tags if t.tagtype == tagtype]
+        return [t for t in self.__tags if t.type == tagtype]
 
     def add_tag(self, tag_obj):
         """ Add an existing tag object into this sentence """
@@ -259,7 +343,7 @@ class Sentence(DataObject):
             ID += 1
         return ID
 
-    def new_concept(self, tag, clemma="", tokens=None, cidx=None, **kwargs):
+    def new_concept(self, value, clemma="", tokens=None, cidx=None, **kwargs):
         """ Create a new concept object and add it to concept list
         tokens can be a list of Token objects or token indices
         """
@@ -267,7 +351,7 @@ class Sentence(DataObject):
             cidx = self.new_concept_id()
         if tokens:
             tokens = (t if isinstance(t, Token) else self[t] for t in tokens)
-        c = Concept(cidx=cidx, tag=tag, clemma=clemma, sent=self, tokens=tokens, **kwargs)
+        c = Concept(value=value, clemma=clemma, tokens=tokens, cidx=cidx, sent=self, **kwargs)
         return self.add_concept(c)
 
     def add_concept(self, concept_obj):
@@ -304,12 +388,12 @@ class Sentence(DataObject):
         else:
             return self.__concept_map[cid]
 
-    def to_json(self):
+    def to_dict(self, *args, **kwargs):
         sent_dict = {'text': self.text}
         if self.tokens:
-            sent_dict['tokens'] = [t.to_json() for t in self.tokens]
+            sent_dict['tokens'] = [t.to_dict() for t in self.tokens]
         if self.concepts:
-            sent_dict['concepts'] = [c.to_json() for c in self.concepts]
+            sent_dict['concepts'] = [c.to_dict() for c in self.concepts]
         if self.ID is not None:
             sent_dict['ID'] = self.ID
         if self.flag is not None:
@@ -317,7 +401,7 @@ class Sentence(DataObject):
         if self.comment is not None:
             sent_dict['comment'] = self.comment
         if self.__tags:
-            sent_dict['tags'] = [t.to_json() for t in self.__tags]
+            sent_dict['tags'] = [t.to_dict() for t in self.__tags]
         return sent_dict
 
     def import_tokens(self, tokens, import_hook=None, ignorecase=True):
@@ -369,25 +453,27 @@ class Sentence(DataObject):
             cfrom = cto - 1
 
     @staticmethod
-    def from_json(json_sent):
+    def from_dict(json_sent):
         sent = Sentence(json_sent['text'])
         sent.update(json_sent, 'ID', 'comment', 'flag')
         # import tokens
         for json_token in json_sent.get('tokens', []):
-            sent.add_token_object(Token.from_json(json_token))
+            sent.add_token_object(Token.from_dict(json_token))
         # import concepts
         for json_concept in json_sent.get('concepts', []):
-            tag = json_concept['tag']
+            tag = json_concept['value']
             clemma = json_concept['clemma']
             tokenids = json_concept['tokens']
             concept = sent.new_concept(tag, clemma=clemma, tokens=tokenids)
             concept.update(json_concept, Concept.COMMENT, Concept.FLAG)
         for json_tag in json_sent.get('tags', []):
-            sent.add_tag(Tag.from_json(json_tag))
+            sent.add_tag(Tag.from_dict(json_tag))
         return sent
 
 
 class Token(DataObject):
+
+    """ Represent a sentence token (i.e. a word) """
 
     def __init__(self, text='', cfrom=-1, cto=-1, sent=None, pos=None, lemma=None, comment=None, **kwargs):
         """ A token (e.g. a word in a sentence) """
@@ -429,7 +515,7 @@ class Token(DataObject):
         """ Build a map from tagtype to list of tags """
         tm = dd(list)
         for tag in self.__tags:
-            tm[tag.tagtype].append(tag)
+            tm[tag.type].append(tag)
         return tm
 
     def __str__(self):
@@ -441,7 +527,7 @@ class Token(DataObject):
             cfrom = self.cfrom
         if cto is None:
             cto = self.cto
-        tag = Tag(label=label, cfrom=cfrom, cto=cto, tagtype=tagtype, **kwargs)
+        tag = Tag(value=label, type=tagtype, cfrom=cfrom, cto=cto, **kwargs)
         return self.add_tag(tag)
 
     def get_tag(self, tagtype, auto_create=False, **kwargs):
@@ -453,18 +539,18 @@ class Token(DataObject):
             If there is no default value provided, an empty string '' will be used.
         """
         for t in self.__tags:
-            if t.tagtype == tagtype:
+            if t.type == tagtype:
                 return t
         if auto_create:
             return self.new_tag(label='' if 'default' not in kwargs else kwargs['default'], tagtype=tagtype, **kwargs)
         elif 'default' in kwargs:
-            return Tag(label=kwargs['default'], tagtype=tagtype, **kwargs)
+            return Tag(value=kwargs['default'], type=tagtype, **kwargs)
         else:
             raise LookupError("Token {} is not tagged with the speficied tagtype ({})".format(self, tagtype))
 
     def get_tags(self, tagtype, **kwargs):
         """ Get all token-level tags with the specified tagtype """
-        return [t for t in self.__tags if t.tagtype == tagtype]
+        return [t for t in self.__tags if t.type == tagtype]
 
     def add_tag(self, tag_obj):
         """ Add an existing tag object into this token """
@@ -481,7 +567,7 @@ class Token(DataObject):
         warnings.warn("Token.find_all() is deprecated and will be removed in near future. Use Token.get_tags() instead", DeprecationWarning, stacklevel=2)
         return self.get_tags(tagtype, **kwargs)
 
-    def to_json(self):
+    def to_dict(self):
         token_json = {'cfrom': self.cfrom,
                       'cto': self.cto,
                       'text': self.text}
@@ -493,38 +579,39 @@ class Token(DataObject):
             token_json['comment'] = self.comment
         if self.flag:
             token_json['flag'] = self.flag
-        all_tags = [t.to_json(default_cfrom=self.cfrom, default_cto=self.cto) for t in self.tags]
+        all_tags = [t.to_dict(default_cfrom=self.cfrom, default_cto=self.cto) for t in self.tags]
         if all_tags:
             token_json['tags'] = all_tags
         return token_json
 
     @staticmethod
-    def from_json(token_dict):
+    def from_dict(token_dict):
         tk = Token()
         tk.update(token_dict, 'cfrom', 'cto', 'text', 'lemma', 'pos', 'comment')
         # rebuild tags
         for tag_json in token_dict.get('tags', []):
-            tk.add_tag(Tag.from_json(tag_json))
+            tk.add_tag(Tag.from_dict(tag_json))
         return tk
 
 
-class Concept(DataObject):
+class Concept(Tag):
+
+    """ Represent a concept in an utterance, which may refers to multiple tokens """
 
     FLAG = 'flag'
     COMMENT = 'comment'
     NOT_MATCHED = 'E'
 
-    def __init__(self, cidx=None, tag='', clemma='', sent=None, tokens=None, comment=None, **kwargs):
-        super().__init__(**kwargs)
-        self.cidx = cidx
-        self.sent = sent
-        self.__tokens = []
+    def __init__(self, value='', type=None, clemma=None, tokens=None, cidx=None, sent=None, comment=None, flag=None, **kwargs):
+        super().__init__(value=value, type=type, **kwargs)
         self.clemma = clemma
-        self.tag = tag
-        self.flag = None
-        self.comment = comment if comment else ''
+        self.__tokens = []
         if tokens:
             self.__tokens.extend(tokens)
+        self.cidx = cidx
+        self.sent = sent
+        self.comment = comment
+        self.flag = flag
 
     @property
     def tokens(self):
@@ -535,27 +622,27 @@ class Concept(DataObject):
             self.__tokens.append(token)
 
     def __repr__(self):
-        return '<{t}:"{l}">'.format(l=self.clemma, t=self.tag)
+        return '<{t}:"{l}">'.format(l=self.clemma, t=self.value)
 
     def __str__(self):
-        return '<{t}:"{l}">({ws})'.format(l=self.clemma, t=self.tag, ws=self.__tokens)
+        return '<{t}:"{l}">({ws})'.format(l=self.clemma, t=self.value, ws=self.__tokens)
 
-    def to_json(self):
+    def to_dict(self, *args, **kwargs):
+        concept_dict = super().to_dict(*args, **kwargs)
         if self.sent:
             # get token idx from sent
-            tokens = [self.sent.tokens.index(t) for t in self.__tokens]
+            concept_dict['tokens'] = [self.sent.tokens.index(t) for t in self.__tokens]
         else:
-            tokens = [t.text for t in self.__tokens]
-        cdict = {
-            'clemma': self.clemma,
-            'tag': str(self.tag),
-            'tokens': tokens
-        }
+            concept_dict['tokens'] = [t.text for t in self.__tokens]
+        if self.clemma is not None:
+            concept_dict['clemma'] = self.clemma
+        if self.type is not None:
+            concept_dict['type'] = self.type
         if self.comment:
-            cdict[Concept.COMMENT] = self.comment
+            concept_dict[Concept.COMMENT] = self.comment
         if self.flag:
-            cdict[Concept.FLAG] = self.flag
-        return cdict
+            concept_dict[Concept.FLAG] = self.flag
+        return concept_dict
 
 
 class Document(DataObject):
@@ -822,17 +909,22 @@ class TxtReader(object):
 
 
 class TxtWriter(object):
-    def __init__(self, sent_stream, token_stream, concept_stream, link_stream, tag_stream, id_seed=1):
+
+    STD_DIALECT = 'excel-tab'
+    STD_QUOTING = csv.QUOTE_MINIMAL
+
+    def __init__(self, sent_stream, token_stream, concept_stream, link_stream, tag_stream, id_seed=1,
+                 csv_dialect=STD_DIALECT, csv_quoting=STD_QUOTING):
         self.sent_stream = sent_stream
         self.token_stream = token_stream
         self.concept_stream = concept_stream
         self.link_stream = link_stream
         self.tag_stream = tag_stream
-        self.sent_writer = csv.writer(sent_stream, dialect=STD_DIALECT, quoting=STD_QUOTING)
-        self.token_writer = csv.writer(token_stream, dialect=STD_DIALECT, quoting=STD_QUOTING)
-        self.concept_writer = csv.writer(concept_stream, dialect=STD_DIALECT, quoting=STD_QUOTING)
-        self.link_writer = csv.writer(link_stream, dialect=STD_DIALECT, quoting=STD_QUOTING)
-        self.tag_writer = csv.writer(tag_stream, dialect=STD_DIALECT, quoting=STD_QUOTING)
+        self.sent_writer = csv.writer(sent_stream, dialect=csv_dialect, quoting=csv_quoting)
+        self.token_writer = csv.writer(token_stream, dialect=csv_dialect, quoting=csv_quoting)
+        self.concept_writer = csv.writer(concept_stream, dialect=csv_dialect, quoting=csv_quoting)
+        self.link_writer = csv.writer(link_stream, dialect=csv_dialect, quoting=csv_quoting)
+        self.tag_writer = csv.writer(tag_stream, dialect=csv_dialect, quoting=csv_quoting)
         self.__idgen = IDGenerator(id_seed=id_seed)
 
     def write_sent(self, sent, **kwargs):
@@ -846,18 +938,18 @@ class TxtWriter(object):
         # write concepts & wclinks
         for cid, concept in enumerate(sent.concepts):
             # write concept
-            self.concept_writer.writerow((sid, cid, concept.clemma, concept.tag, concept.comment))
+            self.concept_writer.writerow((sid, cid, concept.clemma, concept.value, concept.comment))
             # write cwlinks
             for token in concept.tokens:
                 wid = sent.tokens.index(token)
                 self.link_writer.writerow((sid, cid, wid))
         # write tags
         for tag in sent.tags:
-            self.tag_writer.writerow((sid, tag.cfrom, tag.cto, tag.label, tag.tagtype, ''))
+            self.tag_writer.writerow((sid, tag.cfrom, tag.cto, tag.value, tag.type, ''))
         # write token-level tags
         for wid, token in enumerate(sent.tokens):
             for tag in token:
-                self.tag_writer.writerow((sid, tag.cfrom, tag.cto, tag.label, tag.tagtype, wid))
+                self.tag_writer.writerow((sid, tag.cfrom, tag.cto, tag.value, tag.type, wid))
 
     def write_doc(self, doc, **kwargs):
         for sent in doc:
@@ -900,7 +992,7 @@ class JSONWriter(object):
     def write_sent(self, sent, ensure_ascii=False, **kwargs):
         if sent.ID is None:
             sent.ID = next(self.__idgen)
-        self.__output_stream.write(json.dumps(sent.to_json(), ensure_ascii=ensure_ascii))
+        self.__output_stream.write(json.dumps(sent.to_dict(), ensure_ascii=ensure_ascii))
         self.__output_stream.write('\n')
 
     def write_doc(self, doc, ensure_ascii=False, **kwargs):
@@ -941,7 +1033,7 @@ def read_json_iter(path):
     with chio.open(path) as infile:
         for line in infile:
             j = json.loads(line)
-            sent = Sentence.from_json(j)
+            sent = Sentence.from_dict(j)
             yield sent
     return
 
