@@ -44,18 +44,12 @@ def getLogger():
 
 class Tag(DataObject):
 
-    """ A general tag which can be used for annotating different linguistic feature """
+    """ A general tag which can be used for annotating different linguistic features """
+    GOLD = 'gold'
     NONE = ''
     DEFAULT = 'n/a'
-    GOLD = 'gold'
-    ISF = 'isf'
-    LELESK = 'lelesk'
-    NTUMC = 'ntumc'
-    MFS = 'mfs'
-    MECAB = 'mecab'
-    NLTK = 'nltk'
+    MFS = 'mfs'  # most frequent sense
     WORDNET = 'wn'
-    BABELNET = 'bn'
     OTHER = 'other'
 
     def __init__(self, label='', cfrom=-1, cto=-1, tagtype='', source=NONE, **kwargs):
