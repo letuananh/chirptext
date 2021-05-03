@@ -85,3 +85,11 @@ def parse(content, *args, **kwargs):
 
 def wakati(content):
     return parse(content, '-Owakati')
+
+
+def version():
+    output = run_mecab_process("", "--version")
+    if output:
+        return output.strip()
+    else:
+        return None

@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-'''
+"""
 Script for testing leutile
 
 Latest version can be found at https://github.com/letuananh/chirptext
 
 :copyright: (c) 2012 Le Tuan Anh <tuananh.ke@gmail.com>
 :license: MIT, see LICENSE for more details.
-'''
+"""
 
 import os
 import io
@@ -17,7 +17,7 @@ import logging
 import json
 from chirptext import TextReport
 from chirptext import texttaglib as ttl
-from chirptext.deko import parse
+from chirptext.deko import MeCabSent
 
 # ------------------------------------------------------------------------------
 # Configuration
@@ -29,6 +29,15 @@ TEST_FILE = os.path.join(TEST_DATA, 'test')
 
 BARK_SID = '01047745-v'
 GDOG_SID = '02103841-n'
+
+sent1 = "三毛猫が好きです。"
+sent2 = "雨が降る。"
+sent3 = "女の子はケーキを食べる。"
+sent4 = "猫が好きです 。"
+sent1_mecab = '三\t名詞,数,*,*,*,*,三,サン,サン\n毛\t名詞,接尾,助数詞,*,*,*,毛,モウ,モー\n猫\t名詞,一般,*,*,*,*,猫,ネコ,ネコ\nが\t助詞,格助詞,一般,*,*,*,が,ガ,ガ\n好き\t名詞,形容動詞語幹,*,*,*,*,好き,スキ,スキ\nです\t助動詞,*,*,*,特殊・デス,基本形,です,デス,デス\n。\t記号,句点,*,*,*,*,。,。,。\nEOS'
+sent2_mecab = '雨\t名詞,一般,*,*,*,*,雨,アメ,アメ\nが\t助詞,格助詞,一般,*,*,*,が,ガ,ガ\n降る\t動詞,自立,*,*,五段・ラ行,基本形,降る,フル,フル\n。\t記号,句点,*,*,*,*,。,。,。\nEOS'
+sent3_mecab = '女の子\t名詞,一般,*,*,*,*,女の子,オンナノコ,オンナノコ\nは\t助詞,係助詞,*,*,*,*,は,ハ,ワ\nケーキ\t名詞,一般,*,*,*,*,ケーキ,ケーキ,ケーキ\nを\t助詞,格助詞,一般,*,*,*,を,ヲ,ヲ\n食べる\t動詞,自立,*,*,一段,基本形,食べる,タベル,タベル\n。\t記号,句点,*,*,*,*,。,。,。\nEOS'
+sent4_mecab = '猫\t名詞,一般,*,*,*,*,猫,ネコ,ネコ\nが\t助詞,格助詞,一般,*,*,*,が,ガ,ガ\n好き\t名詞,形容動詞語幹,*,*,*,*,好き,スキ,スキ\nです\t助動詞,*,*,*,特殊・デス,基本形,です,デス,デス\n。\t記号,句点,*,*,*,*,。,。,。\nEOS'
 
 
 def getLogger():
@@ -174,10 +183,10 @@ class TestBuildTags(unittest.TestCase):
 
 
 class TestComment(unittest.TestCase):
-    ''' Ensure that all objects may hold comments and flags '''
+    """ Ensure that all objects may hold comments and flags """
 
     def test_storing_flags(self):
-        ''' '''
+        """ """
         doc = ttl.read(TEST_FILE)
         sent = doc[0]
         sent.flag = ttl.Tag.GOLD
@@ -191,7 +200,6 @@ class TestComment(unittest.TestCase):
 class TestTagging(unittest.TestCase):
 
     def test_taginfo(self):
-        print("Test tag info")
         t = ttl.Tag('dog', 1, 4, source=ttl.Tag.ISF)
         self.assertEqual(t.cfrom, 1)
         self.assertEqual(t.cto, 4)
@@ -285,7 +293,7 @@ class TestTagging(unittest.TestCase):
     def test_tagged_sentences(self):
         print("test converting MeCabSent into TTL Sent manually")
         sent = ttl.Sentence('猫が好きです 。')
-        mecab_sent = parse(sent.text)
+        mecab_sent = MeCabSent.from_mecab_output(sent4, sent4_mecab)
         getLogger().debug((mecab_sent.surface, mecab_sent.words))
         # import tags
         sent.import_tokens(mecab_sent.words)
@@ -352,8 +360,8 @@ class TestTagging(unittest.TestCase):
         self.assertEqual(sent_json['concepts'][0]['flag'], 'G')
 
     def test_tagging_erg_sent(self):
-        ''' Test import tokens '''
-        txt = '''In this way I am no doubt indirectly responsible for Dr. Grimesby Roylott's death, and I cannot say that it is likely to weigh very heavily upon my conscience."'''
+        """ Test import tokens """
+        txt = """In this way I am no doubt indirectly responsible for Dr. Grimesby Roylott's death, and I cannot say that it is likely to weigh very heavily upon my conscience." """
         words = ['in', 'this', 'way', 'i', 'am', 'no', 'doubt', 'indirectly', 'responsible', 'for', 'dr.', 'Grimesby', 'Roylott', "'s", 'death', ',', 'and', 'i', 'can', 'not', 'say', 'that', 'it', 'is', 'likely', 'to', 'weigh', 'very', 'heavily', 'upon', 'my', 'conscience', '.', '"']
         s = ttl.Sentence(txt)
         s.import_tokens(words)
@@ -383,7 +391,7 @@ class TestTagging(unittest.TestCase):
         self.assertEqual(mw_ms, [(2, 2), (0, 0), (3, 2)])
 
     def test_recover_surface_string(self):
-        s = ttl.Sentence('''a religious sect founded in the United States in 1966; based on Vedic scriptures; groups engage in joyful chanting of `Hare Krishna' and other mantras based on the name of the Hindu god Krishna; devotees usually wear saffron robes and practice vegetarianism and celibacy''')
+        s = ttl.Sentence("""a religious sect founded in the United States in 1966; based on Vedic scriptures; groups engage in joyful chanting of `Hare Krishna' and other mantras based on the name of the Hindu god Krishna; devotees usually wear saffron robes and practice vegetarianism and celibacy""")
         tokens = ['a', 'religious', 'sect', 'founded', 'in', 'the', 'United', 'States', 'in', '1966', ';', 'based', 'on', 'Vedic', 'scriptures', ';', 'groups', 'engage', 'in', 'joyful', 'chanting', 'of', 'Hare', 'Krishna', 'and', 'other', 'mantras', 'based', 'on', 'the', 'name', 'of', 'the', 'Hindu', 'god', 'Krishna', ';', 'devotees', 'usually', 'wear', 'saffron', 'robes', 'and', 'practice', 'vegetarianism', 'and', 'celibacy']
         s.import_tokens(tokens)
         cfrom = min(x.cfrom for x in s.tokens)
@@ -393,9 +401,10 @@ class TestTagging(unittest.TestCase):
     def test_export_to_streams(self):
         doc = ttl.Document('manual', TEST_DATA)
         # create sents in doc
-        raws = ("三毛猫が好きです。", "雨が降る。", "女の子はケーキを食べる。")
-        for sid, r in enumerate(raws):
-            msent = parse(r)
+        raws = (sent1, sent2, sent3)
+        mecab_outputs = (sent1_mecab, sent2_mecab, sent3_mecab)
+        for sid, (sent, mecab_output) in enumerate(zip(raws, mecab_outputs)):
+            msent = MeCabSent.from_mecab_output(sent, mecab_output)
             tsent = doc.new_sent(msent.surface, sid + 1)  # sentID starts from 1
             tsent.import_tokens(msent.words)
             # pos tagging
@@ -438,7 +447,7 @@ class TestTagging(unittest.TestCase):
 class TestSerialization(unittest.TestCase):
 
     def build_test_sent(self):
-        sent = ttl.Sentence('三毛猫が好きです。')
+        sent = ttl.Sentence(sent1)
         sent.flag = '0'
         sent.comment = 'written in Japanese'
         sent.new_tag('I like calico cats.', tagtype='eng')
