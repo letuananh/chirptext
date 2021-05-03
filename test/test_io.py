@@ -15,7 +15,7 @@ import logging
 import unittest
 import json
 from pathlib import Path
-from chirptext.anhxa import to_json, to_obj
+from chirptext.anhxa import to_dict, to_obj
 from chirptext import chio
 
 # -------------------------------------------------------------------------------
@@ -149,7 +149,7 @@ class TestReaders(unittest.TestCase):
                  "Takeshi Goda G001", "Suneo Honekawa H001", "Jaiko - G002", "Hidetoshi Dekisugi D003"]
         persons = [Person.parse(name) for name in names]
         header = ['first', 'last']
-        chio.write_csv(TEST_CSV, [to_json(p) for p in persons], fieldnames=header)
+        chio.write_csv(TEST_CSV, [to_dict(p) for p in persons], fieldnames=header)
         inrows = chio.read_csv(TEST_CSV, fieldnames=True)
         getLogger().debug("Inrows: {}".format(inrows))
         expected = [{'first': 'Doraemon', 'last': '-'}, {'first': 'Nobita', 'last': 'Nobi'}, {'first': 'Shizuka', 'last': 'Minamoto'}, {'first': 'Dorami', 'last': '-'}, {'first': 'Takeshi', 'last': 'Goda'}, {'first': 'Suneo', 'last': 'Honekawa'}, {'first': 'Jaiko', 'last': '-'}, {'first': 'Hidetoshi', 'last': 'Dekisugi'}]
@@ -162,7 +162,7 @@ class TestReaders(unittest.TestCase):
 
         # with idno
         header = ['first', 'last', 'idno']
-        chio.write_csv(TEST_CSV, [to_json(p) for p in persons], fieldnames=header)
+        chio.write_csv(TEST_CSV, [to_dict(p) for p in persons], fieldnames=header)
         inpersons = [to_obj(Person, row) for row in chio.read_csv(TEST_CSV, fieldnames=True)]
         self.assertEqual(persons, inpersons)
 
