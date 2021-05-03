@@ -51,6 +51,9 @@ class Tag(DataObject):
     MFS = 'mfs'  # most frequent sense
     WORDNET = 'wn'
     OTHER = 'other'
+    NLTK = 'nltk'
+    ISF = 'isf'  # integrated semantic framework: https://github.com/letuananh/intsem.fx
+    MECAB = "mecab"
 
     def __init__(self, label='', cfrom=-1, cto=-1, tagtype='', source=NONE, **kwargs):
         super().__init__(**kwargs)
