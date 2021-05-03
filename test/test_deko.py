@@ -1,26 +1,26 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-'''
+"""
 Test script for deko module
+"""
 
-Latest version can be found at https://github.com/letuananh/chirptext
+# This code is a part of chirptext library: https://github.com/letuananh/chirptext
+# :copyright: (c) 2012 Le Tuan Anh <tuananh.ke@gmail.com>
+# :license: MIT, see LICENSE for more details.
 
-:copyright: (c) 2012 Le Tuan Anh <tuananh.ke@gmail.com>
-:license: MIT, see LICENSE for more details.
-'''
-
+import logging
 import os
 import unittest
-import logging
 
 from chirptext import TextReport
-from chirptext import deko
+from chirptext import dekoigo
 from chirptext.deko import KATAKANA, simple_kata2hira, is_kana
+from chirptext.deko import MeCabSent, DekoText
 from chirptext.deko import get_mecab_bin, set_mecab_bin
 from chirptext.deko import wakati, tokenize, tokenize_sent, analyse, parse, parse_doc
-from chirptext.deko import MeCabSent, DekoText
-from chirptext import dekoigo
+from chirptext.dekomecab import version
+
 # -------------------------------------------------------------------------------
 # Configuration
 # -------------------------------------------------------------------------------
@@ -30,6 +30,13 @@ txt = '雨が降る。'
 txt2 = '猫が好きです。\n犬も好きです。'
 txt3 = '猫が好きです。\n犬も好きです。\n鳥は'
 txt4 = '猫が好きです。犬も好きです。鳥は'
+
+
+_MECAB_VERSION = None
+try:
+    _MECAB_VERSION = version()
+except Exception:
+    pass
 
 
 def getLogger():
@@ -64,18 +71,23 @@ class TestTool(unittest.TestCase):
         self.assertFalse(is_kana('すき です'))  # with a space
 
 
+@unittest.skipIf(not _MECAB_VERSION,
+                 "Mecab binary is not available, all mecab related tests will be ignored")
 class TestDeko(unittest.TestCase):
 
+    def test_mecab_version(self):
+        v = version()
+        print(f"Testing deko using mecab version: {v}")
+        self.assertIn("mecab", v)
+
     def test_mecab(self):
-        print("Testing mecab")
         tokens = parse(txt)
         self.assertTrue(tokens[-1].is_eos)
 
     def test_mecab_bin_loc(self):
         mbin_original = get_mecab_bin()
         mbin_locs = ['mecab', 'mecab.exe', '/usr/local/bin/mecab', '/usr/bin/mecab']
-        if mbin_original:
-            self.assertIn(mbin_original, mbin_locs)
+        self.assertTrue(mbin_original)  # there must be a default mecab binary even when the binary is not available
         with self.assertLogs('chirptext.dekomecab', level='WARNING') as log:
             mecab_custom_loc = 'C:\\mecab\\mecab-console.exe'
             set_mecab_bin(mecab_custom_loc)
@@ -223,13 +235,14 @@ EOS
         self.assertEqual(len(doc), 3)
 
 
-class TestDekoIgo(unittest.TestCase):
+@unittest.skipIf(not dekoigo.igo_available(),
+                 "igo library is not available, all dekoigo tests will be ignored")
+class TestDekoigo(unittest.TestCase):
 
     def test_dekoigo(self):
-        if dekoigo.igo_available():
-            print(dekoigo.parse(txt))
-        else:
-            getLogger().warning("igo is not available, all dekoigo tests will be skipped")
+        self.assertTrue(dekoigo.igo_available())
+        print(dekoigo.parse(txt))
+
 
 # -------------------------------------------------------------------------------
 # Main
