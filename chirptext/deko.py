@@ -197,8 +197,18 @@ class MeCabSent(object):
     @staticmethod
     def parse(text, **kwargs):
         """ Use mecab to parse one sentence """
-        mecab_out = _internal_mecab_parse(text, **kwargs).splitlines()
-        tokens = [MeCabToken.parse(x) for x in mecab_out]
+        mecab_output = _internal_mecab_parse(text, **kwargs)
+        return MeCabSent.from_mecab_output(text, mecab_output)
+
+    @staticmethod
+    def from_mecab_output(text, mecab_output):
+        """ Parse mecab output
+
+        :param text: Original text that was fed into mecab
+        :param mecab_output: text retrieved from mecab output stream
+        """
+        lines = mecab_output.splitlines()
+        tokens = [MeCabToken.parse(x) for x in lines]
         return MeCabSent(text, tokens)
 
 
