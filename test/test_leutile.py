@@ -81,7 +81,6 @@ class TestLeUtile(unittest.TestCase):
         self.assertEqual(groups, [['src: me', 'txt:It works'], ['src:him', 'txt:It rains', 'cmt:I made it up'], ['src:anonymous', 'txt:cow level is real']])
 
     def test_counter(self):
-        print("Test counter")
         c = Counter()
         c.count("A")
         c.count(None)
@@ -181,7 +180,6 @@ class TestConfigFile(unittest.TestCase):
     def test_locate_config_file(self):
         cfg = AppConfig(name='foo', mode=AppConfig.JSON)
         actual = cfg.potentials()
-        print(actual)
         expected = ['./.foo.json', './foo.json', './config/foo.json', './config/.foo.json',
                     '~/.foo/config.json', '~/.config/foo/config.json',
                     '~/.config/foo/foo.json',

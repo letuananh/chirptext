@@ -47,12 +47,11 @@ class TestArsenal(unittest.TestCase):
         self.assertEqual(cache.retrieve_string(key), value)
 
     def test_empty_cache(self):
-        TEST_CACHE2 = os.path.join(TEST_DIR, 'test_cache2.db')
-        JiCache(TEST_CACHE2)
-        self.assertFalse(os.path.exists(TEST_CACHE2))
+        test_cache2 = os.path.join(TEST_DIR, 'test_cache2.db')
+        JiCache(test_cache2)
+        self.assertFalse(os.path.exists(test_cache2))
 
     def test_arsenal(self):
-        print("Test arsenal module")
         cache = JiCache(TEST_CACHE)
         # test insert blob
         self.try_cache(cache, 'lorem', LOREM_IPSUM)
