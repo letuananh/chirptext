@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 
-'''
+"""
 Chirp Net - Web utilities
+"""
 
-Latest version can be found at https://github.com/letuananh/chirptext
-
-:copyright: (c) 2012 Le Tuan Anh <tuananh.ke@gmail.com>
-:license: MIT, see LICENSE for more details.
-'''
+# Latest version can be found at https://github.com/letuananh/chirptext
+# :copyright: (c) 2012 Le Tuan Anh <tuananh.ke@gmail.com>
+# :license: MIT, see LICENSE for more details.
 
 import os
 from io import BytesIO
@@ -34,7 +33,7 @@ def getLogger():
 # ----------------------------------------------------------------------
 
 class SmartURL(object):
-    ''' Smart URL supports URL manipulation '''
+    """ Smart URL supports URL manipulation """
 
     def __init__(self, raw_url, quoted=False):
         self.raw = raw_url
@@ -59,7 +58,7 @@ class SmartURL(object):
         return os.path.splitext(self.get_filename())[1]
 
     def process(self, quoted=False):
-        ''' Parse an URL '''
+        """ Parse an URL """
         self.p = urlparse(self.raw)
         self.scheme = self.p.scheme
         self.netloc = self.p.netloc
@@ -75,7 +74,7 @@ class SmartURL(object):
 
 
 class WebHelper(object):
-    ''' a wget like utility for Python '''
+    """ a wget like utility for Python """
 
     def __init__(self, cache=None):
         if cache is None or isinstance(cache, JiCache):
@@ -88,7 +87,7 @@ class WebHelper(object):
         return str(SmartURL(url, quoted=True))
 
     def fetch(self, url, encoding=None, force_refetch=False, nocache=False, quiet=True):
-        ''' Fetch a HTML file as binary'''
+        """ Fetch a HTML file as binary"""
         try:
             if not force_refetch and self.cache is not None and url in self.cache:
                 # try to look for content in cache
@@ -133,8 +132,8 @@ class WebHelper(object):
             return None
 
     def download(self, url, path, force_refetch=False, nocache=False):
-        ''' Download a file at $url and save it to $path
-        '''
+        """ Download a file at $url and save it to $path
+        """
         # Enable cache
         if os.path.isfile(path):
             getLogger().info("File exists, download task skipped -> {path}".format(path=path))

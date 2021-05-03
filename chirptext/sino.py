@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 
-'''
+"""
 Tools for processing Chinese
+"""
 
-Latest version can be found at https://github.com/letuananh/chirptext
-
-:copyright: (c) 2012 Le Tuan Anh <tuananh.ke@gmail.com>
-:license: MIT, see LICENSE for more details.
-'''
+# This code is a part of chirptext library: https://github.com/letuananh/chirptext
+# :copyright: (c) 2012 Le Tuan Anh <tuananh.ke@gmail.com>
+# :license: MIT, see LICENSE for more details.
 
 import os
 import logging
@@ -41,9 +40,9 @@ KANGXI_FIELDS = ["idseq", "radical", "variants", "strokes", "meaning", "pinyin",
 
 class Radical(object):
 
-    ''' Chinese Radical
+    """ Chinese Radical
         Source: https://en.wikipedia.org/wiki/Kangxi_radical#Table_of_radicals
-    '''
+    """
     def __init__(self, idseq='', radical='', variants='', strokes='', meaning='', pinyin='', hanviet='', hiragana='', romaji='', hangeul='', romaja='', frequency='', simplified='', examples=''):
         self.idseq = idseq
         self.radical = radical

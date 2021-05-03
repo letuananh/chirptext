@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 
-'''
+"""
 Command-line interface helper
+"""
 
-Latest version can be found at https://github.com/letuananh/chirptext
-
-:copyright: (c) 2012 Le Tuan Anh <tuananh.ke@gmail.com>
-:license: MIT, see LICENSE for more details.
-'''
+# Latest version can be found at https://github.com/letuananh/chirptext
+# :copyright: (c) 2012 Le Tuan Anh <tuananh.ke@gmail.com>
+# :license: MIT, see LICENSE for more details.
 
 import os
 import logging
@@ -33,8 +32,8 @@ def getLogger():
 # -------------------------------------------------------------------------------
 
 def setup_logging(filename, log_dir=None, force_setup=False):
-    ''' Try to load logging configuration from a file. Set level to INFO if failed.
-    '''
+    """ Try to load logging configuration from a file. Set level to INFO if failed.
+    """
     if not force_setup and ChirpCLI.SETUP_COMPLETED:
         logging.debug("Master logging has been setup. This call will be ignored.")
         return
@@ -56,7 +55,7 @@ def setup_logging(filename, log_dir=None, force_setup=False):
 
 
 def config_logging(args):
-    ''' Override root logger's level '''
+    """ Override root logger's level """
     if args.quiet:
         logging.getLogger().setLevel(logging.CRITICAL)
     elif args.verbose:
@@ -64,7 +63,7 @@ def config_logging(args):
 
 
 class CLIApp(object):
-    ''' A simple template for command-line interface applications '''
+    """ A simple template for command-line interface applications """
 
     def __init__(self, desc, add_vq=True, add_tasks=True, **kwargs):
         """
@@ -90,7 +89,7 @@ class CLIApp(object):
         self.__name = kwargs['logger'] if 'logger' in kwargs else __name__
 
     def add_task(self, task, func=None, **kwargs):
-        ''' Add a task parser '''
+        """ Add a task parser """
         if not self.__tasks:
             raise Exception("Tasks subparsers is disabled")
         if 'help' not in kwargs:
@@ -104,13 +103,13 @@ class CLIApp(object):
         return task_parser
 
     def add_vq(self, parser):
-        ''' Add verbose & quiet options '''
+        """ Add verbose & quiet options """
         group = parser.add_mutually_exclusive_group()
         group.add_argument("-v", "--verbose", action="store_true")
         group.add_argument("-q", "--quiet", action="store_true")
 
     def add_version_func(self, show_version):
-        ''' Enable --version and -V to show version information '''
+        """ Enable --version and -V to show version information """
         if callable(show_version):
             self.__show_version_func = show_version
         else:
@@ -119,13 +118,13 @@ class CLIApp(object):
 
     @property
     def logger(self):
-        ''' Lazy logger '''
+        """ Lazy logger """
         if self.__logger is None:
             self.__logger = logging.getLogger(self.__name)
         return self.__logger
 
     def run(self, func=None):
-        ''' Run the app '''
+        """ Run the app """
         args = self.parser.parse_args()
         if self.__add_vq is not None and self.__config_logging:
             self.__config_logging(args)

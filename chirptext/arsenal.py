@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 
-'''
+"""
 Chirptext Arsenal - Cache utilities
+"""
 
-Latest version can be found at https://github.com/letuananh/chirptext
-
-:copyright: (c) 2012 Le Tuan Anh <tuananh.ke@gmail.com>
-:license: MIT, see LICENSE for more details.
-'''
+# Latest version can be found at https://github.com/letuananh/chirptext
+# :copyright: (c) 2012 Le Tuan Anh <tuananh.ke@gmail.com>
+# :license: MIT, see LICENSE for more details.
 
 import os
 import uuid
@@ -27,8 +26,8 @@ def getLogger():
 
 
 class JiCache:
-    ''' Cache textual/binary content using an SQLite file (with internal blob or an external folder)
-    '''
+    """ Cache textual/binary content using an SQLite file (with internal blob or an external folder)
+    """
     def __init__(self, location, blob_location=None, use_internal_blob=True):
         self.location = os.path.abspath(os.path.expanduser(location))
         self.blob_location = os.path.abspath(os.path.expanduser(blob_location)) if blob_location else self.location + '.blob'
@@ -50,9 +49,9 @@ class JiCache:
             with sqlite3.connect(self.location) as conn:
                 c = conn.cursor()
                 # Create tables
-                c.execute('''CREATE TABLE IF NOT EXISTS cache_entries (key UNIQUE, value);''')
+                c.execute("""CREATE TABLE IF NOT EXISTS cache_entries (key UNIQUE, value);""")
                 c.execute("""CREATE INDEX IF NOT EXISTS CACHE_ENTRIES_KEY_INDEX ON cache_entries (key);""")
-                c.execute('''CREATE TABLE IF NOT EXISTS blob_entries (key UNIQUE, compressed, blob_data);''')
+                c.execute("""CREATE TABLE IF NOT EXISTS blob_entries (key UNIQUE, compressed, blob_data);""")
                 c.execute("""CREATE INDEX IF NOT EXISTS BLOB_ENTRIES_KEY_INDEX ON blob_entries (key);""")
                 conn.commit()
 
@@ -83,8 +82,8 @@ class JiCache:
                 return None
 
     def __retrieve(self, key):
-        ''' Retrieve file location from cache DB
-        '''
+        """ Retrieve file location from cache DB
+        """
         with self.get_conn() as conn:
             try:
                 c = conn.cursor()
@@ -109,9 +108,9 @@ class JiCache:
         return self.__retrieve(key) is not None
 
     def __insert(self, key, value):
-        '''
+        """
         Insert a new key to database
-        '''
+        """
         if key in self:
             getLogger().warning("Cache entry exists, cannot insert a new entry with key='{key}'".format(key=key))
             return False
@@ -127,8 +126,8 @@ class JiCache:
                 return False
 
     def __delete(self, key):
-        ''' Delete file key from database
-        '''
+        """ Delete file key from database
+        """
         with self.get_conn() as conn:
             try:
                 c = conn.cursor()
@@ -141,8 +140,8 @@ class JiCache:
     INTERNAL_BLOB = "JICACHE_INTERNAL_BLOB"
 
     def __insert_internal_blob(self, key, blob, compressed=True):
-        ''' This method will insert blob data to blob table
-        '''
+        """ This method will insert blob data to blob table
+        """
         with self.get_conn() as conn:
             conn.isolation_level = None
             c = conn.cursor()
@@ -160,8 +159,8 @@ class JiCache:
                 return False
 
     def __delete_internal_blob(self, key):
-        ''' This method will insert blob data to blob table
-        '''
+        """ This method will insert blob data to blob table
+        """
         with self.get_conn() as conn:
             conn.isolation_level = None
             try:
@@ -180,8 +179,8 @@ class JiCache:
             return True
 
     def __retrieve_internal_blob(self, key):
-        ''' Retrieve file location from cache DB
-        '''
+        """ Retrieve file location from cache DB
+        """
         logger = getLogger()
         with self.get_conn() as conn:
             try:
@@ -230,7 +229,7 @@ class JiCache:
                 return True
 
     def retrieve_blob(self, key, encoding=None):
-        ''' Retrieve blob in binary format (or string format if encoding is provided) '''
+        """ Retrieve blob in binary format (or string format if encoding is provided) """
         blob_key = self.__retrieve(key)
         if blob_key is None:
             return None

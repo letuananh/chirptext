@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 
-'''
-Readers for popular formats
+"""
+Chirptext's enhanced IO functions
+"""
 
-Latest version can be found at https://github.com/letuananh/chirptext
-
-:copyright: (c) 2012 Le Tuan Anh <tuananh.ke@gmail.com>
-:license: MIT, see LICENSE for more details.
-'''
+# Latest version can be found at https://github.com/letuananh/chirptext
+# :copyright: (c) 2012 Le Tuan Anh <tuananh.ke@gmail.com>
+# :license: MIT, see LICENSE for more details.
 
 import os
 import csv
@@ -43,7 +42,7 @@ def to_string(content, encoding='utf-8'):
 
 
 def is_file(path):
-    ''' Check if path is a path to an existing file '''
+    """ Check if path is a path to an existing file """
     return path and os.path.isfile(to_string(path))
 
 
@@ -73,7 +72,7 @@ def open(path, encoding='utf-8', mode='rt', *args, **kwargs):
 
 
 def process_file(path, processor, encoding='utf-8', mode='rt', *args, **kwargs):
-    ''' Process a text file's content. If the file name ends with .gz, read it as gzip file '''
+    """ Process a text file's content. If the file name ends with .gz, read it as gzip file """
     if mode not in ('rU', 'rt', 'rb', 'r'):
         raise Exception("Invalid file reading mode")
     with open(path, encoding=encoding, mode=mode, *args, **kwargs) as infile:
@@ -81,10 +80,10 @@ def process_file(path, processor, encoding='utf-8', mode='rt', *args, **kwargs):
 
 
 def read_file(path, encoding='utf-8', *args, **kwargs):
-    ''' Read text file content. If the file name ends with .gz, read it as gzip file.
+    """ Read text file content. If the file name ends with .gz, read it as gzip file.
     If mode argument is provided as 'rb', content will be read as byte stream.
     By default, content is read as string.
-    '''
+    """
     if 'mode' in kwargs and kwargs['mode'] == 'rb':
         return process_file(path, processor=lambda x: x.read(),
                             encoding=encoding, *args, **kwargs)
@@ -94,7 +93,7 @@ def read_file(path, encoding='utf-8', *args, **kwargs):
 
 
 def write_file(path, content, mode=None, encoding='utf-8'):
-    ''' Write content to a file. If the path ends with .gz, gzip will be used. '''
+    """ Write content to a file. If the path ends with .gz, gzip will be used. """
     if not mode:
         if isinstance(content, bytes):
             mode = 'wb'
@@ -122,7 +121,7 @@ def write_file(path, content, mode=None, encoding='utf-8'):
 
 
 def iter_csv_stream(input_stream, fieldnames=None, sniff=False, *args, **kwargs):
-    ''' Read CSV content as a table (list of lists) from an input stream '''
+    """ Read CSV content as a table (list of lists) from an input stream """
     if 'dialect' not in kwargs and sniff:
         kwargs['dialect'] = csv.Sniffer().sniff(input_stream.read(1024))
         input_stream.seek(0)
@@ -147,11 +146,11 @@ def iter_tsv_stream(input_stream, *args, **kwargs):
 
 
 def read_csv_iter(path, fieldnames=None, sniff=True, mode='rt', encoding='utf-8', *args, **kwargs):
-    ''' Iterate through CSV rows in a file.
+    """ Iterate through CSV rows in a file.
     By default, csv.reader() will be used any output will be a list of lists.
     If fieldnames is provided, DictReader will be used and output will be list of OrderedDict instead.
     CSV sniffing (dialect detection) is enabled by default, set sniff=False to switch it off.
-    '''
+    """
     with open(path, mode=mode, encoding=encoding) as infile:
         for row in iter_csv_stream(infile, fieldnames=fieldnames, sniff=sniff, *args, **kwargs):
             yield row
@@ -162,11 +161,11 @@ def read_tsv_iter(path, *args, **kwargs):
 
 
 def read_csv(path, fieldnames=None, sniff=True, encoding='utf-8', *args, **kwargs):
-    ''' Read CSV rows as table from a file.
+    """ Read CSV rows as table from a file.
     By default, csv.reader() will be used any output will be a list of lists.
     If fieldnames is provided, DictReader will be used and output will be list of OrderedDict instead.
     CSV sniffing (dialect detection) is enabled by default, set sniff=False to switch it off.
-    '''
+    """
     return list(r for r in read_csv_iter(path, fieldnames=fieldnames, sniff=sniff, encoding=encoding, *args, **kwargs))
 
 
@@ -175,7 +174,7 @@ def read_tsv(path, *args, **kwargs):
 
 
 def write_csv(path, rows, dialect='excel', fieldnames=None, quoting=csv.QUOTE_ALL, extrasaction='ignore', *args, **kwargs):
-    ''' Write rows data to a CSV file (with or without fieldnames) '''
+    """ Write rows data to a CSV file (with or without fieldnames) """
     if not quoting:
         quoting = csv.QUOTE_MINIMAL
     if 'lineterminator' not in kwargs:
@@ -214,7 +213,7 @@ class CSV(object):
 
     @staticmethod
     def write(file_name, rows, header=None, *args, **kwargs):
-        ''' Write rows data to a CSV file (with or without header) '''
+        """ Write rows data to a CSV file (with or without header) """
         warnings.warn("chirptext.io.CSV is deprecated and will be removed in near future. Use chio.write_csv() instead.", DeprecationWarning, stacklevel=2)
         write_csv(file_name, rows, fieldnames=header, *args, **kwargs)
 
