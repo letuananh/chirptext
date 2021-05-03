@@ -1,20 +1,18 @@
 # -*- coding: utf-8 -*-
 
-'''
+"""
 Functions for processing Japanese text
+"""
 
-Latest version can be found at https://github.com/letuananh/chirptext
-
-References:
-    MeCab homepage:
-        http://taku910.github.io/mecab/
-
-MeCab, デコ, got the joke?
-* This script was a part of omwtk
-
-:copyright: (c) 2012 Le Tuan Anh <tuananh.ke@gmail.com>
-:license: MIT, see LICENSE for more details.
-'''
+# Reference
+#   - MeCab homepage: http://taku910.github.io/mecab/
+#
+# MeCab, デコ, got the joke?
+# This script was adopted from https://github.com/letuananh/omwtk
+#
+# Latest version can be found at https://github.com/letuananh/chirptext
+# :copyright: (c) 2012 Le Tuan Anh <tuananh.ke@gmail.com>
+# :license: MIT, see LICENSE for more details.
 
 import re
 import os
@@ -65,9 +63,9 @@ def simple_kata2hira(input_str):
 
 
 def is_kana(text):
-    ''' Check if a text if written in kana only (hiragana & katakana)
+    """ Check if a text if written in kana only (hiragana & katakana)
     if text is empty then return True
-    '''
+    """
     if text is None:
         raise ValueError("text cannot be None")
     for c in text:
@@ -116,7 +114,7 @@ class MeCabToken(object):
         return self.reading and self.reading != self.surface and self.reading_hira() != self.surface
 
     def pos3(self):
-        ''' Use pos-sc1-sc2 as POS '''
+        """ Use pos-sc1-sc2 as POS """
         parts = [self.pos]
         if self.sc1 and self.sc1 != '*':
             parts.append(self.sc1)
@@ -125,7 +123,7 @@ class MeCabToken(object):
         return '-'.join(parts)
 
     def to_ruby(self):
-        ''' Convert one MeCabToken into HTML '''
+        """ Convert one MeCabToken into HTML """
         if self.need_ruby():
             surface = self.surface
             reading = self.reading_hira()
@@ -198,7 +196,7 @@ class MeCabSent(object):
 
     @staticmethod
     def parse(text, **kwargs):
-        ''' Use mecab to parse one sentence '''
+        """ Use mecab to parse one sentence """
         mecab_out = _internal_mecab_parse(text, **kwargs).splitlines()
         tokens = [MeCabToken.parse(x) for x in mecab_out]
         return MeCabSent(text, tokens)
@@ -217,7 +215,7 @@ class DekoText(object):
         return self.sents[name]
 
     def add(self, sentence_text, **kwargs):
-        ''' Parse a text string and add it to this doc '''
+        """ Parse a text string and add it to this doc """
         sent = MeCabSent.parse(sentence_text, **kwargs)
         self.sents.append(sent)
         return sent
@@ -253,7 +251,7 @@ class DekoText(object):
 # -------------------------------------------------------------------------------
 
 def _lines2mecab(lines, **kwargs):
-    ''' Use mecab to parse many lines '''
+    """ Use mecab to parse many lines """
     sents = []
     for line in lines:
         sent = MeCabSent.parse(line, **kwargs)
@@ -280,7 +278,7 @@ def lines2mecab(lines, **kwargs):
 # -------------------------------------------------------------------------------
 
 def tokenize(content, use_wakati=False, **kwargs):
-    ''' Sentence to a list of tokens (string) '''
+    """ Sentence to a list of tokens (string) """
     if use_wakati:
         return wakati(content).split(' ')
     else:
@@ -289,7 +287,7 @@ def tokenize(content, use_wakati=False, **kwargs):
 
 # TODO: Need to calculate cfrom, cto to get surfaces
 def tokenize_sent(mtokens, raw='', auto_strip=True):
-    ''' Tokenize a text to multiple sentences '''
+    """ Tokenize a text to multiple sentences """
     sents = []
     bucket = []
     cfrom = 0
@@ -326,7 +324,7 @@ def tokenize_sent(mtokens, raw='', auto_strip=True):
 
 
 def analyse(content, splitlines=True, format=None, **kwargs):
-    ''' Japanese text > tokenize/txt/html '''
+    """ Japanese text > tokenize/txt/html """
     sents = DekoText.parse(content, splitlines=splitlines, **kwargs)
     doc = []
     final = sents

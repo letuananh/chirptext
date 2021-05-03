@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 
-''' Text Annotation module
+""" Text Annotation (texttaglib - TTL) module
+"""
 
-Latest version can be found at https://github.com/letuananh/chirptext
-
-:copyright: (c) 2012 Le Tuan Anh <tuananh.ke@gmail.com>
-:license: MIT, see LICENSE for more details.
-'''
+# Latest version can be found at https://github.com/letuananh/chirptext
+# :copyright: (c) 2012 Le Tuan Anh <tuananh.ke@gmail.com>
+# :license: MIT, see LICENSE for more details.
 
 import os
 import logging
@@ -45,7 +44,7 @@ def getLogger():
 
 class Tag(DataObject):
 
-    ''' A general tag which can be used for annotating different linguistic feature '''
+    """ A general tag which can be used for annotating different linguistic feature """
     NONE = ''
     DEFAULT = 'n/a'
     GOLD = 'gold'
@@ -85,7 +84,7 @@ class Tag(DataObject):
 
     @property
     def type(self):
-        ''' Alias for tagtype '''
+        """ Alias for tagtype """
         return self.tagtype
 
     @type.setter
@@ -94,7 +93,7 @@ class Tag(DataObject):
 
     @property
     def text(self):
-        ''' Alias for label '''
+        """ Alias for label """
         return self.label
 
     @text.setter
@@ -168,7 +167,7 @@ class Sentence(DataObject):
 
     @property
     def tags(self):
-        ''' Sentence level tags '''
+        """ Sentence level tags """
         return self.__tags
 
     def tagmap(self):
@@ -193,7 +192,7 @@ class Sentence(DataObject):
         return self.__concepts
 
     def tcmap(self):
-        ''' Create a tokens-concepts map '''
+        """ Create a tokens-concepts map """
         tcmap = dd(list)
         for concept in self.__concept_map.values():
             for w in concept.tokens:
@@ -201,33 +200,33 @@ class Sentence(DataObject):
         return tcmap
 
     def mwe(self):
-        ''' Return a generator of concepts that are linked to more than 1 token. '''
+        """ Return a generator of concepts that are linked to more than 1 token. """
         return (c for c in self.__concepts if len(c.tokens) > 1)
 
     def msw(self):
-        ''' Return a generator of tokens with more than one sense. '''
+        """ Return a generator of tokens with more than one sense. """
         return (t for t, c in self.tcmap().items() if len(c) > 1)
 
     def surface(self, tag):
-        ''' Get surface string that is associated with a tag object '''
+        """ Get surface string that is associated with a tag object """
         if tag.cfrom is not None and tag.cto is not None and tag.cfrom >= 0 and tag.cto >= 0:
             return self.text[tag.cfrom:tag.cto]
         else:
             return ''
 
     def new_tag(self, label, cfrom=-1, cto=-1, tagtype='', **kwargs):
-        ''' Create a sentence-level tag '''
+        """ Create a sentence-level tag """
         tag_obj = Tag(label, cfrom, cto, tagtype=tagtype, **kwargs)
         return self.add_tag(tag_obj)
 
     def get_tag(self, tagtype, auto_create=False, **kwargs):
-        ''' Get the first tag with a type in this sentence
+        """ Get the first tag with a type in this sentence
             use get_tag('mytype', default='somevalue') to get a new tag with default value 
             when there is no tag with this type. This new tag object will NOT be stored in the current sentence by default.
            
             use auto_create=True to auto create a new tag in the current sentence using the 'default' value.
             If there is no default value provided, an empty string '' will be used.
-        '''
+        """
         for t in self.__tags:
             if t.tagtype == tagtype:
                 return t
@@ -239,11 +238,11 @@ class Sentence(DataObject):
             raise LookupError("Sentence {} was not tagged with the speficied tagtype ({})".format(self, tagtype))
 
     def get_tags(self, tagtype, **kwargs):
-        ''' Get all tags of a type '''
+        """ Get all tags of a type """
         return [t for t in self.__tags if t.tagtype == tagtype]
 
     def add_tag(self, tag_obj):
-        ''' Add an existing tag object into this sentence '''
+        """ Add an existing tag object into this sentence """
         self.tags.append(tag_obj)
         return tag_obj
 
@@ -252,7 +251,7 @@ class Sentence(DataObject):
         return self.add_token_object(tk)
 
     def add_token_object(self, token):
-        ''' Add a token object into this sentence '''
+        """ Add a token object into this sentence """
         token.sent = self  # take ownership of given token
         self.__tokens.append(token)
         return token
@@ -264,9 +263,9 @@ class Sentence(DataObject):
         return ID
 
     def new_concept(self, tag, clemma="", tokens=None, cidx=None, **kwargs):
-        ''' Create a new concept object and add it to concept list
+        """ Create a new concept object and add it to concept list
         tokens can be a list of Token objects or token indices
-        '''
+        """
         if cidx is None:
             cidx = self.new_concept_id()
         if tokens:
@@ -275,7 +274,7 @@ class Sentence(DataObject):
         return self.add_concept(c)
 
     def add_concept(self, concept_obj):
-        ''' Add a concept to current concept list '''
+        """ Add a concept to current concept list """
         if concept_obj is None:
             raise Exception("Concept object cannot be None")
         elif concept_obj in self.__concepts:
@@ -299,7 +298,7 @@ class Sentence(DataObject):
         return concept_obj
 
     def concept(self, cid, **kwargs):
-        ''' Get concept by concept ID '''
+        """ Get concept by concept ID """
         if cid not in self.__concept_map:
             if 'default' in kwargs:
                 return kwargs['default']
@@ -325,7 +324,7 @@ class Sentence(DataObject):
         return sent_dict
 
     def import_tokens(self, tokens, import_hook=None, ignorecase=True):
-        ''' Import a list of string as tokens '''
+        """ Import a list of string as tokens """
         text = self.text.lower() if ignorecase else self.text
         has_hooker = import_hook and callable(import_hook)
         cfrom = 0
@@ -394,7 +393,7 @@ class Sentence(DataObject):
 class Token(DataObject):
 
     def __init__(self, text='', cfrom=-1, cto=-1, sent=None, pos=None, lemma=None, comment=None, **kwargs):
-        ''' A token (e.g. a word in a sentence) '''
+        """ A token (e.g. a word in a sentence) """
         super().__init__(**kwargs)
         self.sent = sent
         self.__tags = []
@@ -430,7 +429,7 @@ class Token(DataObject):
         return "`{l}`<{f}:{t}>".format(l=self.text, f=self.cfrom, t=self.cto)
 
     def tag_map(self):
-        ''' Build a map from tagtype to list of tags '''
+        """ Build a map from tagtype to list of tags """
         tm = dd(list)
         for tag in self.__tags:
             tm[tag.tagtype].append(tag)
@@ -440,7 +439,7 @@ class Token(DataObject):
         return "`{l}`<{f}:{t}>{tgs}".format(l=self.text, f=self.cfrom, t=self.cto, tgs=self.__tags if self.__tags else '')
 
     def new_tag(self, label, cfrom=None, cto=None, tagtype=None, **kwargs):
-        ''' Create a new tag on this token '''
+        """ Create a new tag on this token """
         if cfrom is None:
             cfrom = self.cfrom
         if cto is None:
@@ -449,13 +448,13 @@ class Token(DataObject):
         return self.add_tag(tag)
 
     def get_tag(self, tagtype, auto_create=False, **kwargs):
-        ''' Get the first tag with a type in this token
+        """ Get the first tag with a type in this token
             use get_tag('mytype', default='somevalue') to get a new tag with default value 
             when there is no tag with this type. This new tag object will NOT be stored in the token by default.
            
             use auto_create=True to auto create a new tag in the current token using the 'default' value.
             If there is no default value provided, an empty string '' will be used.
-        '''
+        """
         for t in self.__tags:
             if t.tagtype == tagtype:
                 return t
@@ -467,21 +466,21 @@ class Token(DataObject):
             raise LookupError("Token {} is not tagged with the speficied tagtype ({})".format(self, tagtype))
 
     def get_tags(self, tagtype, **kwargs):
-        ''' Get all token-level tags with the specified tagtype '''
+        """ Get all token-level tags with the specified tagtype """
         return [t for t in self.__tags if t.tagtype == tagtype]
 
     def add_tag(self, tag_obj):
-        ''' Add an existing tag object into this token '''
+        """ Add an existing tag object into this token """
         self.__tags.append(tag_obj)
         return tag_obj
 
     def find(self, tagtype, **kwargs):
-        ''' (Deprecated) Return the first tag with a given tagtype in this token '''
+        """ (Deprecated) Return the first tag with a given tagtype in this token """
         warnings.warn("Token.find() is deprecated and will be removed in near future. Use Token.get_tag() instead", DeprecationWarning, stacklevel=2)
         return self.get_tag(tagtype, **kwargs)
 
     def find_all(self, tagtype, **kwargs):
-        ''' (Deprecated) Find all token-level tags with the specified tagtype '''
+        """ (Deprecated) Find all token-level tags with the specified tagtype """
         warnings.warn("Token.find_all() is deprecated and will be removed in near future. Use Token.get_tags() instead", DeprecationWarning, stacklevel=2)
         return self.get_tags(tagtype, **kwargs)
 
@@ -619,8 +618,8 @@ class Document(DataObject):
         return self.__sents[idx]
 
     def get(self, sent_id, **kwargs):
-        ''' If sent_id exists, remove and return the associated sentence object else return default.
-        If no default is provided, KeyError will be raised.'''
+        """ If sent_id exists, remove and return the associated sentence object else return default.
+        If no default is provided, KeyError will be raised."""
         if sent_id is not None and not isinstance(sent_id, int):
             sent_id = int(sent_id)
         if sent_id is None or not self.has_id(sent_id):
@@ -634,7 +633,7 @@ class Document(DataObject):
         return int(sent_id) in self.__sent_map
 
     def add_sent(self, sent_obj):
-        ''' Add a ttl.Sentence object to this document '''
+        """ Add a ttl.Sentence object to this document """
         if sent_obj is None:
             raise Exception("Sentence object cannot be None")
         elif sent_obj.ID is None:
@@ -647,14 +646,14 @@ class Document(DataObject):
         return sent_obj
 
     def new_sent(self, text, ID=None, **kwargs):
-        ''' Create a new sentence and add it to this Document '''
+        """ Create a new sentence and add it to this Document """
         if ID is None:
             ID = next(self.__idgen)
         return self.add_sent(Sentence(text, ID=ID, **kwargs))
 
     def pop(self, sent_id, **kwargs):
-        ''' If sent_id exists, remove and return the associated sentence object else return default.
-        If no default is provided, KeyError will be raised.'''
+        """ If sent_id exists, remove and return the associated sentence object else return default.
+        If no default is provided, KeyError will be raised."""
         if sent_id is not None and not isinstance(sent_id, int):
             sent_id = int(sent_id)
         if not self.has_id(sent_id):
@@ -670,7 +669,7 @@ class Document(DataObject):
             return sent_obj
 
     def read(self):
-        ''' Read tagged doc from mutliple files (sents, tokens, concepts, links, tags) '''
+        """ Read tagged doc from mutliple files (sents, tokens, concepts, links, tags) """
         warnings.warn("Document.read() is deprecated and will be removed in near future.", DeprecationWarning, stacklevel=2)
         with TxtReader.from_doc(self) as reader:
             reader.read(self)
@@ -678,16 +677,16 @@ class Document(DataObject):
 
     @staticmethod
     def read_ttl(path):
-        ''' Helper function to read Document in TTL-TXT format (i.e. ${docname}_*.txt)
+        """ Helper function to read Document in TTL-TXT format (i.e. ${docname}_*.txt)
         E.g. Document.read_ttl('~/data/myfile') is the same as Document('myfile', '~/data/').read()
-        '''
+        """
         warnings.warn("Document.read_ttl() is deprecated and will be removed in near future. Use read() instead", DeprecationWarning, stacklevel=2)
         doc_path = os.path.dirname(path)
         doc_name = os.path.basename(path)
         return Document(doc_name, doc_path).read()
 
     def write_ttl(self):
-        ''' Helper function to write doc to TTL-TXT format '''
+        """ Helper function to write doc to TTL-TXT format """
         with TxtWriter.from_doc(self) as writer:
             writer.write_doc(self)
 
@@ -754,7 +753,7 @@ class TxtReader(object):
         self.close()
 
     def read(self, doc=None):
-        ''' Read tagged doc from mutliple files (sents, tokens, concepts, links, tags) '''
+        """ Read tagged doc from mutliple files (sents, tokens, concepts, links, tags) """
         if not self.sent_stream:
             raise Exception("There is no sentence data stream available")
         if doc is None:
@@ -967,9 +966,9 @@ def write_json(path, doc, ensure_ascii=False, **kwargs):
 
 
 def read(path, mode='tsv'):
-    ''' Helper function to read Document in TTL-TXT format (i.e. ${docname}_*.txt)
+    """ Helper function to read Document in TTL-TXT format (i.e. ${docname}_*.txt)
     E.g. read('~/data/myfile') is the same as Document('myfile', '~/data/').read()
-    '''
+    """
     if mode == 'tsv':
         doc_path = os.path.dirname(path)
         doc_name = os.path.basename(path)
@@ -985,7 +984,7 @@ def read(path, mode='tsv'):
 
 
 def write(path, doc, mode=MODE_TSV, **kwargs):
-    ''' Helper function to write doc to TTL-TXT format '''
+    """ Helper function to write doc to TTL-TXT format """
     if mode == MODE_TSV:
         with TxtWriter.from_path(path) as writer:
             writer.write_doc(doc)

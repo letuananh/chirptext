@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
-''' Miscellaneous tools for text processing
+"""
+Miscellaneous tools for text processing
+"""
 
-Latest version can be found at https://github.com/letuananh/chirptext
-
-:copyright: (c) 2012 Le Tuan Anh <tuananh.ke@gmail.com>
-:license: MIT, see LICENSE for more details.
-'''
+# This code is a part of chirptext library: https://github.com/letuananh/chirptext
+# :copyright: (c) 2012 Le Tuan Anh <tuananh.ke@gmail.com>
+# :license: MIT, see LICENSE for more details.
 
 import os
 import io
@@ -47,7 +47,7 @@ def uniquify(a_list):
 
 
 def hamilton_allocate(numbers, total=100, precision=2):
-    ''' Use largest remainder (Hamilton) method to make sure rounded percentages add up to 100 
+    """ Use largest remainder (Hamilton) method to make sure rounded percentages add up to 100 
     >>> hamilton_allocate((33.33, 33.33, 33.33)) 
     [33.34, 33.33, 33.33]
     >>> hamilton_allocate((24.99, 24.99, 24.99, 24.99))
@@ -56,7 +56,7 @@ def hamilton_allocate(numbers, total=100, precision=2):
     [76.69, 20.83, 2.48]
     >>> hamilton_allocate([13.626332, 47.989636, 9.596008, 28.788024])
     [13.63, 47.99, 9.59, 28.79]
-    '''
+    """
     scale = 10 ** precision
     floored = [[math.floor(n * scale), n * scale - math.floor(n * scale), idx] for idx, n in enumerate(numbers)]
     remainder = (total * scale) - sum(n[0] for n in floored)
@@ -73,8 +73,8 @@ def hamilton_allocate(numbers, total=100, precision=2):
 
 
 def header(*msg, level='h1', separator=" ", print_out=print):
-    ''' Print header block in text mode
-    '''
+    """ Print header block in text mode
+    """
     out_string = separator.join(str(x) for x in msg)
     if level == 'h0':
         # box_len = 80 if len(msg) < 80 else len(msg)
@@ -95,8 +95,8 @@ def header(*msg, level='h1', separator=" ", print_out=print):
 
 
 def is_number(s):
-    ''' Check if something is a number
-    '''
+    """ Check if something is a number
+    """
     try:
         if str(float(s)) != 'nan':
             return True
@@ -113,13 +113,13 @@ def grouper(iterable, n, fillvalue=None):
 ###############################################################################
 
 class Value(object):
-    ''' Value holder '''
+    """ Value holder """
     def __init__(self, value=None):
         self.value = value
 
 
 class piter(object):
-    ''' Peep-able iterator '''
+    """ Peep-able iterator """
     def __init__(self, iterable):
         self.__iterable = iter(iterable)
         self.__current = None
@@ -133,7 +133,7 @@ class piter(object):
         return self.__peep
 
     def fetch(self, value_obj=None):
-        ''' Fetch the next two values '''
+        """ Fetch the next two values """
         val = None
         try:
             val = next(self.__iterable)
@@ -163,8 +163,8 @@ class piter(object):
 
 
 class Counter(PythonCounter):
-    ''' Powerful counter class
-    '''
+    """ Powerful counter class
+    """
     def __init__(self, priority=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.__priority = priority if priority else []
@@ -181,9 +181,9 @@ class Counter(PythonCounter):
         self.priority = list(priority)
 
     def get_report_order(self):
-        ''' Keys are sorted based on report order (i.e. some keys to be shown first)
+        """ Keys are sorted based on report order (i.e. some keys to be shown first)
             Related: see sorted_by_count
-        '''
+        """
         order_list = []
         for x in self.__priority:
             order_list.append([x, self[x]])
@@ -211,8 +211,8 @@ class Counter(PythonCounter):
 
 
 class Timer:
-    ''' Measure tasks' runtime
-    '''
+    """ Measure tasks' runtime
+    """
     def __init__(self, logger=None, report=None):
         self.start_time = time.time()
         self.end_time = time.time()
@@ -225,7 +225,7 @@ class Timer:
         return self.__logger if self.__logger is not None else getLogger()
 
     def exec_time(self):
-        ''' Calculate run time '''
+        """ Calculate run time """
         return self.end_time - self.start_time
 
     def log(self, action, desc=None):
@@ -258,8 +258,8 @@ class Timer:
 ###############################################################################
 
 class StringTool:
-    ''' Common string function
-    '''
+    """ Common string function
+    """
     @staticmethod
     def strip(a_str):
         return a_str.strip() if a_str else ''
@@ -299,15 +299,15 @@ class TextReport:
     STDOUT = '*stdout*'
     STRINGIO = '*string*'
 
-    ''' Helper for creating text report with indentation, tables and flexible output (to stdout or a file)
-    '''
+    """ Helper for creating text report with indentation, tables and flexible output (to stdout or a file)
+    """
     def __init__(self, path=None, mode='w', name=None, auto_flush=True, encoding='utf8'):
-        ''' Create a text report.
+        """ Create a text report.
 
         Arguments:
             report_path -- Path to report file
             mode        -- a for append, w (default) for create from scratch (overwrite existing file)
-        '''
+        """
         if not path or path == TextReport.STDOUT:
             self.__path = TextReport.STDOUT
             self.__report_file = sys.stdout
@@ -342,11 +342,11 @@ class TextReport:
     
     @property
     def file(self):
-        ''' An alias for stream '''
+        """ An alias for stream """
         return self.__report_file
 
     def content(self):
-        ''' Return report content as a string if mode == STRINGIO else an empty string '''
+        """ Return report content as a string if mode == STRINGIO else an empty string """
         if isinstance(self.__report_file, io.StringIO):
             return self.__report_file.getvalue()
         else:
@@ -388,7 +388,7 @@ class TextReport:
 
     @staticmethod
     def null():
-        ''' Get a dev null report (print to nowhere)'''
+        """ Get a dev null report (print to nowhere)"""
         return TextReport('/dev/null')
 
     @staticmethod
@@ -399,8 +399,8 @@ class TextReport:
 ###############################################################################
 
 class FileHub:
-    ''' A helper class for working with multiple text reports at the same time
-    '''
+    """ A helper class for working with multiple text reports at the same time
+    """
     def __init__(self, *filenames, working_dir='.', default_mode='a', ext='txt'):
         self.files = {}
         self.ext = ext if ext else ''
@@ -441,8 +441,8 @@ class FileHub:
 ###############################################################################
 
 class Table:
-    ''' A text-based table which can be used with TextReport
-    '''
+    """ A text-based table which can be used with TextReport
+    """
     def __init__(self, header=True, padding=True, NoneValue=None):
         self.rows = []
         self.col_count = 0
@@ -475,8 +475,8 @@ class Table:
         return [x[col_id] if x[col_id] is not None else self.NoneValue for x in self.rows]
 
     def format(self):
-        ''' Format table to print out
-        '''
+        """ Format table to print out
+        """
         self.max_lengths = []
         for row in self.rows:
             if len(self.max_lengths) < len(row):
@@ -522,14 +522,14 @@ class Table:
 class FileHelper:
     @staticmethod
     def getfilename(file_path):
-        ''' Get filename without extension
-        '''
+        """ Get filename without extension
+        """
         return os.path.splitext(os.path.basename(file_path))[0]
 
     @staticmethod
     def getfullfilename(file_path):
-        ''' Get full filename (with extension)
-        '''
+        """ Get full filename (with extension)
+        """
         warnings.warn("getfullfilename() is deprecated and will be removed in near future. Use chirptext.io.write_file() instead", DeprecationWarning)
         if file_path:
             return os.path.basename(file_path)
@@ -538,7 +538,7 @@ class FileHelper:
 
     @staticmethod
     def replace_ext(file_path, ext):
-        ''' Change extension of a file_path to something else (provide None to remove) '''
+        """ Change extension of a file_path to something else (provide None to remove) """
         if not file_path:
             raise Exception("File path cannot be empty")
         dirname = os.path.dirname(file_path)
@@ -549,7 +549,7 @@ class FileHelper:
 
     @staticmethod
     def replace_name(file_path, new_name):
-        ''' Change the file name in a path but keep the extension '''
+        """ Change the file name in a path but keep the extension """
         if not file_path:
             raise Exception("File path cannot be empty")
         elif not new_name:
@@ -573,19 +573,19 @@ class FileHelper:
 
     @staticmethod
     def get_child_folders(path):
-        ''' Get all child folders of a folder '''
+        """ Get all child folders of a folder """
         path = FileHelper.abspath(path)
         return [dirname for dirname in os.listdir(path) if os.path.isdir(os.path.join(path, dirname))]
 
     @staticmethod
     def get_child_files(path):
-        ''' Get all child files of a folder '''
+        """ Get all child files of a folder """
         path = FileHelper.abspath(path)
         return [filename for filename in os.listdir(path) if os.path.isfile(os.path.join(path, filename))]
 
     @staticmethod
     def remove_file(filepath):
-        ''' Delete a file '''
+        """ Delete a file """
         try:
             os.remove(os.path.abspath(os.path.expanduser(filepath)))
         except OSError as e:
@@ -605,9 +605,9 @@ class FileHelper:
 
 class AppConfig(object):
 
-    ''' Application Configuration Helper
+    """ Application Configuration Helper
 This class supports guessing configuration file location, and reads either INI (default) or JSON format.
-    '''
+    """
     JSON = 'json'
     INI = 'ini'  # Python INI config file
     LOC_TEMPLATE = ['{wd}/.{n}.{mode}', '{wd}/{n}.{mode}',
@@ -632,20 +632,20 @@ This class supports guessing configuration file location, and reads either INI (
 
     @property
     def config_path(self):
-        ''' Path to config file '''
+        """ Path to config file """
         return self.__config_path
 
     def potentials(self):
         return self.__potential
 
     def add_potential(self, *patterns):
-        ''' Add a potential config file pattern '''
+        """ Add a potential config file pattern """
         for ptn in patterns:
             _p = ptn.format(wd=self.working_dir, n=self.__name, mode=self.__mode)
             self.__potential.append(_p)
 
     def locate_config(self):
-        ''' Locate config file '''
+        """ Locate config file """
         for f in self.__potential:
             f = FileHelper.abspath(f)
             if os.path.isfile(f):
@@ -653,12 +653,16 @@ This class supports guessing configuration file location, and reads either INI (
         return None
 
     def read_config(self, key, strict=False, **kwargs):
-        ''' Read a config by key. Default value can be passed by using the kwarg `default`
-            For example: read_config(key, default='my value')
-            Arguments:
-                default -- Optional kwarg to set default value when key could not be found
-                strict -- Set to True to throw an exception if config key was not set. Defaulted to False
-        '''
+        """ Read a config by key
+
+        Default value can be passed by using the kwarg `default`
+
+        >>> read_config(key, default='my value')
+
+        :param key: configuration key
+        :param strict: Set to True to raise KeyError if config key was not set. Defaulted to False
+        :param default: Optional kwarg to set default value when key could not be found
+        """
         if self.config and key in self.config:
             return self.config[key]
         elif 'default' in kwargs:
@@ -671,7 +675,7 @@ This class supports guessing configuration file location, and reads either INI (
     
     @property
     def config(self):
-        ''' Read config automatically if required '''
+        """ Read config automatically if required """
         if self.__config is None:
             config_path = self.locate_config()
             if config_path:
@@ -680,7 +684,7 @@ This class supports guessing configuration file location, and reads either INI (
         return self.__config
 
     def read_file(self, file_path):
-        ''' Read a configuration file and return configuration data '''
+        """ Read a configuration file and return configuration data """
         getLogger().info("Loading app config from {} file: {}".format(self.__mode, file_path))
         if self.__mode == AppConfig.JSON:
             return json.loads(read_file(file_path), object_pairs_hook=OrderedDict)
@@ -690,7 +694,7 @@ This class supports guessing configuration file location, and reads either INI (
             return config
 
     def load(self, file_path):
-        ''' Load configuration from a specific file '''
+        """ Load configuration from a specific file """
         self.clear()
         self.__config = self.read_file(file_path)
 
