@@ -135,7 +135,6 @@ class TagSet:
         def __setitem__(self, type, value):
             """ Set the first tag object in the tag list of a given type to key if exist, else create a new tag """
             _old = self[type]
-            _new = self.__tagset.new_tag(value, type)
             if not _old:
                 # create a new tag
                 self.__tagset.new_tag(value, type)
@@ -151,45 +150,15 @@ class TagSet:
             """ Set the first tag object in the tag list of a given type to key if exist, else create a new tag """
             self[type] = value
 
-    class TagListMap:
-        def __init__(self, tagset):
-            self.__dict__["_TagListMap__tagset"] = tagset
-            self.__dict__["_TagListMap__map"] = dd(list)
-            print(self.__dict__)
-
-        def __contains__(self, type):
-            """ Check if this TagList contains at least a tag with the given type """
-            print(self.__map)
-            return type in self.__map
-
-        def __getitem__(self, type):
-            """ Get a list of all tags with the given type """
-            return self.__map[type] if type in self.__map else None
-
-        def __getattr__(self, type):
-            return self[type] if type in self.__map else None
-
-        def append(self, tag):
-            self.__map[tag.type].append(tag)
-
-        def get_tags(self, type):
-            """ Get all tags of a given type """
-            return self[type]
-
     def __init__(self):
         self.__dict__["_TagSet__tags"] = []
         self.__dict__["_TagSet__tagmap"] = TagSet.TagMap(self)
-        self.__dict__["_TagSet__taglist_map"] = TagSet.TagListMap(self)
+        self.__dict__["_TagSet__tagsmap"] = dd(list)
 
     @property
     def tag(self):
         """ Interact with first tag directly """
         return self.__tagmap
-
-    @property
-    def tags(self):
-        """ Access the full tag list """
-        return self.__taglist_map
 
     def __len__(self):
         """ Number of tags in this object """
@@ -205,16 +174,17 @@ class TagSet:
 
     def __getattr__(self, type):
         """ Get the first tag of a given type if it exists"""
-        return self.__tagmap[type] if type in self.__tagmap else None
+        return self[type]
 
     def __setattr__(self, type, value):
         """ Set the first tag of a given type """
-        if self.__tagmap is not None:
-            self[type] = value
+        self[type] = value
 
     def __contains__(self, type):
         """ Check if there is at least a tag with a type """
-        return type in self.__taglist_map
+        print(f"checking type {type} in self.__tagsmap = {self.__tagsmap}")
+        return type in self.__tagsmap
+        raise Exception()
 
     def __iter__(self):
         """ Loop through all tags in this set """
@@ -224,22 +194,25 @@ class TagSet:
         """ Create a new tag """
         _tag = Tag(value=value, type=type)
         self.__tags.append(_tag)
-        self.__taglist_map.append(_tag)
+        self._append(_tag)
 
     def replace(self, old_tag, new_tag):
         """ Replace an existing tag with a new tag """
         self.__tags.remove(old_tag)
         self.__tags.insert(new_tag)
         if old_tag.type == new_tag.type:
-            _taglist = self.__taglist_map[old_tag.key]
+            _taglist = self.__tagsmap[old_tag.key]
             _taglist[_taglist.index(old_tag)] = new_tag
         else:
-            self.__taglist_map[old_tag.key].remove(old_tag)
-            self.__taglist_map[new_tag.key].append(new_tag)
+            self.__tagsmap[old_tag.key].remove(old_tag)
+            self.__tagsmap[new_tag.key].append(new_tag)
+
+    def _append(self, tag):
+        self.__tagsmap[tag.type].append(tag)
 
     def get_tags(self, type):
         """ Get all tags of a given type """
-        return self.__taglist_map.get_tags(type)
+        return self.__tagsmap[type]
 
     def to_dict(self, *args, **kwargs):
         """ Create a list of dicts from all tag objects """
