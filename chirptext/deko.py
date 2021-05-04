@@ -184,7 +184,7 @@ class MeCabSent(object):
 
     def to_ttl(self):
         tsent = ttl.Sentence(self.surface)
-        tsent.import_tokens(self.words)
+        tsent._import_tokens(self.words)
         for mtk, tk in zip((tk for tk in self if not tk.is_eos), tsent):
             tk.pos = mtk.pos3()
             if mtk.root and mtk.root != '*':
@@ -236,7 +236,7 @@ class DekoText(object):
     def to_ttl(self, name=None):
         doc = ttl.Document(name=name if name else self.name)
         for sent in self.sents:
-            doc.add_sent(sent.to_ttl())
+            doc._add_sent_obj(sent.to_ttl())
         return doc
 
     @staticmethod

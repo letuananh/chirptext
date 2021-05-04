@@ -56,17 +56,17 @@ class TestBasicModel(unittest.TestCase):
         self.assertTrue(len(tags.pos), 1)
         self.assertIsInstance(tags.pos, list)
         self.assertIsInstance(tags.pos[0], ttl.Tag)
-        self.assertEqual(tags.tag.pos.value, "NN")
-        self.assertEqual(tags.tag.pos.type, "pos")
-        self.assertEqual(tags.tag.pos.source, "manual")
+        self.assertEqual(tags.gold.pos.value, "NN")
+        self.assertEqual(tags.gold.pos.type, "pos")
+        self.assertEqual(tags.gold.pos.source, "manual")
         # replace tag
-        tags.tag.pos = "NNP"
+        tags.gold.pos = "NNP"
         self.assertTrue(len(tags.pos), 1)  # still at 1, because we reset it
-        self.assertEqual(tags.tag.pos.value, "NNP")
-        self.assertEqual(tags.tag.pos.type, "pos")
-        self.assertEqual(tags.tag.pos.source, "")  # source should be empty because this is a new tag
+        self.assertEqual(tags.gold.pos.value, "NNP")
+        self.assertEqual(tags.gold.pos.type, "pos")
+        self.assertEqual(tags.gold.pos.source, "")  # source should be empty because this is a new tag
         # test attr access and key access
-        self.assertEqual(tags.tag.pos, tags.tag["pos"])
+        self.assertEqual(tags.gold.pos, tags.gold["pos"])
         self.assertEqual(tags.pos, tags["pos"])
         # add another POS
         tags.add("cat-n-1", "sense")
@@ -74,7 +74,7 @@ class TestBasicModel(unittest.TestCase):
         tags.add("cat-n-3", "sense")
         tags.add("NN_", "pos")
         self.assertEqual(len(tags.pos), 2)
-        tags.tag.sense = "cat-n-4"  # set the best sense to cat-n-4
+        tags.gold.sense = "cat-n-4"  # set the best sense to cat-n-4
         self.assertEqual(len(tags.sense), 3)
         actual = set(tags.values('pos'))
         expected = {"NNP", "NN_"}
@@ -109,23 +109,23 @@ class TestBasicModel(unittest.TestCase):
     def test_sentid(self):
         doc = ttl.Document('mydoc')
         sent = doc.new_sent('First sentence.')
-        self.assertEqual(sent.ID, 1)
+        self.assertEqual(sent.ID, "1")
         sent2 = doc.new_sent('Second sentence.')
-        self.assertEqual(sent2.ID, 2)
+        self.assertEqual(sent2.ID, "2")
         # add some sentences manually
         sentm1 = ttl.Sentence('Another one', ID=3)
         sentm2 = ttl.Sentence('Another one 2', ID='5')
-        doc.add_sent(sentm1)
-        doc.add_sent(sentm2)
+        doc._add_sent_obj(sentm1)
+        doc._add_sent_obj(sentm2)
         doc.new_sent('Third sentence.')
         doc.new_sent('Fourth sentence.')
         sent5 = doc.new_sent('Fifth sentence.')
-        self.assertEqual(sent5.ID, 7)
+        self.assertEqual(sent5.ID, "6")
         # cannot add 3 again
         sent_foo = ttl.Sentence('Foo sentence.', ID=3)
-        self.assertRaises(Exception, lambda: doc.add_sent(sent_foo))
+        self.assertRaises(Exception, lambda: doc._add_sent_obj(sent_foo))
         # cannot add a None sentence
-        self.assertRaises(Exception, lambda: doc.add_sent(None))
+        self.assertRaises(Exception, lambda: doc._add_sent_obj(None))
         # document should have 5 created sentences + 2 imported sentences
         self.assertEqual(len(doc), 7)
 
@@ -139,7 +139,7 @@ class TestBasicModel(unittest.TestCase):
         tokens = 'It rains .'.split()
         s = ttl.Sentence('It rains.', tokens=tokens)
         self.assertEqual([t.text for t in s.tokens], tokens)
-        self.assertEqual(repr(s), s.text)
+        self.assertEqual(repr(s), "Sentence('It rains.')")
         self.assertEqual(str(s), s.text)
         self.assertEqual(s.surface(s[0]), 'It')
         self.assertEqual(s.surface(ttl.Tag(cfrom=-1, cto=-1)), '')
@@ -147,29 +147,24 @@ class TestBasicModel(unittest.TestCase):
         self.assertEqual(s.surface(ttl.Tag(cfrom=3, cto=-1)), '')
         self.assertEqual(s.surface(ttl.Tag(cfrom=None, cto=None)), '')
         s.ID = '1'
-        self.assertEqual(repr(s), '#1: It rains.')
-        self.assertEqual(str(s), '#1: It rains.')
+        self.assertEqual(repr(s), "Sentence(ID='1', text='It rains.')")
+        self.assertEqual(str(s), s.text)
         # tag sentence
         url = 'https://github.com/letuananh/chirptext'
-        turl = s.new_tag(url, tagtype='URL')
-        self.assertEqual(s.get_tag('URL').text, url)
-        self.assertEqual(s.tagmap(), {'URL': [turl]})
-        self.assertEqual(s.get_tags('URL'), [turl])
+        s.tag.URL = url
+        self.assertEqual(s.tag['URL'].text, url)
+        self.assertEqual(s.tag['URL'].value, url)
+        self.assertEqual(len(s.tags.URL), 1)
+        self.assertEqual(list(s.tags.values('URL')), [url])
         # test concepts
-        c = ttl.Concept(tag='02756558-v', clemma='rain')
-        s.add_concept(c)
-        self.assertRaises(Exception, lambda: s.add_concept(None))
-        self.assertRaises(Exception, lambda: s.add_concept(c))
-        c2 = ttl.Concept(tag='dummy', clemma='it')
-        c2.cidx = c.cidx
-        self.assertRaises(Exception, lambda: s.add_concept(c2))
-        c2.cidx = s.new_concept_id()
-        s.add_concept(c2)
+        c = s.concepts.add(value='02756558-v', clemma='rain')
+        self.assertRaises(Exception, lambda: s.concepts.add(None))
+        self.assertRaises(Exception, lambda: s.concepts.add(''))
+        c2 = s.concepts.add(value='dummy', clemma='it')
         self.assertEqual(len(s.concepts), 2)
-        self.assertRaises(Exception, lambda: s.pop_concept(3))
-        self.assertEqual(s.pop_concept(3, default=c2), c2)
-        self.assertEqual(s.pop_concept(c2.cidx), c2)
-        self.assertEqual(s.concepts, [c])
+        self.assertRaises(Exception, lambda: s.concept.remove(3))
+        self.assertEqual(s.concepts.remove(c2), c2)
+        self.assertEqual(list(s.concepts), [c])
 
     def test_idgen(self):
         idg = ttl.IDGenerator()
@@ -187,7 +182,7 @@ class TestBuildTags(unittest.TestCase):
         doc = ttl.Document('test', TEST_DATA)
         # add words
         sent = doc.new_sent('Some happy guard-dogs barked.', 1)
-        sent.import_tokens('Some happy guard dogs barked .'.split())
+        sent._import_tokens('Some happy guard dogs barked .'.split())
         self.assertEqual(len(sent), 6)
         # sense tagging
         sent.new_concept('01148283-a', 'happy', tokens=[sent[1]])
@@ -207,7 +202,7 @@ class TestBuildTags(unittest.TestCase):
 
     def test_sentids(self):
         doc = ttl.Document('boo')
-        doc.add_sent(ttl.Sentence('odd', ID=3))  # add sent#3 first
+        doc._add_sent_obj(ttl.Sentence('odd', ID=3))  # add sent#3 first
         doc.new_sent('foo')  # 1
         doc.new_sent('boo')  # 2
         moo = doc.new_sent('moo')  # moo will be #4 because sent #3 exists
@@ -303,15 +298,15 @@ class TestTagging(unittest.TestCase):
         self.assertRaises(Exception, lambda: self.import_tokens(sent, tokens))
         # or import half-way
         sent2 = ttl.Sentence("Cats don't like cats that meow.")
-        sent2.import_tokens(('Cats',))
+        sent2._import_tokens(('Cats',))
         tokens2 = "do n't like cats that meow .".split()
         self.assertRaises(Exception, lambda: self.import_tokens(sent, tokens2))
-        sent2.import_tokens(tokens2)  # but use import_tokens explicitly is fine
+        sent2._import_tokens(tokens2)  # but use import_tokens explicitly is fine
         self.assertEqual([t.text for t in sent2.tokens], ['Cats', 'do', "n't", 'like', 'cats', 'that', 'meow', '.'])
 
     def test_comment(self):
         sent = ttl.Sentence("Dogs bark.")
-        sent.import_tokens("Dogs bark .".split())
+        sent._import_tokens("Dogs bark .".split())
         sent.comment = 'I am a test sentence.'
         sent[0].comment = "canine"
         sent.new_concept("02084071-n", "dog", tokens=(sent[0],))
@@ -336,7 +331,7 @@ class TestTagging(unittest.TestCase):
         mecab_sent = MeCabSent.from_mecab_output(sent4, sent4_mecab)
         getLogger().debug((mecab_sent.surface, mecab_sent.words))
         # import tags
-        sent.import_tokens(mecab_sent.words)
+        sent._import_tokens(mecab_sent.words)
         for mtoken, token in zip(mecab_sent, sent.tokens):
             if mtoken.reading_hira() != token.text:
                 if token.text in ('猫', '好き'):
@@ -356,7 +351,7 @@ class TestTagging(unittest.TestCase):
 
     def test_tagged_sent_to_json(self):
         sent = ttl.Sentence("女の子は猫が好きです。")
-        sent.import_tokens("女 の 子 は 猫 が 好き です 。".split())
+        sent._import_tokens("女 の 子 は 猫 が 好き です 。".split())
         sent[0].lemma = "おんな"
         sent[2].lemma = "こ"
         sent[4].lemma = "ねこ"
@@ -415,7 +410,7 @@ class TestTagging(unittest.TestCase):
         txt = """In this way I am no doubt indirectly responsible for Dr. Grimesby Roylott's death, and I cannot say that it is likely to weigh very heavily upon my conscience." """
         words = ['in', 'this', 'way', 'i', 'am', 'no', 'doubt', 'indirectly', 'responsible', 'for', 'dr.', 'Grimesby', 'Roylott', "'s", 'death', ',', 'and', 'i', 'can', 'not', 'say', 'that', 'it', 'is', 'likely', 'to', 'weigh', 'very', 'heavily', 'upon', 'my', 'conscience', '.', '"']
         s = ttl.Sentence(txt)
-        s.import_tokens(words)
+        s._import_tokens(words)
         self.assertEqual(words, [x.text for x in s.tokens])
 
     def test_tagged_doc(self):
@@ -444,7 +439,7 @@ class TestTagging(unittest.TestCase):
     def test_recover_surface_string(self):
         s = ttl.Sentence("""a religious sect founded in the United States in 1966; based on Vedic scriptures; groups engage in joyful chanting of `Hare Krishna' and other mantras based on the name of the Hindu god Krishna; devotees usually wear saffron robes and practice vegetarianism and celibacy""")
         tokens = ['a', 'religious', 'sect', 'founded', 'in', 'the', 'United', 'States', 'in', '1966', ';', 'based', 'on', 'Vedic', 'scriptures', ';', 'groups', 'engage', 'in', 'joyful', 'chanting', 'of', 'Hare', 'Krishna', 'and', 'other', 'mantras', 'based', 'on', 'the', 'name', 'of', 'the', 'Hindu', 'god', 'Krishna', ';', 'devotees', 'usually', 'wear', 'saffron', 'robes', 'and', 'practice', 'vegetarianism', 'and', 'celibacy']
-        s.import_tokens(tokens)
+        s._import_tokens(tokens)
         cfrom = min(x.cfrom for x in s.tokens)
         cto = max(x.cto for x in s.tokens)
         self.assertEqual(s.text, s.text[cfrom:cto])
@@ -457,7 +452,7 @@ class TestTagging(unittest.TestCase):
         for sid, (sent, mecab_output) in enumerate(zip(raws, mecab_outputs)):
             msent = MeCabSent.from_mecab_output(sent, mecab_output)
             tsent = doc.new_sent(msent.surface, sid + 1)  # sentID starts from 1
-            tsent.import_tokens(msent.words)
+            tsent._import_tokens(msent.words)
             # pos tagging
             for mtk, tk in zip(msent, tsent):
                 tk.pos = mtk.pos3()
@@ -502,7 +497,7 @@ class TestSerialization(unittest.TestCase):
         sent.flag = '0'
         sent.comment = 'written in Japanese'
         sent.new_tag('I like calico cats.', tagtype='eng')
-        sent.import_tokens('三 毛 猫 が 好き です 。'.split())
+        sent._import_tokens('三 毛 猫 が 好き です 。'.split())
         for tk, pos in zip(sent, '名詞 名詞 名詞 助詞 名詞 助動詞 記号'.split()):
             tk.pos = pos
         sent.new_concept("三毛猫", "wiki.ja:三毛猫", tokens=[0, 1, 2])
