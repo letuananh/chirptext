@@ -3,7 +3,7 @@
 """ Text Annotation (texttaglib - TTL) module
 """
 
-# Latest version can be found at https://github.com/letuananh/chirptext
+# This code is a part of chirptext library: https://github.com/letuananh/chirptext
 # :copyright: (c) 2012 Le Tuan Anh <tuananh.ke@gmail.com>
 # :license: MIT, see LICENSE for more details.
 
@@ -12,16 +12,14 @@ import json
 import logging
 import os
 import warnings
-from collections import OrderedDict
 from collections import defaultdict as dd
-from typing import TypeVar, Generic, Sequence
+from collections import Mapping
+from typing import TypeVar, Generic
 
 from . import chio
 from .anhxa import DataObject
 from .anhxa import IDGenerator
 from .chio import iter_tsv_stream
-from .leutile import FileHelper
-
 
 MODE_TSV = 'tsv'
 MODE_JSON = 'json'
@@ -40,10 +38,10 @@ class Tag(DataObject):
     ISF = 'isf'  # integrated semantic framework: https://github.com/letuananh/intsem.fx
     MECAB = "mecab"
 
-    def __init__(self, value='', type=NONE, cfrom=-1, cto=-1, source=NONE, **kwargs):
+    def __init__(self, value: str = '', type: str = NONE, cfrom=-1, cto=-1, source=NONE, **kwargs):
         super().__init__(**kwargs)
-        self.value = value
-        self.type = type  # tag type
+        self.__value = value
+        self.__type = type  # tag type
         self.__cfrom = cfrom
         self.__cto = cto
         self.source = source
@@ -56,6 +54,18 @@ class Tag(DataObject):
     @cfrom.setter
     def cfrom(self, value):
         self.__cfrom = int(value) if value is not None else None
+
+    @property
+    def value(self):
+        return self.__value
+
+    @value.setter
+    def value(self, value):
+        self.__value = value
+
+    @property
+    def type(self):
+        return self.__type
 
     @property
     def cto(self):
@@ -83,7 +93,7 @@ class Tag(DataObject):
 
     def __str__(self):
         if self.cfrom not in (-1, None) and self.cto not in (-1, None):
-            return "`{l}`<{f}:{t}>{v}".format(l=self.value, f=self.cfrom, t=self.cto, v=self.type)
+            return f"{self.type}/{self.value}[{self.cfrom}:{self.cto}]"
         else:
             return f"{self.type}/{self.value}"
 
@@ -94,21 +104,113 @@ class Tag(DataObject):
             a_dict['type'] = self.type
         if self.source:
             a_dict['source'] = self.source
-        if self.cfrom is not None and self.cfrom != -1 and self.cfrom != default_cfrom and self.cfrom >= 0:
+        if self.cfrom not in (None, -1, default_cfrom, self.parent.cfrom if self.parent else None) and self.cfrom >= 0:
             a_dict['cfrom'] = self.cfrom
-        if self.cto is not None and self.cto != -1 and self.cto != default_cto and self.cto >= 0:
+        if self.cto not in (None, -1, default_cto, self.parent.cto if self.parent else None) and self.cto >= 0:
             a_dict['cto'] = self.cto
         return a_dict
 
     @staticmethod
     def from_dict(json_dict):
         """ Create a Tag object from a dict's data """
-        tag = Tag()
-        tag.update(json_dict, 'cfrom', 'cto', 'value', 'source', 'type')
+        tag = Tag(**json_dict)
         return tag
 
 
 T = TypeVar('TagType')
+
+
+class ProtoList:
+    def __init__(self, parent, proto=None, proto_kwargs=None, proto_key="ID", index_key=False,
+                 claim_hook=None, release_hook=None, *args, **kwargs):
+        self.__parent = parent
+        self.__proto = proto
+        self.__proto_kwargs = proto_kwargs
+        self.__proto_key = proto_key
+        self.__obj_map = {}
+        self.__has_index = index_key and proto_key
+        self.__claim_hook = claim_hook
+        self.__release_hook = release_hook
+        self.__children = []
+
+    def __len__(self):
+        return len(self.__children)
+
+    def __iter__(self):
+        return iter(self.__children)
+
+    def __getitem__(self, idx):
+        if isinstance(idx, int):
+            return self.__children[idx]
+        elif self.__has_index:
+            return self.__obj_map[idx]
+        else:
+            raise IndexError("object search value has to be either sequence position (int) or key (str)")
+
+    def __contains__(self, value):
+        if self.__has_index:
+            return value in self.__children or value in self.__obj_map
+        else:
+            return value in self.__children
+
+    def new(self, *args, **kwargs):
+        """ Create a new object and add this this TokenList """
+        return self._add_obj(self.__proto(*args, sent=self.__parent, **kwargs))
+
+    def append(self, obj):
+        return self._add_obj(obj)
+
+    def extend(self, values):
+        for obj in values:
+            self.append(obj)
+
+    def insert(self, idx, obj):
+        self._add_obj(obj, idx=idx)
+
+    def index(self, *args, **kwargs):
+        return self.__children.index(*args, **kwargs)
+
+    def _add_obj(self, obj, idx=None):
+        """ [Internal function] Add an existing object into this list
+
+        Currently this function is only used for constructing structures from input streams.
+        General users should NOT use this function as it is very likely to be removed in the future
+        """
+        if self.__claim_hook:
+            self.__claim_hook(obj)
+        if self.__has_index:
+            if getattr(obj, self.__proto_key):
+                self.__obj_map[getattr(obj, self.__proto_key)] = obj
+        if idx is None:
+            self.__children.append(obj)
+        else:
+            self.__children.insert(idx, obj)
+        return obj
+
+    def by_id(self, id: str, **kwargs):
+        """ ID value has to be string """
+        for _obj in self:
+            if getattr(_obj, self.__proto_key) == id:
+                return _obj
+        if 'default' in kwargs:
+            return kwargs['default']
+        else:
+            raise IndexError("No object could be found with the given index and no default value was provided")
+
+    def remove(self, obj_ref):
+        # remove from map
+        _obj = obj_ref
+        if self.__has_index:
+            if obj_ref in self.__obj_map:
+                _obj = self.__obj_map.pop(obj_ref)
+            elif self.__proto and isinstance(obj_ref, self.__proto):
+                self.__obj_map.pop(getattr(obj_ref, self.__proto_key))
+        # remove from list
+        if _obj in self.__children:
+            self.remove(_obj)
+        if self.__release_hook:
+            self.__release_hook(_obj)
+        return _obj
 
 
 class TagSet(Generic[T]):
@@ -126,14 +228,27 @@ class TagSet(Generic[T]):
                 return None
 
         def __setitem__(self, type, value):
-            """ Set the first tag object in the tag list of a given type to key if exist, else create a new tag """
+            """ Set the first tag object in the tag list of a given type to key if exist, else create a new tag
+
+            :param type: type of the generic tag object being added
+            :param value: if value is a dict-like object, it will be unpacked into object constructor, otherwise it will be used as the tag value
+            """
             _old = self[type]
+            _kwargs = {}
+            if isinstance(value, Mapping):
+                _kwargs = value
+                if 'type' in _kwargs:
+                    if _kwargs['type'] != type:
+                        raise ValueError("Multiple values for type were provided")
+                    else:
+                        _kwargs.pop('type')
+                value = _kwargs.pop('value') if 'value' in _kwargs else ''
             if not _old:
                 # create a new tag
-                self.__tagset.add(value=value, type=type)
+                self.__tagset.new(value, type=type, **_kwargs)
             else:
                 # pop the old tag and replace it with a new one
-                self.__tagset.replace(_old, value=value, type=type)
+                self.__tagset.replace(_old, value, type=type, **_kwargs)
 
         def __getattr__(self, type) -> T:
             """ get the first tag object in the tag list of a given type if exist, else return None """
@@ -188,15 +303,22 @@ class TagSet(Generic[T]):
                 if k not in self.kwargs:
                     kwargs[k] = v
         _tag = self.__proto(*args, **kwargs)
-        if self.__parent:
+        if self.__parent is not None and self.__parent._claim:
             self.__parent._claim(_tag)
         return _tag
 
-    def add(self, value, type='', *args, **kwargs) -> T:
+    def new(self, value, type='', *args, **kwargs) -> T:
         """ Create a new generic tag object """
         if not value and not type:
             raise ValueError("Concept value and type cannot be both empty")
-        _tag = self._construct_tag(value=value, type=type, *args, **kwargs)
+        _tag = self._construct_tag(value, type, *args, **kwargs)
+        return self._append(_tag)
+
+    def _append(self, _tag):
+        """ [Internal] Add an existing tag object into the list
+
+        General users should NOT use this method as it is very likely to be removed in the future
+        """
         self.__tags.append(_tag)
         self.__tagsmap[_tag.type].append(_tag)
         return _tag
@@ -226,8 +348,11 @@ class TagSet(Generic[T]):
             return tag
 
     def pop(self, idx: int) -> T:
-        """ Remove a tag at the given index and return it """
+        """ Remove a tag at a given position and return it """
         return self.remove(self.__tags[idx])
+
+    def index(self, obj):
+        return self.__tags.index(obj)
 
     def values(self, type=None):
         """ Get all values of tags with the specified type or all tags when type is None """
@@ -263,6 +388,16 @@ class Token(DataObject):
     def __iter__(self):
         return iter(self.__tags)
 
+    def __repr__(self):
+        return "`{l}`<{f}:{t}>".format(l=self.text, f=self.cfrom, t=self.cto)
+
+    def __str__(self):
+        return "`{l}`<{f}:{t}>{tgs}".format(l=self.text, f=self.cfrom, t=self.cto, tgs=self.__tags if self.__tags else '')
+
+    @property
+    def tag(self):
+        return self.__tags.gold
+
     @property
     def tag(self):
         """ Interact with first tag (gold) directly """
@@ -283,64 +418,12 @@ class Token(DataObject):
         else:
             return ''
 
-    def __repr__(self):
-        return "`{l}`<{f}:{t}>".format(l=self.text, f=self.cfrom, t=self.cto)
-
     def tag_map(self):
         """ Build a map from tagtype to list of tags """
         tm = dd(list)
         for tag in self.__tags:
             tm[tag.type].append(tag)
         return tm
-
-    def __str__(self):
-        return "`{l}`<{f}:{t}>{tgs}".format(l=self.text, f=self.cfrom, t=self.cto, tgs=self.__tags if self.__tags else '')
-
-    def new_tag(self, label, cfrom=None, cto=None, tagtype=None, **kwargs):
-        """ Create a new tag on this token """
-        if cfrom is None:
-            cfrom = self.cfrom
-        if cto is None:
-            cto = self.cto
-        tag = Tag(value=label, type=tagtype, cfrom=cfrom, cto=cto, **kwargs)
-        return self.add_tag(tag)
-
-    def get_tag(self, tagtype, auto_create=False, **kwargs):
-        """ Get the first tag with a type in this token
-            use get_tag('mytype', default='somevalue') to get a new tag with default value
-            when there is no tag with this type. This new tag object will NOT be stored in the token by default.
-
-            use auto_create=True to auto create a new tag in the current token using the 'default' value.
-            If there is no default value provided, an empty string '' will be used.
-        """
-        for t in self.__tags:
-            if t.type == tagtype:
-                return t
-        if auto_create:
-            return self.new_tag(label='' if 'default' not in kwargs else kwargs['default'], tagtype=tagtype, **kwargs)
-        elif 'default' in kwargs:
-            return Tag(value=kwargs['default'], type=tagtype, **kwargs)
-        else:
-            raise LookupError("Token {} is not tagged with the speficied tagtype ({})".format(self, tagtype))
-
-    def get_tags(self, tagtype, **kwargs):
-        """ Get all token-level tags with the specified tagtype """
-        return [t for t in self.__tags if t.type == tagtype]
-
-    def add_tag(self, tag_obj):
-        """ Add an existing tag object into this token """
-        self.__tags.append(tag_obj)
-        return tag_obj
-
-    def find(self, tagtype, **kwargs):
-        """ (Deprecated) Return the first tag with a given tagtype in this token """
-        warnings.warn("Token.find() is deprecated and will be removed in near future. Use Token.get_tag() instead", DeprecationWarning, stacklevel=2)
-        return self.get_tag(tagtype, **kwargs)
-
-    def find_all(self, tagtype, **kwargs):
-        """ (Deprecated) Find all token-level tags with the specified tagtype """
-        warnings.warn("Token.find_all() is deprecated and will be removed in near future. Use Token.get_tags() instead", DeprecationWarning, stacklevel=2)
-        return self.get_tags(tagtype, **kwargs)
 
     def to_dict(self):
         token_json = {'cfrom': self.cfrom,
@@ -365,27 +448,47 @@ class Token(DataObject):
         tk.update(token_dict, 'cfrom', 'cto', 'text', 'lemma', 'pos', 'comment')
         # rebuild tags
         for tag_json in token_dict.get('tags', []):
-            tk.add_tag(Tag.from_dict(tag_json))
+            tk.tags.new(**tag_json)
         return tk
 
 
 class TokenList(list):
-    def __init__(self, parent, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.__parent = parent
+    """ A list of Token - Accept both token index and token object """
+    def __init__(self, *args, **kwargs):
+        super().__init__()
+        self.sent = None
 
-    def add(self, *args, **kwargs):
-        """ Create a new token and add this this TokenList """
-        self.add_obj(Token(*args, sent=self.__parent, **kwargs))
+    def __ensure_token(self, token):
+        if isinstance(token, Token):
+            return token
+        elif isinstance(token, int):
+            if self.sent is None:
+                raise ValueError("Using token index in a TokenList without sentence ref")
+            return self.sent[token]
+        else:
+            raise ValueError(f"Invalid token value: {token} (Only token index and Token objects are accepted")
 
-    def add_obj(self, token):
-        """ [Internal function] Add an existing Token object into this TokenList
+    def append(self, x):
+        """ Add tokens to this concept """
+        super().append(self.__ensure_token(x))
 
-        Currently this function is only used for constructing structures from input streams.
-        General users should NOT use this function as it is very likely to be removed in the future
+    def extend(self, iterable):
+        """ Add all tokens from an iterable to this TokenList
+
+        :param iterable: An iterable of int (for token indices) or Token list
+        :raises: ValueError
         """
-        token.sent = self.__parent
-        self.append(token)
+        super().extend(self.__ensure_token(t) for t in iterable)
+
+    def insert(self, i, x):
+        """ Insert a token at a given position """
+        super().insert(i, self.__ensure_token(x))
+
+    def __add__(self, other):
+        return self.extend(other)
+
+    def __iadd__(self, other):
+        return self.extend(other)
 
 
 class Concept(Tag):
@@ -396,26 +499,35 @@ class Concept(Tag):
     COMMENT = 'comment'
     NOT_MATCHED = 'E'
 
-    def __init__(self, value='', type=None, clemma=None, tokens=None, comment=None, flag=None, **kwargs):
-        super().__init__(value=value, type=type, **kwargs)
+    def __init__(self, value='', type=None, clemma=None, tokens=None, comment=None, flag=None, sent=None, **kwargs):
+        super().__init__(value, type, **kwargs)
+        self.__tokens = TokenList()
+        self.sent = sent
         self.clemma = clemma
-        self.__tokens = []
         if tokens:
-            self.add_token(*tokens)
+            self.tokens.extend(tokens)
         self.comment = comment
         self.flag = flag
 
-    def add_token(self, *tokens):
-        """ Add tokens to this concept """
-        for token in tokens:
-            if isinstance(token, Token):
-                self.__tokens.append(token)
-            elif isinstance(token, int) and self.sent is not None:
-                self.__tokens.append(self.sent[token])
-            else:
-                raise ValueError(f"Invalid token value: {token} (Only token index and Token objects are accepted")
+    @property
+    def tokens(self):
+        return self.__tokens
 
-    def __getattr__(self, idx):
+    @tokens.setter
+    def tokens(self, values):
+        self.__tokens.clear()
+        self.__tokens.extend(values)
+
+    @property
+    def sent(self):
+        return self.__sent
+
+    @sent.setter
+    def sent(self, value):
+        self.__sent = value
+        self.__tokens.sent = value
+
+    def __getitem__(self, idx):
         """ Get the idx-th token of this concept """
         return self.__tokens[idx]
 
@@ -428,7 +540,7 @@ class Concept(Tag):
         return len(self.__tokens)
 
     def __repr__(self):
-        return '<{t}:"{l}">'.format(l=self.clemma, t=self.value)
+        return f'<{self.type}:{self.value}:"{self.clemma}">'
 
     def __str__(self):
         return '<{t}:"{l}">({ws})'.format(l=self.clemma, t=self.value, ws=self.__tokens)
@@ -457,7 +569,9 @@ class Concept(Tag):
             concept_dict['tokens'] = [t.text for t in self.__tokens]
         if self.clemma is not None:
             concept_dict['clemma'] = self.clemma
-        if self.type is not None:
+        if self.value:
+            concept_dict['value'] = self.value
+        if self.type:
             concept_dict['type'] = self.type
         if self.comment:
             concept_dict[Concept.COMMENT] = self.comment
@@ -471,12 +585,12 @@ class Sentence(DataObject):
     """ Represent an utterance (i.e. a sentence) """
 
     def __init__(self, text='', ID=None, tokens=None, **kwargs):
-        super().__init__(text=text, ID=ID, **kwargs)
-        self.__text = text
-        self.__ID = ID
+        super().__init__(text=text, **kwargs)
+        self.text = text
+        self.ID = ID
         self.__tags: TagSet[Tag] = TagSet[Tag](parent=self)
         self.__concepts: TagSet[Concept] = TagSet[Concept](proto=Concept, proto_kwargs={'sent': self})
-        self.__tokens: TokenList = TokenList(parent=self)
+        self.__tokens: ProtoList = ProtoList(parent=self, proto=Token, proto_kwargs={'sent': self})
         if tokens:
             self._import_tokens(tokens)
 
@@ -486,8 +600,16 @@ class Sentence(DataObject):
         return self.__ID
 
     @ID.setter
-    def ID(self, value):
-        self.__ID = str(value) if value else None
+    def ID(self, value: str):
+        self.__ID = str(value) if value is not None else None
+
+    @property
+    def text(self):
+        return self.__text
+
+    @text.setter
+    def text(self, value):
+        self.__text = value
 
     def __repr__(self):
         if self.ID:
@@ -499,8 +621,8 @@ class Sentence(DataObject):
         """ The text content of this sentence """
         return self.text
 
-    def __getitem__(self, idx: int):
-        """ Get the idx-th token in this sentence """
+    def __getitem__(self, idx: int) -> Token:
+        """ Get the token at a given position in this sentence """
         return self.__tokens[idx]
 
     def __len__(self):
@@ -621,7 +743,7 @@ class Sentence(DataObject):
                 raise LookupError('Cannot find token `{t}` in sent `{s}`({l}) from {i} ({p})'.format(t=token, s=self.text, l=len(self.text), i=cfrom, p=self.text[cfrom:cfrom + 20]))
             cfrom = start
             cto = cfrom + len(to_find)
-            self.tokens.add(token, cfrom, cto)
+            self.tokens.new(token, cfrom, cto)
             cfrom = cto - 1
 
     def fix_cfrom_cto(self, import_hook=None, ignorecase=True):
@@ -664,17 +786,14 @@ class Sentence(DataObject):
         sent.update(json_sent, 'ID', 'comment', 'flag')
         # import tokens
         for json_token in json_sent.get('tokens', []):
-            sent.tokens.add_obj(Token.from_dict(json_token))
+            sent.tokens._add_obj(Token.from_dict(json_token))
         # import concepts
         for json_concept in json_sent.get('concepts', []):
-            tag = json_concept['value']
-            clemma = json_concept['clemma']
-            tokenids = json_concept['tokens']
-            concept = sent.new_concept(tag, clemma=clemma, tokens=tokenids)
+            concept = sent.concepts.new(**json_concept)
             concept.update(json_concept, Concept.COMMENT, Concept.FLAG)
         # import sentence's tag
         for json_tag in json_sent.get('tags', []):
-            sent.add_tag(Tag.from_dict(json_tag))
+            sent.tags.new(**json_tag)
         return sent
 
 
@@ -684,98 +803,31 @@ class Document(DataObject):
         super().__init__(**kwargs)
         self.name = name
         self.path = path
-        self.__sents = []
-        self.__sent_map = {}
+        self.__sents = ProtoList(parent=self, proto=Sentence, index_key=True, claim_hook=self.__claim_sent_obj)
         self.__idgen = IDGenerator(id_hook=lambda x: x in self)  # for creating a new sentence without ID
+
+    @property
+    def sents(self):
+        return self.__sents
+
+    def __contains__(self, sent_id):
+        """ Check if a given sentence ID exists in this Document """
+        return str(sent_id) in self.__sents
 
     def __len__(self):
         return len(self.__sents)
 
-    def __getitem__(self, sent_id):
-        """ Get a sentence object by ID """
-        return self.__sent_map[str(sent_id)]
-
-    def __contains__(self, sent_id):
-        """ Check if a given sentence ID exists in this Document """
-        return str(sent_id) in self.__sent_map
+    def __getitem__(self, sent_ref) -> Sentence:
+        """ Get a sentence object by ID (string) or position (int) """
+        return self.__sents[sent_ref]
 
     def __iter__(self):
         """ Return an iterator to loop though all sentences in this Document """
         return iter(self.__sents)
 
-    def get(self, sent_id, **kwargs):
-        """ Find sentence with a specific sent_id
-
-        a kwargs = 'default' can be set to specify the default value to return when there is no matching sentence.
-        If no default is provided, KeyError will be raised.
-
-        >>> sent = doc.get("sent_id_does_not_exist", None)
-        # sent is set to None instead of throwing KeyError
-
-        :param sent_id: ID of the sentence to find
-        :type: str
-        :raises: KeyError
-        """
-        if sent_id in self:
-            return self[sent_id]
-        elif 'default' in kwargs:
-            return kwargs['default']
-        else:
-            raise KeyError("Invalid sentence ID ({})".format(sent_id))
-
-    def _add_sent_obj(self, sent_obj):
-        """ [Internal] Add a ttl.Sentence object to this document 
-        
-        General users should NOT use this function as it is very likely to be removed in the future
-        """
-        if sent_obj is None:
-            raise ValueError("Sentence object cannot be None")
-        elif sent_obj.ID is None:
-            # if sentID is None, create a new ID
-            sent_obj.ID = next(self.__idgen)
-        elif sent_obj.ID in self:
-            raise ValueError("Sentence ID {} exists".format(sent_obj.ID))
-        self.__sent_map[sent_obj.ID] = sent_obj
-        self.__sents.append(sent_obj)
-        return sent_obj
-
-    def new_sent(self, text, **kwargs):
-        """ Create a new sentence and add it to this Document """
-        return self._add_sent_obj(Sentence(text, **kwargs))
-
-    def pop(self, sent_ref, **kwargs):
-        """ Find and remove a sentence if possible.
-
-        A default keyword argument can be set to return a desired value in case no sentence could be found.
-        If no default is provided, KeyError will be raised.
-
-        >>> sent = doc.pop("sent_id_does_not_exist", None)
-        >>> sent = doc.pop(sent_obj_from_somewhere_else, None)
-        # sent is set to None instead of throwing KeyError
-
-        :param sent_ref: a sentence ID or a sentence object
-        """
-        sent_id = None
-        sent_obj = None
-        if sent_ref is None:
-            raise ValueError("sent_ref has to be a Sentence object or a Sentence ID")
-        elif isinstance(sent_ref, Sentence) and sent_ref.ID and sent_ref.ID in self:
-            sent_id = sent_ref.ID
-            sent_obj = sent_ref
-        elif sent_ref in self:
-            sent_id = sent_ref
-            sent_obj = self[sent_id]
-        # now remove the sentence if possible
-        if sent_id is None and not sent_obj is None:
-            if 'default' in kwargs:
-                return kwargs['default']
-            else:
-                raise KeyError("Sentence ID {} does not exist".format(sent_ref))
-        else:
-            # now remove the sentence ...
-            self.__sent_map.pop(sent_id)
-            self.__sents.remove(sent_obj)
-            return sent_obj
+    def __claim_sent_obj(self, sent: Sentence):
+        if not sent.ID:
+            sent.ID = next(self.__idgen)
 
 
 class TxtReader(object):
@@ -849,10 +901,10 @@ class TxtReader(object):
         for row in self.sent_reader():
             if len(row) == 2:
                 sid, text = row
-                doc.new_sent(text.strip(), ID=sid)
+                doc.sents.new(text.strip(), ID=sid)
             elif len(row) == 4:
                 sid, text, flag, comment = row
-                sent = doc.new_sent(text.strip(), ID=sid)
+                sent = doc.sents.new(text.strip(), ID=sid)
                 sent.flag = flag
                 sent.comment = comment
         # Read tokens if available
@@ -865,50 +917,57 @@ class TxtReader(object):
                 else:
                     sid, wid, token, lemma, pos = token_row
                     comment = ''
-                sid = int(sid)
                 sent_tokens_map[sid].append((token, lemma, pos.strip(), wid, comment))
-                # TODO: verify wid?
             # import tokens
             for sent in doc:
                 sent_tokens = sent_tokens_map[sent.ID]
-                sent.import_tokens([x[0] for x in sent_tokens])
+                sent.tokens = ([x[0] for x in sent_tokens])
                 for ((tk, lemma, pos, wid, comment), token) in zip(sent_tokens, sent.tokens):
                     token.pos = pos
                     token.lemma = lemma
                     token.comment = comment
             # only read concepts if tokens are available
             if self.concept_stream:
+                concept_map = {}
                 # read concepts
                 for concept_row in self.concept_reader():
+                    if len(concept_row) == 6:
+                        sid, cid, clemma, value, _type, comment = concept_row
                     if len(concept_row) == 5:
-                        sid, cid, clemma, tag, comment = concept_row
+                        sid, cid, clemma, value, _type = concept_row
                     else:
-                        sid, cid, clemma, tag = concept_row
+                        sid, cid, clemma, value = concept_row
                         comment = ''
+                        _type = ''
+                    if not value and not _type:
+                        raise ValueError("Invalid concept line (concept value and type cannot be both zero)")
                     cid = int(cid)
-                    doc.get(sid).new_concept(tag.strip(), clemma=clemma, cidx=cid, comment=comment)
+                    sent = doc[sid]
+                    # TODO: read type info from file
+                    c = sent.concepts.new(value.strip(), type=_type, clemma=clemma, comment=comment)
+                    concept_map[(sid, cid)] = c
                 # only read concept-token links if tokens and concepts are available
                 for sid, cid, wid in self.link_reader():
-                    sent = doc.get(sid)
-                    cid = int(cid)
-                    wid = int(wid.strip())
-                    sent.concept(cid).add_token(sent[wid])
+                    sent = doc[sid]
+                    concept = concept_map[(sid, int(cid.strip()))]
+                    token = sent[int(wid.strip())]
+                    concept.tokens.append(token)
         # read sentence level tags
         if self.tag_stream:
             for row in self.tag_reader():
                 if len(row) == 5:
-                    sid, cfrom, cto, label, tagtype = row
+                    sid, cfrom, cto, value, _type = row
                     wid = None
                 if len(row) == 6:
-                    sid, cfrom, cto, label, tagtype, wid = row
+                    sid, cfrom, cto, value, _type, wid = row
                 if cfrom:
                     cfrom = int(cfrom)
                 if cto:
                     cto = int(cto)
                 if wid is None or wid == '':
-                    doc.get(sid).new_tag(label, cfrom, cto, tagtype=tagtype)
+                    doc[sid].tags.new(value=value, type=_type, cfrom=cfrom, cto=cto)
                 else:
-                    doc.get(sid)[int(wid)].new_tag(label, cfrom, cto, tagtype=tagtype)
+                    doc[sid][int(wid)].tags.new(value=value, type=_type, cfrom=cfrom, cto=cto)
         return doc
 
 
