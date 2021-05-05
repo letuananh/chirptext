@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
-
 # chirptext's package version information
+
+# This code is a part of chirptext library: https://github.com/letuananh/chirptext
+# :copyright: (c) 2012 Le Tuan Anh <tuananh.ke@gmail.com>
+# :license: MIT, see LICENSE for more details.
+
 __author__ = "Le Tuan Anh"
 __email__ = "tuananh.ke@gmail.com"
 __copyright__ = "Copyright (c) 2012, Le Tuan Anh"
