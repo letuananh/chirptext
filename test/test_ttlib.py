@@ -52,7 +52,7 @@ class TestBasicModel(unittest.TestCase):
 
     def test_tagset(self):
         tags = ttl.TagSet()
-        tags.add("NN", "pos", source="manual")
+        tags.new("NN", "pos", source="manual")
         self.assertTrue(len(tags.pos), 1)
         self.assertIsInstance(tags.pos, list)
         self.assertIsInstance(tags.pos[0], ttl.Tag)
@@ -65,14 +65,20 @@ class TestBasicModel(unittest.TestCase):
         self.assertEqual(tags.gold.pos.value, "NNP")
         self.assertEqual(tags.gold.pos.type, "pos")
         self.assertEqual(tags.gold.pos.source, "")  # source should be empty because this is a new tag
+
+        # tag type should be read only
+        def _func():
+            tags.gold.pos.type = "POS"
+
+        self.assertRaises(AttributeError, lambda: _func())
         # test attr access and key access
         self.assertEqual(tags.gold.pos, tags.gold["pos"])
         self.assertEqual(tags.pos, tags["pos"])
         # add another POS
-        tags.add("cat-n-1", "sense")
-        tags.add("cat-n-2", "sense")
-        tags.add("cat-n-3", "sense")
-        tags.add("NN_", "pos")
+        tags.new("cat-n-1", "sense")
+        tags.new("cat-n-2", "sense")
+        tags.new("cat-n-3", "sense")
+        tags.new("NN_", "pos")
         self.assertEqual(len(tags.pos), 2)
         tags.gold.sense = "cat-n-4"  # set the best sense to cat-n-4
         self.assertEqual(len(tags.sense), 3)
@@ -91,11 +97,15 @@ class TestBasicModel(unittest.TestCase):
         self.assertEqual(tag.type, 'PWN30')
         self.assertEqual(tag.text, ssid)
         self.assertEqual(tag.value, ssid)
-        tag.text = '00636921-n'
-        self.assertEqual(tag.value, '00636921-n')
-        tag.type = 'OMW1.2'
-        self.assertEqual(tag.type, 'OMW1.2')
-        self.assertEqual(tag.to_dict(), {'value': '00636921-n', 'type': 'OMW1.2'})
+        tag.value = '00636921-n'
+        self.assertEqual(tag.text, '00636921-n')
+
+        def _func():
+            tag.type = 'OMW1.2'
+
+        self.assertRaises(AttributeError, lambda: _func())
+        self.assertEqual(tag.type, 'PWN30')  # tag type should still be PWN30 because tag type are immutable
+        self.assertEqual(tag.to_dict(), {'value': '00636921-n', 'type': 'PWN30'})
         # no type
         tag_foo = ttl.Tag('foo')
         tag_foo.source = '頭'
@@ -108,19 +118,20 @@ class TestBasicModel(unittest.TestCase):
 
     def test_sentid(self):
         doc = ttl.Document('mydoc')
-        sent = doc.new_sent('First sentence.')
+        sent = doc.sents.new('First sentence.')
+        print(sent, repr(sent.ID))
         self.assertEqual(sent.ID, "1")
-        sent2 = doc.new_sent('Second sentence.')
+        sent2 = doc.sents.new('Second sentence.')
         self.assertEqual(sent2.ID, "2")
         # add some sentences manually
         sentm1 = ttl.Sentence('Another one', ID=3)
         sentm2 = ttl.Sentence('Another one 2', ID='5')
-        doc._add_sent_obj(sentm1)
-        doc._add_sent_obj(sentm2)
-        doc.new_sent('Third sentence.')
-        doc.new_sent('Fourth sentence.')
-        sent5 = doc.new_sent('Fifth sentence.')
-        self.assertEqual(sent5.ID, "6")
+        doc.sents.append(sentm1)
+        doc.sents.append(sentm2)
+        doc.sents.new('Third sentence.')
+        doc.sents.new('Fourth sentence.')
+        sent5 = doc.sents.new('Fifth sentence.')
+        self.assertEqual(sent5.ID, "7")
         # cannot add 3 again
         sent_foo = ttl.Sentence('Foo sentence.', ID=3)
         self.assertRaises(Exception, lambda: doc._add_sent_obj(sent_foo))
@@ -157,10 +168,10 @@ class TestBasicModel(unittest.TestCase):
         self.assertEqual(len(s.tags.URL), 1)
         self.assertEqual(list(s.tags.values('URL')), [url])
         # test concepts
-        c = s.concepts.add(value='02756558-v', clemma='rain')
-        self.assertRaises(Exception, lambda: s.concepts.add(None))
-        self.assertRaises(Exception, lambda: s.concepts.add(''))
-        c2 = s.concepts.add(value='dummy', clemma='it')
+        c = s.concepts.new(value='02756558-v', clemma='rain')
+        self.assertRaises(Exception, lambda: s.concepts.new(None))
+        self.assertRaises(Exception, lambda: s.concepts.new(''))
+        c2 = s.concepts.new(value='dummy', clemma='it')
         self.assertEqual(len(s.concepts), 2)
         self.assertRaises(Exception, lambda: s.concept.remove(3))
         self.assertEqual(s.concepts.remove(c2), c2)
@@ -181,15 +192,16 @@ class TestBuildTags(unittest.TestCase):
     def test_create_sent(self):
         doc = ttl.Document('test', TEST_DATA)
         # add words
-        sent = doc.new_sent('Some happy guard-dogs barked.', 1)
+        sent = doc.sents.new('Some happy guard-dogs barked.', 1)
         sent._import_tokens('Some happy guard dogs barked .'.split())
         self.assertEqual(len(sent), 6)
         # sense tagging
-        sent.new_concept('01148283-a', 'happy', tokens=[sent[1]])
-        c = sent.new_concept('02084071-n', 'dog')
-        sent.concept(c.cidx).add_token(sent[3])
-        sent.new_concept(BARK_SID, 'bark').add_token(sent[4])
-        sent.new_concept(GDOG_SID, 'guard-dog').add_token(sent[2], sent[3])  # MWE example
+        sent.concepts.new('01148283-a', 'wn', clemma='happy', tokens=[sent[1]])
+        # create a new concept and then bind a token in
+        c = sent.concepts.new('02084071-n', 'wn', 'dog')
+        c.tokens.append(sent[3])
+        sent.concepts.new(BARK_SID, "wn", 'bark').tokens.append(sent[4])  # add token object
+        sent.concepts.new(GDOG_SID, "wn", 'guard-dog').tokens = (2, 3)  # MWE example, add by index
         # verification
         tcmap = sent.tcmap()
         self.assertEqual(tcmap[sent[3]][0].clemma, 'dog')
@@ -202,13 +214,15 @@ class TestBuildTags(unittest.TestCase):
 
     def test_sentids(self):
         doc = ttl.Document('boo')
-        doc._add_sent_obj(ttl.Sentence('odd', ID=3))  # add sent#3 first
-        doc.new_sent('foo')  # 1
-        doc.new_sent('boo')  # 2
-        moo = doc.new_sent('moo')  # moo will be #4 because sent #3 exists
-        self.assertEqual(moo.ID, 4)
+        s = ttl.Sentence('odd', ID=3)
+        self.assertEqual(s.ID, "3")
+        doc.sents.append(s)  # add sent#3 first
+        doc.sents.new('foo')  # 1
+        doc.sents.new('boo')  # 2
+        moo = doc.sents.new('moo')  # moo will be #4 because sent #3 exists
+        self.assertEqual(moo.ID, "4")
         sids = [s.ID for s in doc]
-        self.assertEqual(sids, [3, 1, 2, 4])  # sidx is not the same as sent.ID
+        self.assertEqual(sids, ["3", "1", "2", "4"])
 
 
 class TestComment(unittest.TestCase):
@@ -216,14 +230,18 @@ class TestComment(unittest.TestCase):
 
     def test_storing_flags(self):
         doc = ttl.read(TEST_FILE)
-        sent = doc[0]
-        sent.flag = ttl.Tag.GOLD
-        sent[0].flag = ttl.Tag.NLTK
-        sent.concepts[0].flag = ttl.Tag.ISF
+        sent = doc["10315"]  # use sentence #10315 for testing
+        # before setting concept
+        sent.flag = ttl.Tag.GOLD  # setting sentence flag
+        sent[0].flag = ttl.Tag.NLTK  # flag the first token with NLTK
+        # create a concept with tokens
+        sent.concept.wn = "Wordnet 3.0"
+        sent.concept.wn.flag = ttl.Tag.ISF
+        sent.concept.wn.tokens.append(1)
         sent_json = sent.to_dict()
         self.assertEqual(sent_json['flag'], ttl.Tag.GOLD)
         self.assertEqual(sent_json['tokens'][0]['flag'], ttl.Tag.NLTK)
-        self.assertEqual(sent_json['concepts'][0]['flag'], ttl.Tag.ISF)
+        self.assertEqual(sent_json['concepts'][-1]['flag'], ttl.Tag.ISF)
 
 
 class TestTagging(unittest.TestCase):
@@ -309,8 +327,9 @@ class TestTagging(unittest.TestCase):
         sent._import_tokens("Dogs bark .".split())
         sent.comment = 'I am a test sentence.'
         sent[0].comment = "canine"
-        sent.new_concept("02084071-n", "dog", tokens=(sent[0],))
-        sent.concepts[0].comment = 'a member of the genus Canis (probably descended from the common wolf) that has been domesticated by man since prehistoric times'
+        sent.concepts.new("02084071-n", clemma="dog", tokens=(sent[0],))
+
+        list(sent.concepts)[0].comment = 'a member of the genus Canis (probably descended from the common wolf) that has been domesticated by man since prehistoric times'
         expected = {'text': 'Dogs bark.', 'comment': 'I am a test sentence.',
                     'tokens': [{'cto': 4, 'cfrom': 0, 'comment': 'canine', 'text': 'Dogs'},
                                {'cto': 9, 'cfrom': 5, 'text': 'bark'},
@@ -320,8 +339,8 @@ class TestTagging(unittest.TestCase):
         getLogger().debug(expected)
         self.assertEqual(expected, sent.to_dict())
         self.assertFalse(sent.tags)
-        sent.new_tag(GDOG_SID, 0, 4, tagtype='wn30')
-        sent.new_tag(BARK_SID, 5, 9, tagtype='wn30')
+        sent.tags.new(GDOG_SID, 'wn30', 0, 4)
+        sent.tag.wn30 = {"value": BARK_SID, "cfrom": 5, "cto": 9}
         for t in sent.tags:
             getLogger().debug("{}: label={} | type = {}".format(t, t.value, t.type))
 
@@ -335,13 +354,13 @@ class TestTagging(unittest.TestCase):
         for mtoken, token in zip(mecab_sent, sent.tokens):
             if mtoken.reading_hira() != token.text:
                 if token.text in ('猫', '好き'):
-                    token.new_tag(mtoken.reading_hira(), tagtype='reading')
+                    token.tag.reading = mtoken.reading_hira()
                 token.lemma = mtoken.reading_hira()
                 token.pos = mtoken.pos3()
         self.assertEqual(mecab_sent.words, [x.text for x in sent.tokens])
-        self.assertEqual(sent[0].get_tag('reading').value, 'ねこ')
+        self.assertEqual(sent[0].tag.reading.value, 'ねこ')
         self.assertEqual(sent[0].lemma, 'ねこ')
-        self.assertEqual(sent[2][0].value, 'すき')
+        self.assertEqual(sent[2].tag.reading.value, 'すき')  # accessing gold-value
         self.assertFalse(sent[3].lemma, '')  # if there is no lemma label => return ''
         self.assertEqual(sent[2].surface(), '好き')
         self.assertFalse(len(sent[1]))
@@ -359,7 +378,7 @@ class TestTagging(unittest.TestCase):
         sent[4].pos = "名詞-一般"
         sent[6].lemma = "すき"
         sent[6].pos = "名詞-形容動詞語幹"
-        sent.new_concept("10084295-n", "女の子", (sent[0], sent[1], sent[2]))
+        sent.concepts.new("10084295-n", clemma="女の子", tokens=(sent[0], sent[1], sent[2]))
         sent.concepts[0].comment = "若々しい女の人"
         sent.new_concept("02121620-n", clemma="猫").add_token(sent[4])
         sent.new_concept("01292683-a", clemma="好き").add_token(sent[6])
@@ -496,14 +515,14 @@ class TestSerialization(unittest.TestCase):
         sent = ttl.Sentence(sent1)
         sent.flag = '0'
         sent.comment = 'written in Japanese'
-        sent.new_tag('I like calico cats.', tagtype='eng')
+        sent.tags.new('I like calico cats.', 'eng')
         sent._import_tokens('三 毛 猫 が 好き です 。'.split())
         for tk, pos in zip(sent, '名詞 名詞 名詞 助詞 名詞 助動詞 記号'.split()):
             tk.pos = pos
-        sent.new_concept("三毛猫", "wiki.ja:三毛猫", tokens=[0, 1, 2])
-        sent[0].new_tag('mi', tagtype='reading')
-        sent[1].new_tag('ke', tagtype='reading')
-        sent[2].new_tag('neko', tagtype='reading')
+        sent.concepts.new("三毛猫", "wiki", "wiki.ja:三毛猫", tokens=[0, 1, 2])
+        sent[0].tags.new('mi', type='reading')
+        sent[1].tags.new('ke', type='reading')
+        sent[2].tag.reading = 'neko'
         getLogger().debug(sent.to_dict())
         return sent
 
