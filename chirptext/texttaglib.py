@@ -27,7 +27,11 @@ MODE_JSON = 'json'
 
 class Tag(DataObject):
 
-    """ A general tag which can be used for annotating linguistic objects such as Sentence, Chunk, or Token """
+    """ A general tag which can be used for annotating linguistic objects such as Sentence, Chunk, or Token
+
+    Note: object types cannot be None. If forced with ``Tag('val', type=None)`` type will be set to an empty string ''
+    If an object is passed in as type str(type) will be used to convert it into a string.
+    """
     GOLD = 'gold'
     NONE = ''
     DEFAULT = 'n/a'
@@ -40,8 +44,8 @@ class Tag(DataObject):
 
     def __init__(self, value: str = '', type: str = NONE, cfrom=-1, cto=-1, source=NONE, **kwargs):
         super().__init__(**kwargs)
-        self.__value = value
-        self.__type = type  # tag type
+        self.__value = value if value == '' or value is None else str(value)
+        self.__type = str(type) if type else ''  # tag type
         self.__cfrom = cfrom
         self.__cto = cto
         self.source = source
@@ -78,8 +82,12 @@ class Tag(DataObject):
 
     @property
     def text(self):
-        """ Alias for Tag.value """
-        return self.value
+        """ The text value of this tag
+
+        Tag.text returns Tag.value except when value does not exist (i.e. is None)
+        in which an empty string '' will be returned
+        """
+        return self.value if self.value else ''
 
     @text.setter
     def text(self, value):
@@ -110,6 +118,12 @@ class Tag(DataObject):
             a_dict['cto'] = self.cto
         return a_dict
 
+    def clone(self, **kwargs):
+        """ Create a new tag object """
+        _source_dict = self.to_dict()
+        _source_dict.update(kwargs)
+        return Tag.from_dict(_source_dict)
+
     @staticmethod
     def from_dict(json_dict):
         """ Create a Tag object from a dict's data """
@@ -120,17 +134,18 @@ class Tag(DataObject):
 T = TypeVar('TagType')
 
 
-class ProtoList:
-    def __init__(self, parent, proto=None, proto_kwargs=None, proto_key="ID", index_key=False,
-                 claim_hook=None, release_hook=None, *args, **kwargs):
+class TagList:
+    def __init__(self, parent=None, proto=Tag, proto_kwargs=None, proto_key="ID", index_key=False,
+                 claim_hook=None, release_hook=None, taglist_create_hook=None, *args, **kwargs):
         self.__parent = parent
         self.__proto = proto
         self.__proto_kwargs = proto_kwargs
         self.__proto_key = proto_key
         self.__obj_map = {}
         self.__has_index = index_key and proto_key
-        self.__claim_hook = claim_hook
-        self.__release_hook = release_hook
+        self.__claim_hook = claim_hook  # notify parent to claim an object
+        self.__release_hook = release_hook  # notify parent that an object has been removed
+        self.__taglist_create_hook = taglist_create_hook  # notify parent that TagList created a new object using new()
         self.__children = []
 
     def __len__(self):
@@ -147,6 +162,9 @@ class ProtoList:
         else:
             raise IndexError("object search value has to be either sequence position (int) or key (str)")
 
+    def __setitem__(self, key, value):
+        return self._add_obj(value, key, replace=True)
+
     def __contains__(self, value):
         if self.__has_index:
             return value in self.__children or value in self.__obj_map
@@ -155,7 +173,20 @@ class ProtoList:
 
     def new(self, *args, **kwargs):
         """ Create a new object and add this this TokenList """
-        return self._add_obj(self.__proto(*args, sent=self.__parent, **kwargs))
+        # prefer kwargs to proto_kwargs, except for type
+        if self.__proto_kwargs:
+            for k, v in self.__proto_kwargs.items():
+                if k == 'type':
+                    if 'type' in kwargs and kwargs['type']:
+                        if kwargs['type'] != self.__proto_kwargs['type']:
+                            raise ValueError("Cannot construct new object due to conflicting types")
+                    kwargs['type'] = self.__proto_kwargs['type']
+                elif k not in kwargs:
+                    kwargs[k] = self.__proto_kwargs[k]
+        new_obj = self.__proto(*args, **kwargs)
+        if self.__taglist_create_hook:
+            self.__taglist_create_hook(new_obj)
+        return self._add_obj(new_obj)
 
     def append(self, obj):
         return self._add_obj(obj)
@@ -170,11 +201,15 @@ class ProtoList:
     def index(self, *args, **kwargs):
         return self.__children.index(*args, **kwargs)
 
-    def _add_obj(self, obj, idx=None):
+    def _add_obj(self, obj, idx=None, replace=False):
         """ [Internal function] Add an existing object into this list
 
         Currently this function is only used for constructing structures from input streams.
         General users should NOT use this function as it is very likely to be removed in the future
+
+        :param obj: a new object to add to this list
+        :param idx: position to insert the new object to, or set to None to append the new object to the end of list.
+        :param replace: replace an existing object at a given position instead of inserting
         """
         if self.__claim_hook:
             self.__claim_hook(obj)
@@ -183,6 +218,10 @@ class ProtoList:
                 self.__obj_map[getattr(obj, self.__proto_key)] = obj
         if idx is None:
             self.__children.append(obj)
+        elif replace:
+            _old_obj = self.__children[idx]
+            self._release_obj(_old_obj)
+            self.__children[idx] = obj
         else:
             self.__children.insert(idx, obj)
         return obj
@@ -199,18 +238,23 @@ class ProtoList:
 
     def remove(self, obj_ref):
         # remove from map
-        _obj = obj_ref
-        if self.__has_index:
-            if obj_ref in self.__obj_map:
-                _obj = self.__obj_map.pop(obj_ref)
-            elif self.__proto and isinstance(obj_ref, self.__proto):
-                self.__obj_map.pop(getattr(obj_ref, self.__proto_key))
-        # remove from list
+        if obj_ref in self.__obj_map:
+            _obj = self.__obj_map[obj_ref]
+        else:
+            _obj = obj_ref
+        # remove the object from this list
         if _obj in self.__children:
-            self.remove(_obj)
+            self.__children.remove(_obj)
+        return self._release_obj(_obj)
+
+    def _release_obj(self, obj):
+        # remove the obj from obj map index
+        if self.__has_index:
+            key = getattr(obj, self.__proto_key)
+            self.__obj_map.pop(key)
         if self.__release_hook:
-            self.__release_hook(_obj)
-        return _obj
+            self.__release_hook(obj)
+        return obj
 
 
 class TagSet(Generic[T]):
@@ -218,7 +262,7 @@ class TagSet(Generic[T]):
 
     class TagMap:
         def __init__(self, tagset):
-            self.__dict__["_TagMap__tagset"] = tagset
+            self.__dict__["_TagMap__tagset"]: TagSet = tagset
 
         def __getitem__(self, type) -> T:
             """ Get the first tag object in the tag list of a given type if exist, else return None """
@@ -258,13 +302,47 @@ class TagSet(Generic[T]):
             """ Set the first tag object in the tag list of a given type to key if exist, else create a new tag """
             self[type] = value
 
+        def get_or_create(self, type, default=None, check_type=True):
+            """ Get an existing tag object with a specific type, or create a new one using defaulted values
+
+            :param default: A Tag object or a dict-like structure, both will be used to construct a new Tag object
+                             If defaults is set to None then an empty tag of the given type will be created
+            :param check_type: Make sure that type information in defaults is not conflicting with querying type
+            :raises: ValueError
+            """
+            if type in self.__tagset:
+                return self[type]
+            elif default is None:
+                return self.__tagset.new('', type=type)
+            elif isinstance(default, Tag):
+                if check_type and default.type and default.type != type:
+                    raise ValueError(
+                        f"Could not create new tag object due to type conflicting ({repr(type)} != {repr(default.type)})")
+                else:
+                    return self.__tagset._append(default.clone(type=type))
+            elif isinstance(default, Mapping):
+                _kwargs = dict(default)
+                if 'value' in _kwargs:
+                    _value = _kwargs.pop("value")
+                else:
+                    _value = None
+                if 'type' in _kwargs:
+                    if check_type and _kwargs['type'] != type:
+                        raise ValueError(
+                            f"Could not create new tag object due to type conflicting ({repr(type)} != {repr(_kwargs['type'])})")
+                    _kwargs.pop("type")
+                    return self.__tagset.new(_value, type=type, **_kwargs)
+            else:
+                # use defaults as the input value string
+                return self.__tagset.new(str(default), type=type)
+
     def __init__(self, parent=None, **kwargs):
         self.__parent = parent
         self.__proto_kwargs = kwargs['proto_kwargs'] if 'proto_kwargs' in kwargs else {}
         self.__proto = kwargs['proto'] if 'proto' in kwargs else Tag
         self.__dict__["_TagSet__tags"] = []
         self.__dict__["_TagSet__tagmap"] = TagSet.TagMap(self)
-        self.__dict__["_TagSet__tagsmap"] = dd(list)
+        self.__dict__["_TagSet__tagsmap"] = dict()
 
     @property
     def gold(self):
@@ -277,6 +355,10 @@ class TagSet(Generic[T]):
 
     def __getitem__(self, type) -> T:
         """ Get the all tags of a given type """
+        if type not in self.__tagsmap:
+            self.__tagsmap[type] = TagList(proto=self.__proto,
+                                           proto_kwargs={'type': type},
+                                           taglist_create_hook=lambda x: self.__tags.append(x))
         return self.__tagsmap[type]
 
     def __getattr__(self, type) -> T:
@@ -295,7 +377,7 @@ class TagSet(Generic[T]):
         """ Return an iterator to loop through all (type, value_list) pairs in this TagSet """
         return self.__tagsmap.items()
 
-    def _construct_tag(self, *args, **kwargs) -> T:
+    def _construct_obj(self, *args, **kwargs) -> T:
         """ Construct a new tag object and notify parent if possible """
         if self.__proto_kwargs:
             # prioritise values in kwargs rather than in default constructor kwargs
@@ -303,6 +385,7 @@ class TagSet(Generic[T]):
                 if k not in self.kwargs:
                     kwargs[k] = v
         _tag = self.__proto(*args, **kwargs)
+        # TODO to review this _claim book design
         if self.__parent is not None and self.__parent._claim:
             self.__parent._claim(_tag)
         return _tag
@@ -311,30 +394,42 @@ class TagSet(Generic[T]):
         """ Create a new generic tag object """
         if not value and not type:
             raise ValueError("Concept value and type cannot be both empty")
-        _tag = self._construct_tag(value, type, *args, **kwargs)
+        _tag = self._construct_obj(value, type, *args, **kwargs)
         return self._append(_tag)
 
-    def _append(self, _tag):
+    def _append(self, tag):
         """ [Internal] Add an existing tag object into the list
 
         General users should NOT use this method as it is very likely to be removed in the future
         """
-        self.__tags.append(_tag)
-        self.__tagsmap[_tag.type].append(_tag)
-        return _tag
+        self.__map_tag(tag)
+        self.__tags.append(tag)
+        return tag
 
-    def replace(self, old_tag, value, type='', *args, **kwargs) -> T:
-        """ Create a new tag to replace an existing tag object """
-        self.__tags.remove(old_tag)
-        new_tag = self._construct_tag(value=value, type=type, *args, **kwargs)
-        self.__tags.append(new_tag)
-        if old_tag.type == new_tag.type:
-            _taglist = self.__tagsmap[old_tag.type]
-            _taglist[_taglist.index(old_tag)] = new_tag
+    def __map_tag(self, tag):
+        self[tag.type].append(tag)
+        return tag
+
+    def _replace_obj(self, old_obj, new_obj):
+        self.__tags.remove(old_obj)
+        self.__tags.append(new_obj)
+        if old_obj.type == new_obj.type:
+            _taglist = self.__tagsmap[old_obj.type]
+            _taglist[_taglist.index(old_obj)] = new_obj
         else:
-            self.__tagsmap[old_tag.type].remove(old_tag)
-            self.__tagsmap[new_tag.type].append(new_tag)
-        return new_tag
+            self.__tagsmap[old_obj.type].remove(old_obj)
+            self.__tagsmap[new_obj.type].append(new_obj)
+        return new_obj
+
+    def replace(self, old_obj, value: str, type='', *args, **kwargs) -> T:
+        """ Create a new tag to replace an existing tag object
+
+        :param old_obj: Old object to be removed and replaced with a newly crated object
+        :param value: text value for the new tag object
+        :param type: type for the new object, defaulted to an empty string
+        """
+        new_obj = self._construct_obj(value=value, type=type, *args, **kwargs)
+        return self._replace_obj(old_obj, new_obj)
 
     def remove(self, tag: T) -> T:
         """ Remove a generic tag object and return them """
@@ -590,9 +685,9 @@ class Sentence(DataObject):
         self.ID = ID
         self.__tags: TagSet[Tag] = TagSet[Tag](parent=self)
         self.__concepts: TagSet[Concept] = TagSet[Concept](proto=Concept, proto_kwargs={'sent': self})
-        self.__tokens: ProtoList = ProtoList(parent=self, proto=Token, proto_kwargs={'sent': self})
+        self.__tokens: TagList = TagList(parent=self, proto=Token, proto_kwargs={'sent': self})
         if tokens:
-            self._import_tokens(tokens)
+            self.tokens = tokens
 
     @property
     def ID(self) -> str:
@@ -803,7 +898,7 @@ class Document(DataObject):
         super().__init__(**kwargs)
         self.name = name
         self.path = path
-        self.__sents = ProtoList(parent=self, proto=Sentence, index_key=True, claim_hook=self.__claim_sent_obj)
+        self.__sents = TagList(parent=self, proto=Sentence, index_key=True, claim_hook=self.__claim_sent_obj)
         self.__idgen = IDGenerator(id_hook=lambda x: x in self)  # for creating a new sentence without ID
 
     @property
@@ -933,7 +1028,7 @@ class TxtReader(object):
                 for concept_row in self.concept_reader():
                     if len(concept_row) == 6:
                         sid, cid, clemma, value, _type, comment = concept_row
-                    if len(concept_row) == 5:
+                    elif len(concept_row) == 5:
                         sid, cid, clemma, value, _type = concept_row
                     else:
                         sid, cid, clemma, value = concept_row
@@ -1001,7 +1096,7 @@ class TxtWriter(object):
         # write concepts & wclinks
         for cid, concept in enumerate(sent.concepts):
             # write concept
-            self.concept_writer.writerow((sid, cid, concept.clemma, concept.value, concept.comment))
+            self.concept_writer.writerow((sid, cid, concept.clemma, concept.value, concept.type, concept.comment))
             # write cwlinks
             for token in concept.tokens:
                 wid = sent.tokens.index(token)
