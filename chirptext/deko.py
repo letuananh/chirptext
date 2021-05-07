@@ -191,7 +191,7 @@ class MeCabSent(object):
                 tk.lemma = mtk.root
             else:
                 tk.lemma = mtk.surface
-            tk.new_tag(mtk.reading_hira(), tagtype="reading", source=ttl.Tag.MECAB)
+            tk.tags.new(mtk.reading_hira(), type="reading", source=ttl.Tag.MECAB)
         return tsent
 
     @staticmethod
@@ -236,7 +236,7 @@ class DekoText(object):
     def to_ttl(self, name=None):
         doc = ttl.Document(name=name if name else self.name)
         for sent in self.sents:
-            doc._add_sent_obj(sent.to_ttl())
+            doc.sents.append(sent.to_ttl())
         return doc
 
     @staticmethod
