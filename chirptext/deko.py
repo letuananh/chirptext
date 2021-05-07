@@ -10,7 +10,7 @@ Functions for processing Japanese text
 # MeCab, デコ, got the joke?
 # This script was adopted from https://github.com/letuananh/omwtk
 #
-# Latest version can be found at https://github.com/letuananh/chirptext
+# This code is a part of chirptext library: https://github.com/letuananh/chirptext
 # :copyright: (c) 2012 Le Tuan Anh <tuananh.ke@gmail.com>
 # :license: MIT, see LICENSE for more details.
 
@@ -184,14 +184,14 @@ class MeCabSent(object):
 
     def to_ttl(self):
         tsent = ttl.Sentence(self.surface)
-        tsent.import_tokens(self.words)
+        tsent._import_tokens(self.words)
         for mtk, tk in zip((tk for tk in self if not tk.is_eos), tsent):
             tk.pos = mtk.pos3()
             if mtk.root and mtk.root != '*':
                 tk.lemma = mtk.root
             else:
                 tk.lemma = mtk.surface
-            tk.new_tag(mtk.reading_hira(), tagtype="reading", source=ttl.Tag.MECAB)
+            tk.tags.new(mtk.reading_hira(), type="reading", source=ttl.Tag.MECAB)
         return tsent
 
     @staticmethod
@@ -236,7 +236,7 @@ class DekoText(object):
     def to_ttl(self, name=None):
         doc = ttl.Document(name=name if name else self.name)
         for sent in self.sents:
-            doc.add_sent(sent.to_ttl())
+            doc.sents.append(sent.to_ttl())
         return doc
 
     @staticmethod

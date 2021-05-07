@@ -189,7 +189,7 @@ EOS
             getLogger().debug("{} - {}".format(tk, tk.pos))
         sj = sent.to_dict()
         getLogger().debug(sj)
-        expected = {'text': '雨が降る。', 'tokens': [{'cfrom': 0, 'cto': 1, 'text': '雨', 'lemma': '雨', 'pos': '名詞-一般', 'tags': [{'label': 'あめ', 'type': 'reading', 'source': 'mecab'}]}, {'cfrom': 1, 'cto': 2, 'text': 'が', 'lemma': 'が', 'pos': '助詞-格助詞-一般', 'tags': [{'label': 'が', 'type': 'reading', 'source': 'mecab'}]}, {'cfrom': 2, 'cto': 4, 'text': '降る', 'lemma': '降る', 'pos': '動詞-自立', 'tags': [{'label': 'ふる', 'type': 'reading', 'source': 'mecab'}]}, {'cfrom': 4, 'cto': 5, 'text': '。', 'lemma': '。', 'pos': '記号-句点', 'tags': [{'label': '。', 'type': 'reading', 'source': 'mecab'}]}]}
+        expected = {'text': '雨が降る。', 'tokens': [{'cfrom': 0, 'cto': 1, 'text': '雨', 'lemma': '雨', 'pos': '名詞-一般', 'tags': [{'value': 'あめ', 'type': 'reading', 'source': 'mecab'}]}, {'cfrom': 1, 'cto': 2, 'text': 'が', 'lemma': 'が', 'pos': '助詞-格助詞-一般', 'tags': [{'value': 'が', 'type': 'reading', 'source': 'mecab'}]}, {'cfrom': 2, 'cto': 4, 'text': '降る', 'lemma': '降る', 'pos': '動詞-自立', 'tags': [{'value': 'ふる', 'type': 'reading', 'source': 'mecab'}]}, {'cfrom': 4, 'cto': 5, 'text': '。', 'lemma': '。', 'pos': '記号-句点', 'tags': [{'value': '。', 'type': 'reading', 'source': 'mecab'}]}]}
         self.assertEqual(sj, expected)
         # test doc to ttl
         doc = DekoText.parse(txt3, splitlines=True)
@@ -209,7 +209,7 @@ EOS
         tokens = [tk.text for tk in sent.tokens]
         self.assertEqual(tokens, expected_tokens)
         # check reading
-        readings = [tk.get_tag('reading').value for tk in sent.tokens]
+        readings = [tk.tag.reading.value for tk in sent.tokens]
         expected_readings = ['ねこ', 'が', 'すき', 'です', '。', 'いぬ', 'も', 'すき', 'です', '。', 'とり', 'は']
         self.assertEqual(readings, expected_readings)
         # try tokenizing sentences
