@@ -54,7 +54,7 @@ class TestBasicModel(unittest.TestCase):
         tags = ttl.TagSet()
         tags.new("NN", "pos", source="manual")
         self.assertTrue(len(tags.pos), 1)
-        self.assertIsInstance(tags.pos, ttl.TagList)
+        self.assertIsInstance(tags.pos, ttl.ProtoList)
         self.assertIsInstance(tags.pos[0], ttl.Tag)
         self.assertEqual(tags.gold.pos.value, "NN")
         self.assertEqual(tags.gold.pos.type, "pos")
@@ -97,6 +97,22 @@ class TestBasicModel(unittest.TestCase):
         expected = {"NNP", "NN",
                     "cat-n-2", "cat-n-3", "cat-n-4"}
         self.assertEqual(expected, actual)
+
+    def test_comparing_token_list(self):
+        set1 = ttl.TokenList()
+        set2 = ttl.TokenList()
+        self.assertEqual(set1, set2)
+        t = ttl.Token("a")
+        set1.append(t)
+        set2.append(t)
+        self.assertEqual(set1, set2)
+        t2 = ttl.Token("word")
+        set2.append(t2)
+        self.assertNotEqual(set1, set2)
+        t3 = ttl.Token("word")
+        set1.append(t3)
+        # TODO: deep comparing? (may be not)
+        self.assertNotEqual(set1, set2)
 
     def test_tag_model(self):
         ssid = '06162979-n'
