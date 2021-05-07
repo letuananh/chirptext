@@ -11,9 +11,8 @@ import csv
 import json
 import logging
 import os
-import warnings
-from collections import defaultdict as dd
 from collections import Mapping
+from collections import defaultdict as dd
 from typing import TypeVar, Generic
 
 from . import chio
@@ -134,7 +133,10 @@ class Tag(DataObject):
 T = TypeVar('TagType')
 
 
-class TagList:
+class ProtoList:
+
+    """ A list of data objects that can construct new children """
+
     def __init__(self, parent=None, proto=Tag, proto_kwargs=None, proto_key="ID", index_key=False,
                  claim_hook=None, release_hook=None, taglist_create_hook=None, *args, **kwargs):
         self.__parent = parent
@@ -356,9 +358,9 @@ class TagSet(Generic[T]):
     def __getitem__(self, type) -> T:
         """ Get the all tags of a given type """
         if type not in self.__tagsmap:
-            self.__tagsmap[type] = TagList(proto=self.__proto,
-                                           proto_kwargs={'type': type},
-                                           taglist_create_hook=lambda x: self.__tags.append(x))
+            self.__tagsmap[type] = ProtoList(proto=self.__proto,
+                                             proto_kwargs={'type': type},
+                                             taglist_create_hook=lambda x: self.__tags.append(x))
         return self.__tagsmap[type]
 
     def __getattr__(self, type) -> T:
@@ -553,6 +555,23 @@ class TokenList(list):
         super().__init__()
         self.sent = None
 
+    def __eq__(self, other):
+        if not isinstance(other, list):
+            return False
+        elif len(other) != len(self):
+            return False
+        else:
+            for i1, i2 in zip(self, other):
+                if i1 != i2:
+                    return False
+            return True
+
+    def __add__(self, other):
+        return self.extend(other)
+
+    def __iadd__(self, other):
+        return self.extend(other)
+
     def __ensure_token(self, token):
         if isinstance(token, Token):
             return token
@@ -578,12 +597,6 @@ class TokenList(list):
     def insert(self, i, x):
         """ Insert a token at a given position """
         super().insert(i, self.__ensure_token(x))
-
-    def __add__(self, other):
-        return self.extend(other)
-
-    def __iadd__(self, other):
-        return self.extend(other)
 
 
 class Concept(Tag):
@@ -685,7 +698,7 @@ class Sentence(DataObject):
         self.ID = ID
         self.__tags: TagSet[Tag] = TagSet[Tag](parent=self)
         self.__concepts: TagSet[Concept] = TagSet[Concept](proto=Concept, proto_kwargs={'sent': self})
-        self.__tokens: TagList = TagList(parent=self, proto=Token, proto_kwargs={'sent': self})
+        self.__tokens: ProtoList = ProtoList(parent=self, proto=Token, proto_kwargs={'sent': self})
         if tokens:
             self.tokens = tokens
 
@@ -898,7 +911,7 @@ class Document(DataObject):
         super().__init__(**kwargs)
         self.name = name
         self.path = path
-        self.__sents = TagList(parent=self, proto=Sentence, index_key=True, claim_hook=self.__claim_sent_obj)
+        self.__sents = ProtoList(parent=self, proto=Sentence, index_key=True, claim_hook=self.__claim_sent_obj)
         self.__idgen = IDGenerator(id_hook=lambda x: x in self)  # for creating a new sentence without ID
 
     @property
