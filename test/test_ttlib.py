@@ -15,6 +15,7 @@ import io
 import unittest
 import logging
 import json
+from chirptext import __version__
 from chirptext import TextReport
 from chirptext import texttaglib as ttl
 from chirptext.deko import parse
@@ -40,6 +41,10 @@ def getLogger():
 # ------------------------------------------------------------------------------
 
 class TestBasicModel(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        print(f"Testing texttaglib API version 1.0 in chirptext [{__version__}]")
 
     def test_tag_model(self):
         ssid = '06162979-n'
