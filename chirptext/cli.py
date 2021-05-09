@@ -50,9 +50,9 @@ def setup_logging(filename, log_dir=None, force_setup=False):
             except Exception as e:
                 logging.exception("Could not load logging config")
                 # default logging config
-                logging.basicConfig(level=logging.INFO)
+                logging.basicConfig(level=logging.WARNING)
     else:
-        logging.basicConfig(level=logging.INFO)
+        logging.basicConfig(level=logging.WARNING)
 
 
 def config_logging(args):
