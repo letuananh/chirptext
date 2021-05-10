@@ -31,27 +31,37 @@ def getLogger():
 # Application logic
 # -------------------------------------------------------------------------------
 
-def setup_logging(filename, log_dir=None, force_setup=False):
+def setup_logging(config_path, log_dir=None, force_setup=False, default_level= logging.WARNING, silent=True):
     """ Try to load logging configuration from a file. Set level to INFO if failed.
+
+    :param config_path: Path to the logging config file (JSON)
+    :param log_dir: Path to log output directory. When log_dir is not None and the directory does not exist, it will be created automatically.
     """
     if not force_setup and ChirpCLI.SETUP_COMPLETED:
-        logging.debug("Master logging has been setup. This call will be ignored.")
+        if not silent:
+            logging.debug("Master logging has been setup. This call will be ignored.")
         return
     if log_dir and not os.path.exists(log_dir):
-        os.makedirs(log_dir)
-    if os.path.isfile(filename):
-        with open(filename) as config_file:
+        try:
+            os.makedirs(log_dir)
+        except OSError:
+            if not silent:
+                logging.exception("Could not create logging folder")
+    if os.path.isfile(config_path):
+        with open(config_path) as config_file:
             try:
                 config = json.load(config_file)
                 logging.config.dictConfig(config)
-                logging.info("logging was setup using {}".format(filename))
+                if not silent:
+                    logging.info("logging was setup using {}".format(config_path))
                 ChirpCLI.SETUP_COMPLETED = True
-            except Exception as e:
-                logging.exception("Could not load logging config")
+            except Exception:
+                if not silent:
+                    logging.exception("Could not load logging config")
                 # default logging config
-                logging.basicConfig(level=logging.INFO)
+                logging.basicConfig(level=default_level)
     else:
-        logging.basicConfig(level=logging.INFO)
+        logging.basicConfig(level=default_level)
 
 
 def config_logging(args):
