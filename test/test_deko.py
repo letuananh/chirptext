@@ -36,7 +36,10 @@ _MECAB_VERSION = None
 try:
     _MECAB_VERSION = version()
 except Exception:
-    pass
+    print("WARNING: mecab binary is not available. All dekomecab tests will be ignored.")
+
+if not dekoigo.igo_available():
+    print("WARNING: igo-python is not available. All igo test will be ignored.")
 
 
 def getLogger():
@@ -93,17 +96,18 @@ class TestDeko(unittest.TestCase):
             set_mecab_bin(mecab_custom_loc)
             self.assertEqual(get_mecab_bin(), mecab_custom_loc)
             if not os.path.isfile(mecab_custom_loc):
-                self.assertEqual(log.output, ['WARNING:chirptext.dekomecab:Provided mecab binary location does not exist C:\\mecab\\mecab-console.exe'])
-        # set it back after tested
-        set_mecab_bin(mbin_original)
+                self.assertEqual(log.output, ['WARNING:chirptext.dekomecab:Provided mecab binary location does not exist (C:\\mecab\\mecab-console.exe)'])
         if not os.path.isfile(mbin_original):
             # this should shout a warning too
             with self.assertLogs('chirptext.dekomecab', level='WARNING') as log:
                 set_mecab_bin(mbin_original)
-                getLogger().info(f"Original mbin: {mbin_original}")
-                getLogger().info(f"log.output: {log}")
-                getLogger().info(f"{os.path.isfile(mbin_original)}")
-                self.assertEqual(log.output, ['WARNING:chirptext.dekomecab:Provided mecab binary location does not exist ' + mbin_original])
+                getLogger().debug(f"Original mbin: {mbin_original}")
+                getLogger().debug(f"log.output: {log}")
+                getLogger().debug(f"{os.path.isfile(mbin_original)}")
+                self.assertEqual(log.output, [f'WARNING:chirptext.dekomecab:Provided mecab binary location does not exist ({mbin_original})'])
+        else:
+            # set it back after tested
+            set_mecab_bin(mbin_original)
 
     def test_dekomecab(self):
         # try parsing text using mecab binary
