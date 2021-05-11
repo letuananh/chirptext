@@ -84,9 +84,6 @@ class TestBasicModel(unittest.TestCase):
         tags.new("cat-n-2", "sense")
         tags.new("cat-n-3", "sense")
         pos2 = tags.new("NN", "pos")
-        print(pos1, pos2)
-        for t in tags:
-            print(f"All tag: {t}")
         self.assertEqual(len(tags.pos), 2)
         tags.gold.sense = "cat-n-4"  # set the best sense to cat-n-4
         self.assertEqual(len(tags.sense), 3)
