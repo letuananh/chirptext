@@ -19,6 +19,7 @@ from chirptext import __version__
 from chirptext import TextReport
 from chirptext import texttaglib as ttl
 from chirptext.deko import parse
+from chirptext.dekomecab import version
 
 # ------------------------------------------------------------------------------
 # Configuration
@@ -30,6 +31,13 @@ TEST_FILE = os.path.join(TEST_DATA, 'test')
 
 BARK_SID = '01047745-v'
 GDOG_SID = '02103841-n'
+
+
+_MECAB_VERSION = None
+try:
+    _MECAB_VERSION = version()
+except Exception:
+    pass
 
 
 def getLogger():
@@ -287,6 +295,8 @@ class TestTagging(unittest.TestCase):
         for t in sent.tags:
             getLogger().debug("{}: label={} | type = {}".format(t, t.label, t.tagtype))
 
+    @unittest.skipIf(not _MECAB_VERSION,
+             "Mecab binary is not available, all mecab related tests will be ignored")
     def test_tagged_sentences(self):
         print("test converting MeCabSent into TTL Sent manually")
         sent = ttl.Sentence('猫が好きです 。')
@@ -395,6 +405,8 @@ class TestTagging(unittest.TestCase):
         cto = max(x.cto for x in s.tokens)
         self.assertEqual(s.text, s.text[cfrom:cto])
 
+    @unittest.skipIf(not _MECAB_VERSION,
+                 "Mecab binary is not available, all mecab related tests will be ignored")
     def test_export_to_streams(self):
         doc = ttl.Document('manual', TEST_DATA)
         # create sents in doc
