@@ -21,6 +21,8 @@ from chirptext.deko import get_mecab_bin, set_mecab_bin
 from chirptext.deko import wakati, tokenize, tokenize_sent, analyse, parse, parse_doc
 from chirptext.deko import MeCabSent, DekoText
 from chirptext import dekoigo
+from chirptext.dekomecab import version
+
 # -------------------------------------------------------------------------------
 # Configuration
 # -------------------------------------------------------------------------------
@@ -30,6 +32,13 @@ txt = '雨が降る。'
 txt2 = '猫が好きです。\n犬も好きです。'
 txt3 = '猫が好きです。\n犬も好きです。\n鳥は'
 txt4 = '猫が好きです。犬も好きです。鳥は'
+
+
+_MECAB_VERSION = None
+try:
+    _MECAB_VERSION = version()
+except Exception:
+    pass
 
 
 def getLogger():
@@ -64,6 +73,8 @@ class TestTool(unittest.TestCase):
         self.assertFalse(is_kana('すき です'))  # with a space
 
 
+@unittest.skipIf(not _MECAB_VERSION,
+                 "Mecab binary is not available, all mecab related tests will be ignored")
 class TestDeko(unittest.TestCase):
 
     def test_mecab(self):
