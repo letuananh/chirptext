@@ -173,6 +173,12 @@ class ProtoList:
         else:
             return value in self.__children
 
+    def __repr__(self):
+        return repr([repr(c) for c in self])
+        
+    def __str__(self):
+        return str([str(c) for c in self])
+
     def new(self, *args, **kwargs):
         """ Create a new object and add this this TokenList """
         # prefer kwargs to proto_kwargs, except for type
