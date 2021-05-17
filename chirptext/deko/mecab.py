@@ -208,7 +208,6 @@ def parse_doc(text, splitlines=True, auto_strip=True, doc_name='', **kwargs):
     """ Parse a Japanese document with multiple sentences using Mecab """
     doc = ttl.Document(name=doc_name)
     if not splitlines:
-        # surface is broken right now ...
         lines = _internal_mecab_parse(text, **kwargs).splitlines()
         token_dicts = [_mecab_line_to_token_dicts(line) for line in lines]
         return _tokenize_token_dicts(token_dicts, text, auto_strip, doc=doc)
