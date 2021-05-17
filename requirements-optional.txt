@@ -1,4 +1,4 @@
 jaconv
-janome
+Janome
 igo-python
 mecab-python3

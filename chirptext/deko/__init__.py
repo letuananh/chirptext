@@ -16,6 +16,7 @@ Convenient Japanese text parser that produces results in TTL format
 
 from . import mecab
 from . import dekoigo
+from . import janome
 from . import util
 
 # allow mecab config
@@ -33,6 +34,8 @@ def engines():
         pass
     if dekoigo.igo_available():
         _engines.append(("igo", dekoigo))
+    if janome.janome_available():
+        _engines.append(("janome", dekoigo))
     return _engines
 
 
