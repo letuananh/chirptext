@@ -258,6 +258,10 @@ class ProtoList:
             self.__release_hook(obj)
         return obj
 
+    def values(self):
+        """ Compile a value list from all children """
+        return [c.value for c in self.__children]
+
 
 class TagSet(Generic[T]):
     """ contains all tags of a linguistic object """
@@ -470,14 +474,20 @@ class Token(DataObject):
         self.__tags: TagSet[Tag] = TagSet[Tag](parent=self)
         self.cfrom = cfrom
         self.cto = cto
-        self.text = text  # original/surface form
+        self.__text = text  # original/surface form
         self.lemma = lemma   # dictionary form
         self.pos = pos
         self.comment = comment
         self.flag = flag
 
-    def __getitem__(self, idx):
-        return self.__tags[idx]
+    def __getitem__(self, name):
+        return self.tag[name].value if name in self.__tags else None
+
+    def __setitem__(self, name, value):
+        self.tag[name] = value
+
+    def __getattr__(self, name):
+        return self[name]
 
     def __len__(self):
         return len(self.__tags)
@@ -489,7 +499,25 @@ class Token(DataObject):
         return "`{l}`<{f}:{t}>".format(l=self.text, f=self.cfrom, t=self.cto)
 
     def __str__(self):
-        return "`{l}`<{f}:{t}>{tgs}".format(l=self.text, f=self.cfrom, t=self.cto, tgs=self.__tags if self.__tags else '')
+        return self.text
+
+    @property
+    def text(self):
+        """ Text value of a Token object """
+        return self.__text
+
+    @text.setter
+    def text(self, value):
+        self.__text = value
+
+    @property
+    def value(self):
+        """ Alias to Token.text """
+        return self.text
+
+    @value.setter
+    def value(self, value):
+        self.text = value
 
     @property
     def tag(self):
