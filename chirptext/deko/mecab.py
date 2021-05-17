@@ -147,13 +147,15 @@ def _make_sent(text, token_dicts, doc: ttl.Document = None, sent_id=None):
         token.pos = token_dict['pos']
         token.tag.pos3 = _token_pos3(token)
         # root is mapped to lemma
-        if token_dict["root"] and token_dict["root"] != "*":
+        if "root" in token_dict and token_dict["root"] and token_dict["root"] != "*":
             token.lemma = token_dict["root"]
         else:
             token.lemma = token.surface
-        token.reading = token_dict['reading']
-        token.tag.reading_hira = util.kata2hira(token_dict['reading'])
-        token.pron = token_dict['pron']
+        if "reading" in token_dict:
+            token.reading = token_dict['reading']
+            token.tag.reading_hira = util.kata2hira(token_dict['reading'])
+        if "pron" in token_dict:
+            token.pron = token_dict['pron']
     return sent
 
 
