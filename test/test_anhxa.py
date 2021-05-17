@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-'''
+"""
 Test script for anhxa
-Latest version can be found at https://github.com/letuananh/chirptext
+"""
 
-:copyright: (c) 2012 Le Tuan Anh <tuananh.ke@gmail.com>
-:license: MIT, see LICENSE for more details.
-'''
+# This code is a part of chirptext library: https://github.com/letuananh/chirptext
+# :copyright: (c) 2012 Le Tuan Anh <tuananh.ke@gmail.com>
+# :license: MIT, see LICENSE for more details.
 
 import os
 import unittest
@@ -56,7 +56,7 @@ class Job(object):
         self.sal = sal
 
     def __str__(self):
-        return ("{} (${}/mth)".format(self.job, self.sal))
+        return "{} (${}/mth)".format(self.job, self.sal)
 
     def __eq__(self, other):
         if not other:

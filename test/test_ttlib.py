@@ -9,16 +9,15 @@ Latest version can be found at https://github.com/letuananh/chirptext
 :copyright: (c) 2012 Le Tuan Anh <tuananh.ke@gmail.com>
 :license: MIT, see LICENSE for more details.
 """
-import collections
-import os
 import io
-import unittest
-from collections import Set
-import logging
 import json
+import logging
+import os
+import unittest
+
 from chirptext import TextReport
-from chirptext import ttl
 from chirptext import deko
+from chirptext import ttl
 
 # ------------------------------------------------------------------------------
 # Configuration

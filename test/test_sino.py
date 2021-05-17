@@ -1,30 +1,21 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-'''
+"""
 Test script for sino module
+"""
 
-Latest version can be found at https://github.com/letuananh/chirptext
-
-:copyright: (c) 2012 Le Tuan Anh <tuananh.ke@gmail.com>
-:license: MIT, see LICENSE for more details.
-'''
+# This code is a part of chirptext library: https://github.com/letuananh/chirptext
+# :copyright: (c) 2012 Le Tuan Anh <tuananh.ke@gmail.com>
+# :license: MIT, see LICENSE for more details.
 
 import os
 import unittest
 from chirptext.sino import Radical, KangxiMap
 
-# -------------------------------------------------------------------------------
-# Configuration
-# -------------------------------------------------------------------------------
-
 TEST_DIR = os.path.dirname(os.path.realpath(__file__))
 TEST_DATA = os.path.join(TEST_DIR, 'data')
 
-
-# -------------------------------------------------------------------------------
-# Data Structures
-# -------------------------------------------------------------------------------
 
 class TestSino(unittest.TestCase):
 
