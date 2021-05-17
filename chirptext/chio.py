@@ -8,11 +8,10 @@ Chirptext's enhanced IO functions
 # :copyright: (c) 2012 Le Tuan Anh <tuananh.ke@gmail.com>
 # :license: MIT, see LICENSE for more details.
 
-import os
 import csv
 import gzip
 import logging
-import warnings
+import os
 
 # -------------------------------------------------------------------------------
 # Configuration
@@ -46,7 +45,7 @@ def is_file(path):
     return path and os.path.isfile(to_string(path))
 
 
-def open(path, encoding='utf-8', mode='rt', *args, **kwargs):
+def open(path, mode='rt', encoding='utf-8', *args, **kwargs):
     if not mode:
         raise Exception("Invalid file access mode")
     elif mode.startswith('r') and not is_file(path):
@@ -75,14 +74,21 @@ def process_file(path, processor, encoding='utf-8', mode='rt', *args, **kwargs):
     """ Process a text file's content. If the file name ends with .gz, read it as gzip file """
     if mode not in ('rU', 'rt', 'rb', 'r'):
         raise Exception("Invalid file reading mode")
-    with open(path, encoding=encoding, mode=mode, *args, **kwargs) as infile:
+    with open(path, mode, encoding, *args, **kwargs) as infile:
         return processor(infile)
 
 
 def read_file(path, encoding='utf-8', *args, **kwargs):
     """ Read text file content. If the file name ends with .gz, read it as gzip file.
     If mode argument is provided as 'rb', content will be read as byte stream.
-    By default, content is read as string.
+    By default, content is read as text (string).
+
+    # Read content as text
+    >>> txt = chio.read_file("sample.txt")
+    # Read content as binary (bytes)
+    >>> bin = chio.read_file("sample.dat.gz", mode="rb")
+
+    :param encoding: defaulted to UTF-8. Will be ignored if reading mode is 'rb'
     """
     if 'mode' in kwargs and kwargs['mode'] == 'rb':
         return process_file(path, processor=lambda x: x.read(),
@@ -174,7 +180,11 @@ def read_tsv(path, *args, **kwargs):
 
 
 def write_csv(path, rows, dialect='excel', fieldnames=None, quoting=csv.QUOTE_ALL, extrasaction='ignore', *args, **kwargs):
-    """ Write rows data to a CSV file (with or without fieldnames) """
+    """ Write rows data to a CSV file (with or without fieldnames)
+
+    By default content will be written in excel-csv dialect. This can be changed by using the optional
+    argument dialect.
+    """
     if not quoting:
         quoting = csv.QUOTE_MINIMAL
     if 'lineterminator' not in kwargs:
@@ -192,32 +202,9 @@ def write_csv(path, rows, dialect='excel', fieldnames=None, quoting=csv.QUOTE_AL
 
 
 def write_tsv(path, rows, *args, **kwargs):
+    """ Write rows data in tab-separated values (TSV) format
+
+    By default content will be written in excel-tab dialect. This can be changed by using the optional
+    argument dialect.
+    """
     return write_csv(path, rows, dialect='excel-tab', *args, **kwargs)
-
-
-class CSV(object):
-
-    QUOTE_MINIMAL = csv.QUOTE_MINIMAL
-    QUOTE_NONE = csv.QUOTE_NONE
-    QUOTE_ALL = csv.QUOTE_ALL
-
-    @staticmethod
-    def read(file_name, header=False, *args, **kwargs):
-        warnings.warn("chirptext.chio.CSV is deprecated and will be removed in near future. Use chio.read_csv() instead.", DeprecationWarning, stacklevel=2)
-        return read_csv(file_name, fieldnames=header, *args, **kwargs)
-
-    @staticmethod
-    def read_tsv(file_name, *args, **kwargs):
-        warnings.warn("chirptext.chio.CSV is deprecated and will be removed in near future. Use chio.read_tsv() instead.", DeprecationWarning, stacklevel=2)
-        return read_tsv(file_name, *args, **kwargs)
-
-    @staticmethod
-    def write(file_name, rows, header=None, *args, **kwargs):
-        """ Write rows data to a CSV file (with or without header) """
-        warnings.warn("chirptext.io.CSV is deprecated and will be removed in near future. Use chio.write_csv() instead.", DeprecationWarning, stacklevel=2)
-        write_csv(file_name, rows, fieldnames=header, *args, **kwargs)
-
-    @staticmethod
-    def write_tsv(file_name, rows, *args, **kwargs):
-        warnings.warn("chirptext.io.CSV is deprecated and will be removed in near future. Use chio.write_tsv() instead.", DeprecationWarning, stacklevel=2)
-        write_tsv(file_name, rows, *args, **kwargs)
