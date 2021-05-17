@@ -14,9 +14,8 @@ import os
 import unittest
 
 from chirptext import TextReport
-from chirptext import dekoigo
 from chirptext import deko
-from chirptext.deko import get_mecab_bin, set_mecab_bin
+from chirptext.deko import get_mecab_bin, set_mecab_bin, dekoigo
 from chirptext.deko import tokenize, analyse, parse, parse_doc
 from chirptext.deko.util import KATAKANA, simple_kata2hira, is_kana
 from chirptext.deko.mecab import version, wakati
@@ -257,9 +256,51 @@ class TestDeko(unittest.TestCase):
                  "igo library is not available, all dekoigo tests will be ignored")
 class TestDekoigo(unittest.TestCase):
 
-    def test_dekoigo(self):
+    def test_dekoigo_tokenizer(self):
+        # tokenize words
+        words = dekoigo.tokenize(txt)
+        expected_words = ['雨', 'が', '降る', '。']
+        self.assertEqual(expected_words, words)
+        sents = dekoigo.tokenize_sent(txt4)
+        expected = ['猫が好きです。', '犬も好きです。', '鳥は']
+        self.assertEqual(expected, sents)
+
+    def test_dekoigo_parse(self):
         self.assertTrue(dekoigo.igo_available())
-        print(dekoigo.parse(txt))
+        sent = dekoigo.parse(",があります。")
+        expected = [',', 'が', 'あり', 'ます', '。']
+        self.assertEqual(expected, sent.tokens.values())
+        poses = ['名詞-サ変接続', '助詞-格助詞-一般', '動詞-自立', '助動詞', '記号-句点']
+        self.assertEqual(poses, [t.pos3 for t in sent])
+        # try parsing momo
+        sent = dekoigo.parse("すもももももももものうち")
+        features = [(t.text, t.pos3) for t in sent]
+        expected = [('すもも', '名詞-一般'),
+                    ('も', '助詞-係助詞'),
+                    ('もも', '名詞-一般'),
+                    ('も', '助詞-係助詞'),
+                    ('もも', '名詞-一般'),
+                    ('の', '助詞-連体化'),
+                    ('うち', '名詞-非自立-副詞可能')]
+        self.assertEqual(expected, features)
+
+    def test_dekoigo_parse_doc(self):
+        doc1 = dekoigo.parse_doc(txt3)
+        poses = [[(t.surface(), t.pos3, t.reading_hira) for t in s] for s in doc1]
+        expected = [[('猫', '名詞-一般', 'ねこ'),
+                     ('が', '助詞-格助詞-一般', 'が'),
+                     ('好き', '名詞-形容動詞語幹', 'すき'),
+                     ('です', '助動詞', 'です'),
+                     ('。', '記号-句点', '。')],
+                    [('犬', '名詞-一般', 'いぬ'),
+                     ('も', '助詞-係助詞', 'も'),
+                     ('好き', '名詞-形容動詞語幹', 'すき'),
+                     ('です', '助動詞', 'です'),
+                     ('。', '記号-句点', '。')],
+                    [('鳥', '名詞-一般', 'とり'), ('は', '助詞-係助詞', 'は')]]
+        self.assertEqual(expected, poses)
+        doc2 = dekoigo.parse_doc(txt3, splitlines=False)
+        self.assertEqual([s.to_dict() for s in doc1], [s.to_dict() for s in doc2])
 
 
 # -------------------------------------------------------------------------------
