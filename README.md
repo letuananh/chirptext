@@ -1,5 +1,6 @@
-ChirpText is a collection of text processing tools for Python.
+ChirpText is a collection of text processing tools for Python 3.
 
+[![Documentation Status](https://readthedocs.org/projects/chirptext/badge/?version=latest)](https://chirptext.readthedocs.io/en/latest/?badge=latest)
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/letuananh/chirptext.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/letuananh/chirptext/alerts/)
 [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/letuananh/chirptext.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/letuananh/chirptext/context:python)
 
@@ -7,25 +8,22 @@ It is not meant to be a powerful tank like the popular NTLK but a small package 
 
 # Main features
 
+* Simple file data manipulation using an enhanced `open()` function (txt, gz, binary, etc.)
+* CSV helper functions
 * Parse Japanese text with mecab library (Does not require `mecab-python3` package even on Windows, only a binary release (i.e. `mecab.exe`) is required)
 * Built-in "lite" [text annotation formats](https://pypi.org/project/texttaglib/) (`texttaglib` TTL/CSV and TTL/JSON)
 * Helper functions and useful data for processing English, Japanese, Chinese and Vietnamese.
-* Simple file data manipulation using an enhanced `open()` function (txt, gz, binary, etc.)
-* CSV helper functions
-* Quick text-based report generation
 * Application configuration files management which can make educated guess about config files' whereabouts
-* **((Experimental)** Web fetcher with responsible web crawling ethics (support caching out of the box)
-* **(Experimental)** Console application template
-
-Project homepage: [https://letuananh.github.io/chirptext/](https://letuananh.github.io/chirptext/)
+* Quick text-based report generation
 
 # Installation
 
+`chirptext` is available on [PyPI](https://pypi.org/project/chirptext/) and can be installed using pip
+
 ```bash
 pip install chirptext
-# pip script sometimes doesn't work properly, so you may want to try this instead
-python3 -m pip install chirptext
 ```
+
 **Note**: chirptext library does not support Python 2 anymore. Please update to Python 3 to use this package.
 
 # Sample codes
@@ -78,54 +76,6 @@ If you installed MeCab to a custom location, for example `C:\mecab\bin\mecab.exe
 ['c', 'd']
 ```
 
-## Web fetcher
-
-```python
-from chirptext import WebHelper
-
-web = WebHelper('~/tmp/webcache.db')
-data = web.fetch('https://letuananh.github.io/test/data.json')
-data
->>> b'{ "name": "Kungfu Panda" }\n'
-data_json = web.fetch_json('https://letuananh.github.io/test/data.json')
-data_json
->>> {'name': 'Kungfu Panda'}
-```
-
-## Using Counter
-
-```python
-from chirptext import Counter, TextReport
-from chirptext.leutile import LOREM_IPSUM
-
-ct = Counter()
-vc = Counter()  # vowel counter
-for char in LOREM_IPSUM:
-    if char == ' ':
-        continue
-    ct.count(char)
-    vc.count("Letters")
-    if char in 'auieo':
-        vc.count("Vowels")
-    else:
-        vc.count("Consonants")
-vc.summarise()
-ct.summarise(byfreq=True, limit=5)
-```
-
-### Output
-
-```
-Letters: 377 
-Consonants: 212 
-Vowels: 165 
-i: 42 
-e: 37 
-t: 32 
-o: 29 
-a: 29 
-```
-
 ## Sample TextReport
 
 ```python
@@ -165,3 +115,9 @@ t: 32
 o: 29 
 a: 29 
 ```
+
+# Useful links
+
+- Documentation: https://chirptext.readthedocs.io
+- Source code: https://github.com/letuananh/chirptext/
+- PyPI: https://pypi.org/project/chirptext/
