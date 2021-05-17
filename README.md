@@ -24,40 +24,50 @@ It is not meant to be a powerful tank like the popular NTLK but a small package 
 pip install chirptext
 ```
 
-**Note**: chirptext library does not support Python 2 anymore. Please update to Python 3 to use this package.
+# Parsing Japanese text
 
-# Sample codes
+`chirptext` supports parsing Japanese text using different parsers (mecab, Janome, and igo-python)
 
-## Using MeCab on Windows
-You can download mecab binary package from [http://taku910.github.io/mecab/#download](http://taku910.github.io/mecab/#download) and install it.
-After installed you can try:
 ```python
 >>> from chirptext import deko
 >>> sent = deko.parse('猫が好きです。')
 >>> sent.tokens
-[[猫(名詞-一般/*/*|猫|ネコ|ネコ)], [が(助詞-格助詞/一般/*|が|ガ|ガ)], [好き(名詞-形容動詞語幹/*/*|好き|スキ|スキ)], [です(助動詞-*/*/*|です|デス|デス)], [。(記号-句点/*/*|。|。|。)], [EOS(-//|||)]]
->>> sent.words
+['`猫`<0:1>', '`が`<1:2>', '`好き`<2:4>', '`です`<4:6>', '`。`<6:7>']
+>>> sent.tokens.values()
 ['猫', 'が', '好き', 'です', '。']
+>>> sent[0]
+`猫`<0:1>
 >>> sent[0].pos
 '名詞'
->>> sent[0].root
-'猫'
->>> sent[0].reading
-'ネコ'
+>>> sent[1].lemma
+'が'
+>>> sent[2].reading
+'スキ'
+
+# tokenize
+>>> deko.tokenize('猫が好きです。')
+['猫', 'が', '好き', 'です', '。']
+
+# split sentences
+>>> deko.tokenize_sent("猫が好きです。\n犬も好きです。")
+['猫が好きです。', '犬も好きです。']
+
+# parse a document (i.e. multiple sentences)
+>>> doc = deko.parse_doc("猫が好きです。\n犬も好きです。")
+>>> for sent in doc:
+...     print(sent, sent.tokens.values())
+... 
+猫が好きです。 ['猫', 'が', '好き', 'です', '。']
+犬も好きです。 ['犬', 'も', '好き', 'です', '。']
 ```
 
-If you installed MeCab to a custom location, for example `C:\mecab\bin\mecab.exe`, try
-```python
->>> deko.set_mecab_bin("C:\\mecab\\bin\\mecab.exe")
->>> deko.get_mecab_bin()
-'C:\\mecab\\bin\\mecab.exe'
+Notes: At least one of the following tools must be installed to use chirptext Japanese parsing:
 
-# Just that & now you can use mecab
->>> deko.parse('雨が降る。').words
-['雨', 'が', '降る', '。']
-```
+1. mecab: [http://taku910.github.io/mecab/#download](http://taku910.github.io/mecab/#download)
+2. Janome: available on PyPI, install with `pip install Janome`
+3. igo-python: available on PyPI, install with `pip install igo-python`
 
-## Convenient IO APIs
+# Convenient IO APIs
 
 ```python
 >>> from chirptext import chio
@@ -76,7 +86,7 @@ If you installed MeCab to a custom location, for example `C:\mecab\bin\mecab.exe
 ['c', 'd']
 ```
 
-## Sample TextReport
+# Sample TextReport
 
 ```python
 # a string report
@@ -97,7 +107,7 @@ with TextReport.string() as rp:
     print(rp.content())
 ```
 
-### Output
+## Output
 ```
 +---------------------------------------------------------------------------------- 
 | Lorem Ipsum Analysis 
