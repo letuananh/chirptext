@@ -4,7 +4,6 @@
 # :copyright: (c) 2012 Le Tuan Anh <tuananh.ke@gmail.com>
 # :license: MIT, see LICENSE for more details.
 
-import logging
 from . import mecab
 from .. import texttaglib as ttl
 
