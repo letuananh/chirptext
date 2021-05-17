@@ -15,7 +15,8 @@ import unittest
 
 from chirptext import TextReport
 from chirptext import deko
-from chirptext.deko import get_mecab_bin, set_mecab_bin, dekoigo
+from chirptext.deko import get_mecab_bin, set_mecab_bin
+from chirptext.deko import dekoigo
 from chirptext.deko import tokenize, analyse, parse, parse_doc
 from chirptext.deko.util import KATAKANA, simple_kata2hira, is_kana
 from chirptext.deko.mecab import version, wakati
@@ -91,6 +92,10 @@ class TestDeko(unittest.TestCase):
         v = version()
         print(f"Testing deko using mecab version: {v}")
         self.assertIn("mecab", v)
+
+    def test_mecab_available(self):
+        engines = {x[0] for x in deko.engines()}
+        self.assertIn("mecab", engines)
 
     def test_mecab(self):
         sent = parse(txt)
@@ -256,6 +261,10 @@ class TestDeko(unittest.TestCase):
                  "igo library is not available, all dekoigo tests will be ignored")
 class TestDekoigo(unittest.TestCase):
 
+    def test_igo_available(self):
+        engines = {x[0] for x in deko.engines()}
+        self.assertIn("igo", engines)
+
     def test_dekoigo_tokenizer(self):
         # tokenize words
         words = dekoigo.tokenize(txt)
@@ -301,6 +310,62 @@ class TestDekoigo(unittest.TestCase):
         self.assertEqual(expected, poses)
         doc2 = dekoigo.parse_doc(txt3, splitlines=False)
         self.assertEqual([s.to_dict() for s in doc1], [s.to_dict() for s in doc2])
+
+
+@unittest.skipIf(not deko.janome.janome_available(),
+         "Janome library is not available, all janome related tests will be ignored")
+class TestJanome(unittest.TestCase):
+
+    def test_engine(self):
+        engines = {x[0] for x in deko.engines()}
+        self.assertIn("janome", engines)
+    
+    def test_janome_tokenizer(self):
+        # tokenize words
+        words = deko.janome.tokenize(txt)
+        expected_words = ['雨', 'が', '降る', '。']
+        self.assertEqual(expected_words, words)
+        sents = deko.janome.tokenize_sent(txt4)
+        expected = ['猫が好きです。', '犬も好きです。', '鳥は']
+        self.assertEqual(expected, sents)
+
+    def test_janome_parse(self):
+        self.assertTrue(deko.janome.janome_available())
+        sent = deko.janome.parse(",があります。")
+        expected = [',', 'が', 'あり', 'ます', '。']
+        self.assertEqual(expected, sent.tokens.values())
+        poses = ['記号-読点', '助詞-格助詞-一般', '動詞-自立', '助動詞', '記号-句点']
+        self.assertEqual(poses, [t.pos3 for t in sent])
+        # try parsing momo
+        sent = deko.janome.parse("すもももももももものうち")
+        features = [(t.text, t.pos3) for t in sent]
+        expected = [('すもも', '名詞-一般'),
+                    ('も', '助詞-係助詞'),
+                    ('もも', '名詞-一般'),
+                    ('も', '助詞-係助詞'),
+                    ('もも', '名詞-一般'),
+                    ('の', '助詞-連体化'),
+                    ('うち', '名詞-非自立-副詞可能')]
+        self.assertEqual(expected, features)
+
+    def test_janome_parse_doc(self):
+        doc1 = deko.janome.parse_doc(txt3)
+        poses = [[(t.surface(), t.pos3, t.reading_hira) for t in s] for s in doc1]
+        expected = [[('猫', '名詞-一般', 'ねこ'),
+                     ('が', '助詞-格助詞-一般', 'が'),
+                     ('好き', '名詞-形容動詞語幹', 'すき'),
+                     ('です', '助動詞', 'です'),
+                     ('。', '記号-句点', '。')],
+                    [('犬', '名詞-一般', 'いぬ'),
+                     ('も', '助詞-係助詞', 'も'),
+                     ('好き', '名詞-形容動詞語幹', 'すき'),
+                     ('です', '助動詞', 'です'),
+                     ('。', '記号-句点', '。')],
+                    [('鳥', '名詞-一般', 'とり'), ('は', '助詞-係助詞', 'は')]]
+        self.assertEqual(expected, poses)
+        doc2 = deko.janome.parse_doc(txt3, splitlines=False)
+        self.assertEqual([s.to_dict() for s in doc1], [s.to_dict() for s in doc2])
+
 
 
 # -------------------------------------------------------------------------------
