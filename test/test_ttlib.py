@@ -18,7 +18,7 @@ import logging
 import json
 from chirptext import TextReport
 from chirptext import ttl
-from chirptext.deko import MeCabSent
+from chirptext import deko
 
 # ------------------------------------------------------------------------------
 # Configuration
@@ -80,7 +80,6 @@ class TestBasicModel(unittest.TestCase):
         # add another POS
         tags.new("cat-n-1", "sense")
         pos1 = tags.pos.new("NNP")
-        print(tags.gold.pos.type, "pos")
         tags.new("cat-n-2", "sense")
         tags.new("cat-n-3", "sense")
         pos2 = tags.new("NN", "pos")
@@ -380,17 +379,16 @@ class TestTagging(unittest.TestCase):
     def test_tagged_sentences(self):
         print("test converting MeCabSent into TTL Sent manually")
         sent = ttl.Sentence('猫が好きです 。')
-        mecab_sent = MeCabSent.from_mecab_output(sent4, sent4_mecab)
-        getLogger().debug((mecab_sent.surface, mecab_sent.words))
+        mecab_sent = deko.mecab._mecab_output_to_sent(sent4, sent4_mecab)
         # import tags
-        sent._import_tokens(mecab_sent.words)
+        sent._import_tokens(mecab_sent.tokens.values())
         for mtoken, token in zip(mecab_sent, sent.tokens):
-            if mtoken.reading_hira() != token.text:
+            if mtoken.reading_hira != token.text:
                 if token.text in ('猫', '好き'):
-                    token.tag.reading = mtoken.reading_hira()
-                token.lemma = mtoken.reading_hira()
-                token.pos = mtoken.pos3()
-        self.assertEqual(mecab_sent.words, [x.text for x in sent.tokens])
+                    token.tag.reading = mtoken.reading_hira
+                token.lemma = mtoken.reading_hira
+                token.pos = mtoken.pos3
+        self.assertEqual(mecab_sent.tokens.values(), [x.text for x in sent.tokens])
         self.assertEqual(sent[0].tag.reading.value, 'ねこ')
         self.assertEqual(sent[0].lemma, 'ねこ')
         self.assertEqual(sent[2].tag.reading.value, 'すき')  # accessing gold-value
@@ -502,14 +500,8 @@ class TestTagging(unittest.TestCase):
         # create sents in doc
         raws = (sent1, sent2, sent3)
         mecab_outputs = (sent1_mecab, sent2_mecab, sent3_mecab)
-        for sid, (sent, mecab_output) in enumerate(zip(raws, mecab_outputs)):
-            msent = MeCabSent.from_mecab_output(sent, mecab_output)
-            tsent = doc.sents.new(msent.surface, sid + 1)  # sentID starts from 1
-            tsent.tokens = msent.words
-            # pos tagging
-            for mtk, tk in zip(msent, tsent):
-                tk.pos = mtk.pos3()
-                tk.tags.new(mtk.reading_hira(), type="reading", source=ttl.Tag.MECAB)
+        for sid, (text, mecab_output) in enumerate(zip(raws, mecab_outputs)):
+            deko.mecab._mecab_output_to_sent(text, mecab_output, doc=doc)
         # sense tagging
         doc[2][4].comment = 'to eat'
         doc[0].concepts.new("三毛猫", "wiki_ja", "三毛猫", tokens=[0, 1, 2]).comment = 'Calico cat, you know?'
@@ -539,8 +531,8 @@ class TestTagging(unittest.TestCase):
             self.assertTrue(concepts.content())
             self.assertTrue(links.content())
             self.assertTrue(tags.content())
-            for sent in doc:
-                logging.debug(json.dumps(sent.to_dict(), ensure_ascii=False))
+            for text in doc:
+                logging.debug(json.dumps(text.to_dict(), ensure_ascii=False))
 
 
 class TestSerialization(unittest.TestCase):
