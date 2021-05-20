@@ -15,6 +15,7 @@ import logging
 import os
 import unittest
 
+from chirptext import __version__
 from chirptext import TextReport
 from chirptext import deko
 from chirptext import ttl
@@ -48,6 +49,11 @@ def getLogger():
 # Tests
 # ------------------------------------------------------------------------------
 class TestBasicModel(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        print("\n" + "-" * 60)
+        print(f"Testing texttaglib API on chirptext [{__version__}]")
 
     def test_tagset(self):
         tags = ttl.TagSet()
