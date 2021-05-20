@@ -85,8 +85,6 @@ class TestDeko(unittest.TestCase):
     def test_mecab_bin_loc(self):
         mbin_original = get_mecab_bin()
         mbin_locs = ['mecab', 'mecab.exe', '/usr/local/bin/mecab', '/usr/bin/mecab']
-        if mbin_original:
-            self.assertIn(mbin_original, mbin_locs)
         with self.assertLogs('chirptext.dekomecab', level='WARNING') as log:
             mecab_custom_loc = 'C:\\mecab\\mecab-console.exe'
             set_mecab_bin(mecab_custom_loc)
