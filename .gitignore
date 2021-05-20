@@ -1,10 +1,12 @@
+.idea/
 .vscode/
+venv/
 .env_python3/
 README.rst
 test/data/test.txt*
 test/data/temp.*
 test/data/del.me
-test/data/test.csv
+test/data/test.*
 test/data/test_cache.db
 data/foo.txt
 *.py~
