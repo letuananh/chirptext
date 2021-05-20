@@ -50,7 +50,7 @@ setup(
     description=pkg_info['__description__'],
     long_description=long_description,
     long_description_content_type='text/markdown',
-    packages=['chirptext'],
+    packages=['chirptext', 'chirptext.deko'],
     package_data={'chirptext': ['data/luke/swadesh/*.txt',
                                 'data/sino/*.csv']},
     include_package_data=True,
