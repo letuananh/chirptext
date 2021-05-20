@@ -2,7 +2,7 @@
 
 ## 20 May 2021
 
-- v >= 0.1.2: Fix newline and encoding keywords missing in `chio.write_csv()` and `chio.write_tsv()`
+- v >= 0.1.2: Fix `newline` and `encoding` keywords missing in `chio.write_csv()` and `chio.write_tsv()`
 
 ## 1 Jun 2020
 
