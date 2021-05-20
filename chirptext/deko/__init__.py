@@ -18,6 +18,7 @@ from . import mecab
 from . import dekoigo
 from . import janome
 from . import util
+from .util import kata2hira, is_kana, HIRAGANA, KATAKANA
 
 # allow mecab config
 set_mecab_bin = mecab._register_mecab_loc

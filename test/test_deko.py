@@ -18,7 +18,8 @@ from chirptext import deko
 from chirptext.deko import get_mecab_bin, set_mecab_bin
 from chirptext.deko import dekoigo
 from chirptext.deko import tokenize, analyse, parse, parse_doc
-from chirptext.deko.util import KATAKANA, simple_kata2hira, is_kana
+from chirptext.deko import HIRAGANA, KATAKANA, kata2hira, is_kana
+from chirptext.deko.util import simple_kata2hira
 from chirptext.deko.mecab import version, wakati
 
 # -------------------------------------------------------------------------------
@@ -59,6 +60,12 @@ class TestTool(unittest.TestCase):
             rp.write(h, k, '|', separator='')
         expected = TestTool.ALL_MAPPING
         self.assertEqual(rp.content(), expected)
+
+    def test_hira2hira(self):
+        for k in HIRAGANA:
+            h = kata2hira(k)
+            self.assertEqual(k, h)
+            self.assertTrue(is_kana(k) and is_kana(h))
 
     def test_check_kana(self):
         self.assertTrue(is_kana(''))

@@ -78,5 +78,3 @@ def sent_to_ruby(sent):
                                                                                                        '（').replace(
         ' ）', '）')
     return ruby_text
-
-
