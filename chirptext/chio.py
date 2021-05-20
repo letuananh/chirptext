@@ -60,14 +60,14 @@ def open(path, mode='rt', encoding='utf-8', *args, **kwargs):
     # read or write
     if path.endswith('.gz'):
         if mode.endswith('b'):
-            return gzip.open(path, mode=mode)
+            return gzip.open(path, mode=mode, *args, **kwargs)
         else:
-            return gzip.open(path, mode=mode, encoding=encoding)
+            return gzip.open(path, mode=mode, encoding=encoding, *args, **kwargs)
     else:
         if mode.endswith('b'):
-            return __python_open(path, mode=mode)
+            return __python_open(path, mode=mode, *args, **kwargs)
         else:
-            return __python_open(path, mode=mode, encoding=encoding)
+            return __python_open(path, mode=mode, encoding=encoding, *args, **kwargs)
 
 
 def process_file(path, processor, encoding='utf-8', mode='rt', *args, **kwargs):
@@ -179,7 +179,7 @@ def read_tsv(path, *args, **kwargs):
     return read_csv(path, dialect='excel-tab', *args, **kwargs)
 
 
-def write_csv(path, rows, dialect='excel', fieldnames=None, quoting=csv.QUOTE_ALL, extrasaction='ignore', encoding='utf-8', *args, **kwargs):
+def write_csv(path, rows, dialect='excel', fieldnames=None, quoting=csv.QUOTE_ALL, extrasaction='ignore', encoding='utf-8', newline='', *args, **kwargs):
     """ Write rows data to a CSV file (with or without fieldnames)
 
     By default content will be written in excel-csv dialect. This can be changed by using the optional
@@ -189,7 +189,7 @@ def write_csv(path, rows, dialect='excel', fieldnames=None, quoting=csv.QUOTE_AL
         quoting = csv.QUOTE_MINIMAL
     if 'lineterminator' not in kwargs:
         kwargs['lineterminator'] = '\n'  # use \n to fix double-line in Windows
-    with open(path, mode='wt', encoding=encoding if encoding else 'utf-8', newline='') as csvfile:
+    with open(path, mode='wt', encoding=encoding if encoding else 'utf-8', newline=newline) as csvfile:
         if fieldnames:
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames, dialect=dialect, quoting=quoting, extrasaction=extrasaction, *args, **kwargs)
             writer.writeheader()
