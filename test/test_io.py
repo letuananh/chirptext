@@ -24,7 +24,7 @@ from chirptext import chio
 # -------------------------------------------------------------------------------
 
 TEST_DIR = os.path.dirname(os.path.realpath(__file__))
-TEST_DATA = os.path.join(TEST_DIR, 'data')
+TEST_DATA = Path(os.path.join(TEST_DIR, 'data'))
 TEST_CSV = os.path.join(TEST_DATA, 'test.csv')
 
 
@@ -166,6 +166,25 @@ class TestReaders(unittest.TestCase):
         chio.write_csv(TEST_CSV, [to_json(p) for p in persons], fieldnames=header)
         inpersons = [to_obj(Person, row) for row in chio.read_csv(TEST_CSV, fieldnames=True)]
         self.assertEqual(persons, inpersons)
+
+
+class TestWriter(unittest.TestCase):
+
+    def test_write_csv_for_Excel(self):
+
+        rows = [['a', 'b', 'c'],
+                [1, 2, 3]]
+        chio.write_csv(TEST_DATA / 'test.csv', rows, encoding='utf-8-sig', newline='\n')
+        test_bytes = chio.read_file(TEST_DATA / 'test.csv', mode='rb')
+        # make sure that the UTF-8 sig bytes are there
+        expected = b'\xef\xbb\xbf"a","b","c"\n"1","2","3"\n'
+        self.assertEqual(expected, test_bytes)
+        # test TSV as well
+        chio.write_tsv(TEST_DATA / 'test.tsv', rows, encoding='utf-8-sig', newline='\n')
+        test_bytes = chio.read_file(TEST_DATA / 'test.tsv', mode='rb')
+        # make sure that the UTF-8 sig bytes are there
+        expected = b'\xef\xbb\xbf"a"\t"b"\t"c"\n"1"\t"2"\t"3"\n'
+        self.assertEqual(expected, test_bytes)
 
 
 # -------------------------------------------------------------------------------
