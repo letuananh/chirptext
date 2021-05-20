@@ -173,13 +173,13 @@ class TestWriter(unittest.TestCase):
 
         rows = [['a', 'b', 'c'],
                 [1, 2, 3]]
-        chio.write_csv(TEST_DATA / 'test.csv', rows, encoding='utf-8-sig')
+        chio.write_csv(TEST_DATA / 'test.csv', rows, encoding='utf-8-sig', newline='\n')
         test_bytes = chio.read(TEST_DATA / 'test.csv', mode='rb')
         # make sure that the UTF-8 sig bytes are there
         expected = b'\xef\xbb\xbf"a","b","c"\n"1","2","3"\n'
         self.assertEqual(expected, test_bytes)
         # test TSV as well
-        chio.write_tsv(TEST_DATA / 'test.tsv', rows, encoding='utf-8-sig')
+        chio.write_tsv(TEST_DATA / 'test.tsv', rows, encoding='utf-8-sig', newline='\n')
         test_bytes = chio.read(TEST_DATA / 'test.tsv', mode='rb')
         # make sure that the UTF-8 sig bytes are there
         expected = b'\xef\xbb\xbf"a"\t"b"\t"c"\n"1"\t"2"\t"3"\n'
