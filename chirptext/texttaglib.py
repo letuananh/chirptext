@@ -175,7 +175,7 @@ class ProtoList:
 
     def __repr__(self):
         return repr([repr(c) for c in self])
-        
+
     def __str__(self):
         return str([str(c) for c in self])
 
@@ -948,6 +948,18 @@ class Document(DataObject):
         self.__sents = ProtoList(parent=self, proto=Sentence, index_key=True, claim_hook=self.__claim_sent_obj)
         self.__idgen = IDGenerator(id_hook=lambda x: x in self)  # for creating a new sentence without ID
 
+    def __repr__(self):
+        return f"<ttl.Document {len(self)} sent(s)>"
+
+    def __str__(self):
+        return repr(self)
+
+    def to_dict(self):
+        return {
+            'name': self.name,
+            'sents': [s.to_dict() for s in self]
+        }
+
     @property
     def sents(self):
         return self.__sents
@@ -1259,7 +1271,7 @@ def read_json(path):
     doc_path = os.path.dirname(path)
     doc = Document(doc_name, path=doc_path)
     for sent in read_json_iter(path):
-        doc._add_sent_obj(sent)
+        doc.sents.append(sent)
     return doc
 
 
