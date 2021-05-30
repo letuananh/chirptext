@@ -14,6 +14,6 @@ __description__ = "A minimalist collection of text processing tools for Python 3
 __url__ = "https://github.com/letuananh/chirptext/"
 __maintainer__ = "Le Tuan Anh"
 __version_major__ = "0.2"
-__version__ = "{}a4.post1".format(__version_major__)
+__version__ = "{}a4.post2".format(__version_major__)
 __version_long__ = "{} - alpha 4".format(__version_major__)
 __status__ = "3 - Alpha"
