@@ -1259,7 +1259,7 @@ def read_json(path):
     doc_path = os.path.dirname(path)
     doc = Document(doc_name, path=doc_path)
     for sent in read_json_iter(path):
-        doc._add_sent_obj(sent)
+        doc.sents._add_obj(sent)
     return doc
 
 
