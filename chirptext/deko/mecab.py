@@ -150,7 +150,7 @@ def _make_sent(text, token_dicts, doc: ttl.Document = None, sent_id=None):
         if "root" in token_dict and token_dict["root"] and token_dict["root"] != "*":
             token.lemma = token_dict["root"]
         else:
-            token.lemma = token.surface
+            token.lemma = token.surface()
         if "reading" in token_dict:
             token.reading = token_dict['reading']
             token.tag.reading_hira = util.kata2hira(token_dict['reading'])
