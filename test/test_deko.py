@@ -324,8 +324,10 @@ class TestDekoigo(unittest.TestCase):
 class TestJanome(unittest.TestCase):
 
     def test_engine(self):
-        engines = {x[0] for x in deko.engines()}
+        engines = {x[0]: x[1] for x in deko.engines()}
         self.assertIn("janome", engines)
+        self.assertEqual('chirptext.deko.janome', engines['janome'].__name__)
+        print("[Deko janome is working]")
     
     def test_janome_tokenizer(self):
         # tokenize words

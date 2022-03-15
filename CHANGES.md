@@ -5,6 +5,13 @@
 - Fix `ttl.read_json()` bug
 - Fix `token.surface` related bug (`token.surface()` is a method, not a property)
 
+## 27 May 2021
+
+- v0.2a4.post1
+  - Fix deko surface bug
+  - Fix read TTL/JSON
+  - Add ttl.Document.to_dict() method
+
 ## 20 May 2021
 
 - v >= 0.1.2: Fix `newline` and `encoding` keywords missing in `chio.write_csv()` and `chio.write_tsv()`

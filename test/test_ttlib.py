@@ -14,6 +14,7 @@ import json
 import logging
 import os
 import unittest
+from pathlib import Path
 
 from chirptext import __version__
 from chirptext import TextReport
@@ -24,9 +25,9 @@ from chirptext import ttl
 # Configuration
 # ------------------------------------------------------------------------------
 
-TEST_DIR = os.path.dirname(__file__)
-TEST_DATA = os.path.join(TEST_DIR, 'data')
-TEST_FILE = os.path.join(TEST_DATA, 'test')
+TEST_DIR = Path(os.path.dirname(__file__))
+TEST_DATA = TEST_DIR / 'data'
+TEST_FILE = TEST_DATA / 'test'
 
 BARK_SID = '01047745-v'
 GDOG_SID = '02103841-n'
@@ -604,6 +605,19 @@ class TestSerialization(unittest.TestCase):
         self.assertEqual(jo['flag'], jr['flag'])
         self.assertEqual(jo['comment'], jr['comment'])
         self.assertEqual(jo, jr)
+
+    def test_write_json(self):
+        doc = ttl.Document('manual', TEST_DATA)
+        # create sents in doc
+        raws = (sent1, sent2, sent3)
+        mecab_outputs = (sent1_mecab, sent2_mecab, sent3_mecab)
+        for sid, (text, mecab_output) in enumerate(zip(raws, mecab_outputs)):
+            deko.mecab._mecab_output_to_sent(text, mecab_output, doc=doc)
+        ttl.write_json(TEST_DATA / 'test.write.json', doc)
+        doc_json = doc.to_dict()
+        doc2 = ttl.read_json(TEST_DATA / 'test.write.json')
+        doc2_json = doc2.to_dict()
+        self.assertEqual(doc_json['sents'], doc2_json['sents'])
 
 
 # ------------------------------------------------------------------------------
