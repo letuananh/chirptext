@@ -41,7 +41,7 @@ def _igo_parse_token_dicts(content, *args, **kwargs):
     # 表層形,品詞,品詞細分類1,品詞細分類2,品詞細分類3,活用形,活用型,原形,読み,発音
     token_dicts = []
     for token in tokens:
-        features = [token.surface] + token.feature.split(',')
+        features = [token.surface()] + token.feature.split(',')
         if len(features) < 10:
             features += [''] * (10 - len(features))
         token_dicts.append({k: v for k, v in zip(mecab._MECAB_FIELDS, features)})

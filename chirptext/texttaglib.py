@@ -11,7 +11,7 @@ import csv
 import json
 import logging
 import os
-from collections import Mapping
+from collections.abc import Mapping
 from collections import defaultdict as dd
 from typing import TypeVar, Generic
 

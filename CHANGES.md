@@ -1,5 +1,10 @@
 # Chirptext changelog
 
+## 15 Mar 2022
+
+- Fix `ttl.read_json()` bug
+- Fix `token.surface` related bug (`token.surface()` is a method, not a property)
+
 ## 27 May 2021
 
 - v0.2a4.post1
