@@ -361,6 +361,11 @@ class TestJanome(unittest.TestCase):
                     ('の', '助詞-連体化'),
                     ('うち', '名詞-非自立-副詞可能')]
         self.assertEqual(expected, features)
+        # make sure that surface is working as intended
+        sent = deko.janome.parse("犬も好きです。")
+        expected = [('犬', '犬'), ('も', 'も'), ('好き', '好き'), ('です', 'です'), ('。', '。')]
+        actual = [(t.text, t.surface()) for t in sent]
+        self.assertEqual(expected, actual)
 
     def test_janome_parse_doc(self):
         doc1 = deko.janome.parse_doc(txt3)

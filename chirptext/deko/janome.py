@@ -40,14 +40,14 @@ def _janome_parse_token_dicts(content, *args, **kwargs):
     token_dicts = []
     for token in tokens:
         if token.extra is None:
-            if token.surface() in ('\r', '\n', '\r\n'):
+            if token.surface in ('\r', '\n', '\r\n'):
                 continue
-            elif token.surface() == ',':
+            elif token.surface == ',':
                 features = (',', '記号', '読点' , '*', '*', '*', '*', ',', ',', ',')
             else:
-                features = [token.surface()] + [''] * 9
+                features = [token.surface] + [''] * 9
         else:
-            features = (token.surface(), *token.extra[0].split(','), *token.extra[1:])
+            features = (token.surface, *token.extra[0].split(','), *token.extra[1:])
             if len(features) < 10:
                 features += [''] * (10 - len(features))
         token_dicts.append({k: v for k, v in zip(mecab._MECAB_FIELDS, features)})
